@@ -137,7 +137,7 @@ struct DepthwiseConv2DIsMul : public OpRewritePattern<tosa::DepthwiseConv2DOp> {
 
     Value mulValue = rewriter
                          .create<tosa::MulOp>(op.getLoc(), mulShapeType, input,
-                                              weight, /*shift=*/0)
+                                              weight, Value{} /* zero_shift */)
                          .getResult();
 
     // Reshape output to [N, H, W, C * M].
