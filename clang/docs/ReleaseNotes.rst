@@ -788,6 +788,8 @@ Improvements to Clang's diagnostics
       require(scope); // Warning!  Requires mu1.
     }
 
+- Clang now diagnoses missing format attributes for non-template functions and class/struct/union members. (#GH60718)
+
 Improvements to Clang's time-trace
 ----------------------------------
 
