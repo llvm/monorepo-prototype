@@ -708,8 +708,8 @@ registers:       []
 liveins:
   - { reg: '$w0', virtual-reg: '' }
 frameInfo:
-  savePoint:       ''
-  restorePoint:    ''
+  savePoints:      []
+  restorePoints:   []
 body:             |
   ; CHECK-LABEL: name: noshrink_bb_as_inlineasmbr_target
   ; CHECK: bb.0.entry:

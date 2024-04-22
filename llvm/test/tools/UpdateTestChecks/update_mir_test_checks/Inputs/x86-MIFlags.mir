@@ -51,8 +51,8 @@ frameInfo:
   hasMustTailInVarArgFunc: false
   hasTailCall:     false
   localFrameSize:  0
-  savePoint:       ''
-  restorePoint:    ''
+  savePoints:      []
+  restorePoints:   []
 fixedStack:      []
 stack:           []
 callSites:       []
