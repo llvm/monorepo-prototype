@@ -47,16 +47,19 @@ struct __all : _IsSame<__all_dummy<_Pred...>, __all_dummy<((void)_Pred, true)...
 #if _LIBCPP_STD_VER >= 17
 
 template <class...>
-struct conjunction : true_type {};
+struct _LIBCPP_NO_SPECIALIZATIONS conjunction : true_type {};
 
+_LIBCPP_DIAGNOSTIC_PUSH
+_LIBCPP_CLANG_DIAGNOSTIC_IGNORED("-Winvalid-specialization")
 template <class _Arg>
 struct conjunction<_Arg> : _Arg {};
 
 template <class _Arg, class... _Args>
 struct conjunction<_Arg, _Args...> : conditional_t<!bool(_Arg::value), _Arg, conjunction<_Args...>> {};
+_LIBCPP_DIAGNOSTIC_POP
 
 template <class... _Args>
-inline constexpr bool conjunction_v = conjunction<_Args...>::value;
+_LIBCPP_NO_SPECIALIZATIONS inline constexpr bool conjunction_v = conjunction<_Args...>::value;
 
 #endif // _LIBCPP_STD_VER >= 17
 
