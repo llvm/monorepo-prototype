@@ -211,11 +211,7 @@ static LogicalResult verifyConvOp(T op) {
   // All TOSA conv ops have an input() and weight().
   auto inputType = llvm::dyn_cast<RankedTensorType>(op.getInput().getType());
 
-  RankedTensorType weightType;
-  if constexpr (std::is_same_v<T, tosa::TransposeConv2DOp>)
-    weightType = llvm::dyn_cast<RankedTensorType>(op.getFilter().getType());
-  else
-    weightType = llvm::dyn_cast<RankedTensorType>(op.getWeight().getType());
+  auto weightType = llvm::dyn_cast<RankedTensorType>(op.getWeight().getType());
 
   // Must be ranked tensor types
   if (!inputType) {
@@ -223,18 +219,49 @@ static LogicalResult verifyConvOp(T op) {
     return failure();
   }
   if (!weightType) {
-    if constexpr (std::is_same_v<T, tosa::TransposeConv2DOp>) {
-      op.emitOpError("expect a ranked tensor for filter, got ")
-          << op.getFilter();
-    } else {
-      op.emitOpError("expect a ranked tensor for weight, got ")
-          << op.getWeight();
-    }
+    op.emitOpError("expect a ranked tensor for weight, got ") << op.getWeight();
     return failure();
   }
 
   auto inputEType = inputType.getElementType();
   auto weightEType = weightType.getElementType();
+  auto biasEType =
+      llvm::cast<ShapedType>(op.getBias().getType()).getElementType();
+  auto resultEType =
+      llvm::cast<ShapedType>(op.getResult().getType()).getElementType();
+  bool biasIsFloat = llvm::isa<FloatType>(biasEType);
+  bool resultIsFloat = llvm::isa<FloatType>(resultEType);
+
+  if (auto quantType =
+          llvm::dyn_cast<mlir::quant::UniformQuantizedType>(inputEType))
+    inputEType = quantType.getStorageType();
+
+  if (auto quantType =
+          llvm::dyn_cast<mlir::quant::UniformQuantizedType>(biasEType))
+    biasEType = quantType.getStorageType();
+
+  if (auto quantType =
+          llvm::dyn_cast<mlir::quant::UniformQuantizedType>(resultEType))
+    resultEType = quantType.getStorageType();
+
+  if (biasIsFloat && resultIsFloat && (biasEType != resultEType)) {
+    // for now, only enforce bias element type == result element type for
+    // float types.
+    op.emitOpError(
+        "expect both bias and result to have same element type, got ")
+        << biasEType << " and " << resultEType;
+    return failure();
+  }
+
+  if (inputEType.isFloat8E5M2() || inputEType.isFloat8E4M3FN() ||
+      weightEType.isFloat8E5M2() || weightEType.isFloat8E4M3FN()) {
+    if (inputEType != weightEType) {
+      op.emitOpError(
+          "expect both input and weight to have same element type, got ")
+          << inputEType << " and " << weightEType;
+      return failure();
+    }
+  }
 
   bool inputIsQuant = !llvm::isa<FloatType>(inputEType);
   bool weightIsQuant = !llvm::isa<FloatType>(weightEType);
@@ -247,14 +274,33 @@ static LogicalResult verifyConvOp(T op) {
     return failure();
   }
 
-  // Quantized type must have constructed the quantizationattr, and unquantized
-  // types should not have a quantizationattr.
-  if ((inputIsQuant && !op.getQuantizationInfo()) ||
-      (!inputIsQuant && op.getQuantizationInfo())) {
-    op.emitOpError("quantizationattr is required for quantized type, and not "
-                   "allowed for float type");
+  ElementsAttr inputZpAttr;
+  ElementsAttr weightZpAttr;
+  if (!matchPattern(op.getInputZp(), m_Constant(&inputZpAttr)) ||
+      !matchPattern(op.getWeightZp(), m_Constant(&weightZpAttr))) {
+    op.emitOpError(
+        "bail out if the actual value of zero points cannot be determined");
     return failure();
   }
+
+  // Get and verify explicit zero points.
+  int64_t inputZpVal;
+  int64_t weightZpVal;
+
+  if (tosa::getZeroPoint(inputZpAttr, inputZpVal).failed() ||
+      tosa::verifyZeroPoint<T>(getElementTypeOrSelf(inputZpAttr), inputZpVal)
+          .failed()) {
+    op.emitOpError("input zero point must be zero for non-int8 integer types");
+    return failure();
+  }
+
+  if (tosa::getZeroPoint(weightZpAttr, weightZpVal).failed() ||
+      tosa::verifyZeroPoint<T>(getElementTypeOrSelf(weightZpAttr), weightZpVal)
+          .failed()) {
+    op.emitOpError("weight zero point must be zero for non-int8 integer types");
+    return failure();
+  }
+
   return success();
 }
 
@@ -311,6 +357,39 @@ static LogicalResult verifyConvOpModes(T op) {
   if (inputEType.isF32() && !accType.isF32())
     return op.emitOpError("accumulator type for f32 tensor is not f32");
 
+  return success();
+}
+
+// verify that inType and outType have same element types
+template <typename T>
+static LogicalResult verifySameElementTypes(T op, Type inType, Type outType) {
+  auto inputType = llvm::dyn_cast<TensorType>(inType);
+  auto outputType = llvm::dyn_cast<TensorType>(outType);
+  if (!inputType) {
+    op.emitOpError("expect shaped tensor for input, got ") << inType;
+    return failure();
+  }
+  if (!outputType) {
+    op.emitOpError("expect shaped tensor for output, got ") << outType;
+    return failure();
+  }
+  auto inputElementType = inputType.getElementType();
+  auto outputElementType = outputType.getElementType();
+  auto inputQuantType =
+      llvm::dyn_cast<mlir::quant::UniformQuantizedType>(inputElementType);
+  auto outputQuantType =
+      llvm::dyn_cast<mlir::quant::UniformQuantizedType>(outputElementType);
+  if ((inputElementType.isIntOrIndexOrFloat() || inputQuantType) &&
+      (outputElementType.isIntOrIndexOrFloat() || outputQuantType) &&
+      inputElementType != outputElementType) {
+    // only check if both element types are int/index/float/UniformQuantized
+    // eg, not sure how to check quant::QuantizedType
+    // this happens in test_conv2d_q_grouped_convolution in
+    // tfl-to-tosa-pipeline.mlir
+    op.emitOpError("expect input and output to have same element type, got ")
+        << inputElementType << " and " << outputElementType;
+    return failure();
+  }
   return success();
 }
 
@@ -413,21 +492,13 @@ static void buildConvOpWithQuantInfo(OpBuilder &builder, OperationState &result,
                                      DenseI64ArrayAttr stride,
                                      DenseI64ArrayAttr dilation,
                                      TypeAttr accType) {
-
-  result.addOperands({input, weight, bias});
+  auto zps = createZPsAsConst(builder, input, weight);
+  result.addOperands({input, weight, bias, zps.first, zps.second});
   result.addAttribute("pad", pad);
   result.addAttribute("stride", stride);
   result.addAttribute("dilation", dilation);
   result.addAttribute("acc_type", accType);
-
-  auto quantAttr = buildConvOpQuantizationAttr(builder, input, weight);
-  if (quantAttr) {
-    result.addAttribute("quantization_info", quantAttr);
-    result.addTypes(
-        buildConvOpResultTypeInfo(builder, outputType, input, weight));
-  } else {
-    result.addTypes(outputType);
-  }
+  result.addTypes(outputType);
 }
 
 /// Handles tosa.transpose_conv2d which has outpad and output shape
@@ -782,7 +853,7 @@ LogicalResult tosa::FullyConnectedOp::inferReturnTypeComponents(
   return success();
 }
 
-LogicalResult FullyConnectedOp::verify() { return verifyConvOp(*this); }
+LogicalResult FullyConnectedOp::verify() { return success(); }
 
 LogicalResult tosa::MatMulOp::inferReturnTypeComponents(
     MLIRContext *context, ::std::optional<Location> location,
@@ -1850,7 +1921,7 @@ LogicalResult TransposeConv2DOp::inferReturnTypeComponents(
   }
 
   // Weight shapes describes the filter width/height and the output channels.
-  ShapeAdaptor weightShape(adaptor.getFilter().getType());
+  ShapeAdaptor weightShape(adaptor.getWeight().getType());
   if (weightShape.hasRank()) {
     outputShape[3] = ShapedType::isDynamic(outputShape[3])
                          ? weightShape.getDimSize(0)
@@ -1906,10 +1977,8 @@ LogicalResult IfOp::inferReturnTypeComponents(
       if (auto returnOp = dyn_cast<tosa::YieldOp>(block.getTerminator()))
         yieldOps.push_back(returnOp);
   }
-
   if (yieldOps.empty())
     return failure();
-
   // Get the initial type information for the yield op.
   llvm::SmallVector<ValueKnowledge> resultKnowledge;
   resultKnowledge.reserve(yieldOps.front().getNumOperands());
@@ -1917,11 +1986,9 @@ LogicalResult IfOp::inferReturnTypeComponents(
     resultKnowledge.push_back(
         ValueKnowledge::getKnowledgeFromType(operand.getType()));
   }
-
   for (auto yieldOp : yieldOps) {
     if (resultKnowledge.size() != yieldOp.getNumOperands())
       return failure();
-
     for (const auto &it : llvm::enumerate(yieldOp.getOperands())) {
       int32_t index = it.index();
       auto meet = ValueKnowledge::meet(
@@ -1932,11 +1999,9 @@ LogicalResult IfOp::inferReturnTypeComponents(
       resultKnowledge[index] = meet;
     }
   }
-
   for (const ValueKnowledge &result : resultKnowledge) {
     inferredReturnShapes.push_back(result.getShapedTypeComponents());
   }
-
   return success();
 }
 
@@ -2144,6 +2209,54 @@ void WhileOp::print(OpAsmPrinter &parser) {
   parser << " do ";
   parser.printRegion(getBody());
   parser.printOptionalAttrDictWithKeyword((*this)->getAttrs());
+}
+
+LogicalResult mlir::tosa::getZeroPoint(ElementsAttr zpAttr, int64_t &zp) {
+  Type zpElemType = zpAttr.getElementType();
+  if (auto quantType =
+          llvm::dyn_cast<mlir::quant::UniformQuantizedType>(zpElemType)) {
+    zp = quantType.getZeroPoint();
+    return success();
+  }
+  if (llvm::isa<FloatType>(zpElemType)) {
+    // non-zero zero point is not allowed for float types.
+    if (!zpAttr.getValues<APFloat>()[0].isZero())
+      return failure();
+    zp = 0;
+    return success();
+  }
+  if (llvm::isa<IntegerType>(zpElemType)) {
+    zp = zpAttr.getValues<APInt>()[0].getSExtValue();
+    return success();
+  }
+  // zero point is not allowed for unsupported types.
+  return failure();
+}
+
+// Create a rank-0 const tensor for zero point of the source tensor.
+std::optional<Value> mlir::tosa::createZeroPointTensor(OpBuilder &builder,
+                                                       Location loc,
+                                                       Type srcElemType,
+                                                       int64_t zp) {
+  if (auto quantType =
+          llvm::dyn_cast<mlir::quant::UniformQuantizedType>(srcElemType))
+    srcElemType = quantType.getStorageType();
+
+  auto zpType = mlir::RankedTensorType::get({}, srcElemType);
+  if (auto quantType = llvm::dyn_cast<mlir::quant::QuantizedType>(srcElemType))
+    srcElemType = quantType.getStorageType();
+  if (llvm::isa<FloatType>(srcElemType)) {
+    auto zpAttr = DenseElementsAttr::get(
+        zpType, builder.getFloatAttr(srcElemType, static_cast<double>(zp)));
+    return builder.create<tosa::ConstOp>(loc, zpType, zpAttr);
+  }
+  if (llvm::isa<IntegerType>(srcElemType)) {
+    auto zpAttr =
+        DenseElementsAttr::get(zpType, builder.getIntegerAttr(srcElemType, zp));
+    return builder.create<tosa::ConstOp>(loc, zpType, zpAttr);
+  }
+  llvm::errs() << "zero point is not allowed for unsupported data types\n";
+  return std::nullopt;
 }
 
 //===----------------------------------------------------------------------===//

@@ -101,4 +101,38 @@ class TosaElementwiseOperator
 #define GET_OP_CLASSES
 #include "mlir/Dialect/Tosa/IR/TosaOps.h.inc"
 
+namespace mlir {
+namespace tosa {
+
+// Create a rank-0 const tensor for zero point of the source tensor.
+std::optional<Value> createZeroPointTensor(OpBuilder &builder, Location loc,
+                                           Type srcElemType, int64_t zp = 0);
+
+// Get zero point value from the attribute argument.
+LogicalResult getZeroPoint(ElementsAttr zpAttr, int64_t &zp);
+
+// Verify if zero point falls into valid range.
+template <typename T>
+LogicalResult verifyZeroPoint(Type zpElemType, int64_t zp) {
+  if constexpr (!std::is_same_v<T, Conv2DOp> && !std::is_same_v<T, Conv3DOp> &&
+                !std::is_same_v<T, DepthwiseConv2DOp> &&
+                !std::is_same_v<T, TransposeConv2DOp>) {
+    return failure();
+  }
+
+  if (!zpElemType.isIntOrFloat())
+    return failure();
+
+  if (!zpElemType.isInteger(8) && zp != 0)
+    return failure();
+
+  if (zp < -128 || zp > 127)
+    return failure();
+
+  return success();
+}
+
+} // namespace tosa
+} // namespace mlir
+
 #endif // MLIR_DIALECT_TOSA_IR_TOSAOPS_H
