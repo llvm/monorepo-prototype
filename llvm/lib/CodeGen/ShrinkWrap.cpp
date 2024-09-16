@@ -964,8 +964,17 @@ bool ShrinkWrap::runOnMachineFunction(MachineFunction &MF) {
                     << "\nRestore: " << printMBBReference(*Restore) << '\n');
 
   MachineFrameInfo &MFI = MF.getFrameInfo();
-  MFI.setSavePoint(Save);
-  MFI.setRestorePoint(Restore);
+
+  std::vector<Register> CSRVec;
+  SetOfRegs CSRSet = getCurrentCSRs(RS.get());
+  for (unsigned Reg : CSRSet)
+    CSRVec.push_back(Reg);
+
+  llvm::SaveRestorePoints SavePoints({{Save, CSRVec}});
+  llvm::SaveRestorePoints RestorePoints({{Restore, CSRVec}});
+
+  MFI.setSavePoints(SavePoints);
+  MFI.setRestorePoints(RestorePoints);
   ++NumCandidates;
   return Changed;
 }

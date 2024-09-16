@@ -1056,20 +1056,32 @@ bool MIRParserImpl::initializeConstantPool(PerFunctionMIParsingState &PFS,
 bool MIRParserImpl::initializeSaveRestorePoints(
     PerFunctionMIParsingState &PFS, const yaml::SaveRestorePoints &YamlSRP,
     bool IsSavePoints) {
+  SMDiagnostic Error;
   MachineFunction &MF = PFS.MF;
   MachineFrameInfo &MFI = MF.getFrameInfo();
+  llvm::SaveRestorePoints SRPoints;
 
-  if (!YamlSRP.empty()) {
-    const auto &Entry = YamlSRP.front();
+  for (const auto &Entry : YamlSRP) {
     const auto &MBBSource = Entry.Point;
     MachineBasicBlock *MBB = nullptr;
     if (parseMBBReference(PFS, MBB, MBBSource.Value))
       return true;
-    if (IsSavePoints)
-      MFI.setSavePoint(MBB);
-    else
-      MFI.setRestorePoint(MBB);
+
+    std::vector<Register> Registers{};
+    for (auto &RegStr : Entry.Registers) {
+      Register Reg;
+      if (parseNamedRegisterReference(PFS, Reg, RegStr.Value, Error))
+        return error(Error, RegStr.SourceRange);
+
+      Registers.push_back(Reg);
+    }
+    SRPoints.insert(std::make_pair(MBB, Registers));
   }
+
+  if (IsSavePoints)
+    MFI.setSavePoints(SRPoints);
+  else
+    MFI.setRestorePoints(SRPoints);
   return false;
 }
 

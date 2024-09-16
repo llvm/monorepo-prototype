@@ -40,8 +40,10 @@ frameInfo:
   localFrameSize:  32
   savePoints:
     - point:           '%bb.2'
+      registers:       []
   restorePoints:
     - point:           '%bb.2'
+      registers:       []
 stack:
   - { id: 0, size: 32, alignment: 1, local-offset: -32 }
 machineFunctionInfo:
