@@ -189,3 +189,19 @@ void MachineDominatorTree::applySplitCriticalEdges() const {
   NewBBs.clear();
   CriticalEdgesToSplit.clear();
 }
+
+MachineBasicBlock *MachineDominatorTree::findNearestCommonDominator(
+    ArrayRef<MachineBasicBlock *> Blocks) const {
+  assert(!Blocks.empty());
+
+  MachineBasicBlock *NCD = Blocks.front();
+  for (MachineBasicBlock *BB : Blocks.drop_front()) {
+    NCD = Base::findNearestCommonDominator(NCD, BB);
+
+    // Stop when the root is reached.
+    if (Base::isVirtualRoot(Base::getNode(NCD)))
+      return nullptr;
+  }
+
+  return NCD;
+}
