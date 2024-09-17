@@ -1965,3 +1965,12 @@ bool RISCVFrameLowering::isSupportedStackID(TargetStackID::Value ID) const {
 TargetStackID::Value RISCVFrameLowering::getStackIDForScalableVectors() const {
   return TargetStackID::ScalableVector;
 }
+
+bool RISCVFrameLowering::enableCSRSaveRestorePointsSplit() const {
+  // Zcmp extention introduces cm.push and cm.pop instructions, which allow to
+  // perform all spills and restores in one corresponding instruction. This
+  // contradicts the idea of splitting Save Restore points. "-msave-restore"
+  // does the same, not via new instructions but via save/restore libcalls.
+  if (!STI.hasStdExtZcmp() && !STI.enableSaveRestore())
+    return true;
+}

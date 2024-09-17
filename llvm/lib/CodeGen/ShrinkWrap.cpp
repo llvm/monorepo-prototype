@@ -93,13 +93,20 @@ STATISTIC(NumFunc, "Number of functions");
 STATISTIC(NumCandidates, "Number of shrink-wrapping candidates");
 STATISTIC(NumCandidatesDropped,
           "Number of shrink-wrapping candidates dropped because of frequency");
+STATISTIC(
+    NumFuncWithSplitting,
+    "Number of functions, for which we managed to split Save/Restore points");
 
 static cl::opt<cl::boolOrDefault>
 EnableShrinkWrapOpt("enable-shrink-wrap", cl::Hidden,
                     cl::desc("enable the shrink-wrapping pass"));
 static cl::opt<bool> EnablePostShrinkWrapOpt(
-    "enable-shrink-wrap-region-split", cl::init(true), cl::Hidden,
-    cl::desc("enable splitting of the restore block if possible"));
+    "enable-post-shrink-wrap-restore-split", cl::init(true), cl::Hidden,
+    cl::desc(
+        "enable after-shrink-wrap splitting of the restore block if possible"));
+static cl::opt<bool> EnableShrinkWrapSplitOpt(
+    "enable-shrink-wrap-into-multiple-points", cl::init(false), cl::Hidden,
+    cl::desc("enable splitting of the save and restore blocks if possible"));
 
 namespace {
 
@@ -116,15 +123,79 @@ class ShrinkWrap : public MachineFunctionPass {
   MachineDominatorTree *MDT = nullptr;
   MachinePostDominatorTree *MPDT = nullptr;
 
-  /// Current safe point found for the prologue.
-  /// The prologue will be inserted before the first instruction
-  /// in this basic block.
-  MachineBasicBlock *Save = nullptr;
+  /// Hash table, mapping register with its corresponding spill and restore
+  /// basic block.
+  DenseMap<Register, std::pair<MachineBasicBlock *, MachineBasicBlock *>>
+      SavedRegs;
 
-  /// Current safe point found for the epilogue.
-  /// The epilogue will be inserted before the first terminator instruction
-  /// in this basic block.
-  MachineBasicBlock *Restore = nullptr;
+  class SaveRestorePoints {
+    llvm::SaveRestorePoints SRPoints;
+
+  public:
+    llvm::SaveRestorePoints &get() { return SRPoints; }
+
+    void set(llvm::SaveRestorePoints &Rhs) { SRPoints = std::move(Rhs); }
+
+    void clear() { SRPoints.clear(); }
+
+    bool areMultiple() const { return SRPoints.size() > 1; }
+
+    MachineBasicBlock *getFirst() {
+      return SRPoints.empty() ? nullptr : SRPoints.begin()->first;
+    }
+
+    void
+    insert(const std::pair<MachineBasicBlock *, std::vector<Register>> &Point) {
+      SRPoints.insert(Point);
+    }
+
+    void insert(std::pair<MachineBasicBlock *, std::vector<Register>> &&Point) {
+      SRPoints.insert(Point);
+    }
+
+    void insertReg(
+        Register Reg, MachineBasicBlock *MBB,
+        std::optional<std::vector<MachineBasicBlock *>> SaveRestoreBlockList) {
+      assert(MBB && "MBB is nullptr");
+      if (SRPoints.contains(MBB)) {
+        SRPoints[MBB].push_back(Reg);
+        return;
+      }
+      std::vector Regs{Reg};
+      SRPoints.insert(std::make_pair(MBB, Regs));
+      if (SaveRestoreBlockList.has_value())
+        SaveRestoreBlockList->push_back(MBB);
+    }
+
+    void print(raw_ostream &OS, const TargetRegisterInfo *TRI) const {
+      for (auto [BB, Regs] : SRPoints) {
+        OS << printMBBReference(*BB) << ": ";
+        for (auto &reg : Regs) {
+          OS << printReg(reg, TRI) << " ";
+        }
+        OS << "\n";
+      }
+    }
+
+    void dump(const TargetRegisterInfo *TRI) const { print(dbgs(), TRI); }
+  };
+
+  /// Class, wrapping hash table contained safe points, found for register spill
+  /// mapped to the list of corresponding registers. Register spill will be
+  /// inserted before the first instruction in this basic block.
+  SaveRestorePoints SavePoints;
+
+  /// Class, wrapping hash table contained safe points, found for register
+  /// restore mapped to the list of corresponding registers. Register restore
+  /// will be inserted before the first terminator instruction in this basic
+  /// block.
+  SaveRestorePoints RestorePoints;
+
+  std::vector<MachineBasicBlock *> SaveBlocks;
+  std::vector<MachineBasicBlock *> RestoreBlocks;
+
+  MachineBasicBlock *Prolog = nullptr;
+  MachineBasicBlock *Epilog = nullptr;
 
   /// Hold the information of the basic block frequency.
   /// Use to check the profitability of the new points.
@@ -167,11 +238,17 @@ class ShrinkWrap : public MachineFunctionPass {
   /// therefore this approach is fair.
   BitVector StackAddressUsedBlockInfo;
 
-  /// Check if \p MI uses or defines a callee-saved register or
-  /// a frame index. If this is the case, this means \p MI must happen
+  /// Check if \p MI uses or defines a frame index.
+  /// If this is the case, this means \p MI must happen
   /// after Save and before Restore.
-  bool useOrDefCSROrFI(const MachineInstr &MI, RegScavenger *RS,
-                       bool StackAddressUsed) const;
+  bool useOrDefFI(const MachineInstr &MI, RegScavenger *RS,
+                  bool StackAddressUsed) const;
+
+  /// Check if \p MI uses or defines a callee-saved register.
+  /// If this is the case, this means \p MI must happen
+  /// after Save and before Restore.
+  bool useOrDefCSR(const MachineInstr &MI, RegScavenger *RS,
+                   std::set<Register> *RegsToSave) const;
 
   const SetOfRegs &getCurrentCSRs(RegScavenger *RS) const {
     if (CurrentCSRs.empty()) {
@@ -188,12 +265,29 @@ class ShrinkWrap : public MachineFunctionPass {
     return CurrentCSRs;
   }
 
+  std::vector<Register> getTargetCSRList(MachineFunction &MF) {
+    const MCPhysReg *CSRegs = MF.getRegInfo().getCalleeSavedRegs();
+    std::vector<Register> TargetCSRs;
+    for (unsigned i = 0; CSRegs[i]; ++i)
+      TargetCSRs.push_back(CSRegs[i]);
+    return TargetCSRs;
+  }
+
+  void setupSaveRestorePoints(MachineFunction &MF);
+
+  void performSimpleShrinkWrap(RegScavenger *RS, MachineBasicBlock &SavePoint);
+
+  bool canSplitSaveRestorePoints(
+      const ReversePostOrderTraversal<MachineBasicBlock *> &RPOT,
+      RegScavenger *RS);
+
   /// Update the Save and Restore points such that \p MBB is in
   /// the region that is dominated by Save and post-dominated by Restore
   /// and Save and Restore still match the safe point definition.
   /// Such point may not exist and Save and/or Restore may be null after
   /// this call.
-  void updateSaveRestorePoints(MachineBasicBlock &MBB, RegScavenger *RS);
+  void updateSaveRestorePoints(MachineBasicBlock &MBB, Register Reg,
+                               RegScavenger *RS);
 
   // Try to find safe point based on dominance and block frequency without
   // any change in IR.
@@ -204,7 +298,8 @@ class ShrinkWrap : public MachineFunctionPass {
   /// This function tries to split the restore point if doing so can shrink the
   /// save point further. \return True if restore point is split.
   bool postShrinkWrapping(bool HasCandidate, MachineFunction &MF,
-                          RegScavenger *RS);
+                          RegScavenger *RS, MachineBasicBlock *Save,
+                          MachineBasicBlock *Restore);
 
   /// This function analyzes if the restore point can split to create a new
   /// restore point. This function collects
@@ -226,8 +321,13 @@ class ShrinkWrap : public MachineFunctionPass {
     RCI.runOnMachineFunction(MF);
     MDT = &getAnalysis<MachineDominatorTreeWrapperPass>().getDomTree();
     MPDT = &getAnalysis<MachinePostDominatorTreeWrapperPass>().getPostDomTree();
-    Save = nullptr;
-    Restore = nullptr;
+    SavedRegs.clear();
+    SavePoints.clear();
+    RestorePoints.clear();
+    Prolog = nullptr;
+    Epilog = nullptr;
+    SaveBlocks.clear();
+    RestoreBlocks.clear();
     MBFI = &getAnalysis<MachineBlockFrequencyInfoWrapperPass>().getMBFI();
     MLI = &getAnalysis<MachineLoopInfoWrapperPass>().getLI();
     ORE = &getAnalysis<MachineOptimizationRemarkEmitterPass>().getORE();
@@ -246,7 +346,22 @@ class ShrinkWrap : public MachineFunctionPass {
 
   /// Check whether or not Save and Restore points are still interesting for
   /// shrink-wrapping.
-  bool ArePointsInteresting() const { return Save != Entry && Save && Restore; }
+  bool AreCandidatesFound(bool splitEnabled) const {
+    if (SavedRegs.empty())
+      return false;
+
+    auto Cond = [splitEnabled, this](auto &RegEntry) {
+      auto [Save, Restore] = RegEntry.second;
+      return (Save && Restore && Save != Entry) == splitEnabled;
+    };
+
+    auto It = std::find_if(begin(SavedRegs), end(SavedRegs), Cond);
+
+    if (It == SavedRegs.end())
+      return !splitEnabled;
+
+    return splitEnabled;
+  }
 
   /// Check if shrink wrapping is enabled for this target and function.
   static bool isShrinkWrapEnabled(const MachineFunction &MF);
@@ -294,8 +409,8 @@ INITIALIZE_PASS_DEPENDENCY(MachineLoopInfoWrapperPass)
 INITIALIZE_PASS_DEPENDENCY(MachineOptimizationRemarkEmitterPass)
 INITIALIZE_PASS_END(ShrinkWrap, DEBUG_TYPE, "Shrink Wrap Pass", false, false)
 
-bool ShrinkWrap::useOrDefCSROrFI(const MachineInstr &MI, RegScavenger *RS,
-                                 bool StackAddressUsed) const {
+bool ShrinkWrap::useOrDefFI(const MachineInstr &MI, RegScavenger *RS,
+                            bool StackAddressUsed) const {
   /// Check if \p Op is known to access an address not on the function's stack .
   /// At the moment, accesses where the underlying object is a global, function
   /// argument, or jump table are considered non-stack accesses. Note that the
@@ -327,10 +442,28 @@ bool ShrinkWrap::useOrDefCSROrFI(const MachineInstr &MI, RegScavenger *RS,
     LLVM_DEBUG(dbgs() << "Frame instruction: " << MI << '\n');
     return true;
   }
+
+  if (MI.isDebugValue())
+    return false;
+
+  const auto &Ops = MI.operands();
+
+  auto FIOpIt = std::find_if(Ops.begin(), Ops.end(),
+                             [](const auto &MO) { return MO.isFI(); });
+  if (FIOpIt == Ops.end())
+    return false;
+
+  LLVM_DEBUG(dbgs() << "Use or define FI( " << FIOpIt->isFI() << "): " << MI
+                    << '\n');
+
+  return true;
+}
+
+bool ShrinkWrap::useOrDefCSR(const MachineInstr &MI, RegScavenger *RS,
+                             std::set<Register> *RegsToSave) const {
   const MachineFunction *MF = MI.getParent()->getParent();
   const TargetRegisterInfo *TRI = MF->getSubtarget().getRegisterInfo();
   for (const MachineOperand &MO : MI.operands()) {
-    bool UseOrDefCSR = false;
     if (MO.isReg()) {
       // Ignore instructions like DBG_VALUE which don't read/def the register.
       if (!MO.isDef() && !MO.readsReg())
@@ -348,25 +481,32 @@ bool ShrinkWrap::useOrDefCSROrFI(const MachineInstr &MI, RegScavenger *RS,
       // calling convention definitions, so we need to watch for it, too. An LR
       // mentioned implicitly by a return (or "branch to link register")
       // instruction we can ignore, otherwise we may pessimize shrinkwrapping.
-      UseOrDefCSR =
-          (!MI.isCall() && PhysReg == SP) ||
+      if ((!MI.isCall() && PhysReg == SP) ||
           RCI.getLastCalleeSavedAlias(PhysReg) ||
-          (!MI.isReturn() && TRI->isNonallocatableRegisterCalleeSave(PhysReg));
+          (!MI.isReturn() &&
+           TRI->isNonallocatableRegisterCalleeSave(PhysReg))) {
+        LLVM_DEBUG(dbgs() << MI << " uses or defines CSR: "
+                          << RCI.getLastCalleeSavedAlias(PhysReg) << "\n");
+        if (!RegsToSave)
+          return true;
+
+        RegsToSave->insert(PhysReg);
+      }
     } else if (MO.isRegMask()) {
       // Check if this regmask clobbers any of the CSRs.
       for (unsigned Reg : getCurrentCSRs(RS)) {
         if (MO.clobbersPhysReg(Reg)) {
-          UseOrDefCSR = true;
-          break;
+          if (!RegsToSave)
+            return true;
+          RegsToSave->insert(Reg);
         }
       }
     }
-    // Skip FrameIndex operands in DBG_VALUE instructions.
-    if (UseOrDefCSR || (MO.isFI() && !MI.isDebugValue())) {
-      LLVM_DEBUG(dbgs() << "Use or define CSR(" << UseOrDefCSR << ") or FI("
-                        << MO.isFI() << "): " << MI << '\n');
-      return true;
-    }
+  }
+
+  // Skip FrameIndex operands in DBG_VALUE instructions.
+  if (RegsToSave && !RegsToSave->empty()) {
+    return true;
   }
   return false;
 }
@@ -557,7 +697,8 @@ bool ShrinkWrap::checkIfRestoreSplittable(
     SmallVectorImpl<MachineBasicBlock *> &CleanPreds,
     const TargetInstrInfo *TII, RegScavenger *RS) {
   for (const MachineInstr &MI : *CurRestore)
-    if (useOrDefCSROrFI(MI, RS, /*StackAddressUsed=*/true))
+    if (useOrDefFI(MI, RS, /*StackAddressUsed=*/true) ||
+        useOrDefCSR(MI, RS, nullptr))
       return false;
 
   for (MachineBasicBlock *PredBB : CurRestore->predecessors()) {
@@ -574,7 +715,8 @@ bool ShrinkWrap::checkIfRestoreSplittable(
 }
 
 bool ShrinkWrap::postShrinkWrapping(bool HasCandidate, MachineFunction &MF,
-                                    RegScavenger *RS) {
+                                    RegScavenger *RS, MachineBasicBlock *Save,
+                                    MachineBasicBlock *Restore) {
   if (!EnablePostShrinkWrapOpt)
     return false;
 
@@ -617,7 +759,8 @@ bool ShrinkWrap::postShrinkWrapping(bool HasCandidate, MachineFunction &MF,
       continue;
     }
     for (const MachineInstr &MI : MBB)
-      if (useOrDefCSROrFI(MI, RS, /*StackAddressUsed=*/true)) {
+      if (useOrDefFI(MI, RS, /*StackAddressUsed=*/true) ||
+          useOrDefCSR(MI, RS, nullptr)) {
         DirtyBBs.insert(&MBB);
         break;
       }
@@ -677,34 +820,51 @@ bool ShrinkWrap::postShrinkWrapping(bool HasCandidate, MachineFunction &MF,
   assert((EntryFreq >= MBFI->getBlockFreq(Save) &&
           EntryFreq >= MBFI->getBlockFreq(Restore)) &&
          "Incorrect save or restore point based on block frequency");
+
+  SavePoints.clear();
+  RestorePoints.clear();
+
+  std::vector<Register> Regs = getTargetCSRList(MF);
+  SavePoints.insert(std::make_pair(Save, Regs));
+  RestorePoints.insert(std::make_pair(Restore, Regs));
+  Prolog = Save;
+  Epilog = Restore;
   return true;
 }
 
-void ShrinkWrap::updateSaveRestorePoints(MachineBasicBlock &MBB,
+void ShrinkWrap::updateSaveRestorePoints(MachineBasicBlock &MBB, Register Reg,
                                          RegScavenger *RS) {
-  // Get rid of the easy cases first.
-  if (!Save)
-    Save = &MBB;
-  else
-    Save = MDT->findNearestCommonDominator(Save, &MBB);
-  assert(Save);
+  MachineBasicBlock *Save = nullptr;
+  MachineBasicBlock *Restore = nullptr;
 
+  // Get rid of the easy cases first.
+  if (SavedRegs.contains(Reg) && (Save = SavedRegs.at(Reg).first))
+    Save = MDT->findNearestCommonDominator(Save, &MBB);
+  else {
+    auto Pos =
+        SavedRegs.insert(std::make_pair(Reg, std::make_pair(&MBB, nullptr)));
+    Save = Pos.first->second.first;
+  }
+
+  assert(SavedRegs.contains(Reg) && Save);
+
+  Restore = SavedRegs.at(Reg).second;
   if (!Restore)
     Restore = &MBB;
-  else if (MPDT->getNode(&MBB)) // If the block is not in the post dom tree, it
-                                // means the block never returns. If that's the
-                                // case, we don't want to call
+  else if (MPDT->getNode(&MBB)) // If the block is not in the post dom tree,
+                                // it means the block never returns. If
+                                // that's the case, we don't want to call
                                 // `findNearestCommonDominator`, which will
-                                // return `Restore`.
+                                // return `Restore` and RestoreBlock for
+                                // this register will be null.
     Restore = MPDT->findNearestCommonDominator(Restore, &MBB);
-  else
-    Restore = nullptr; // Abort, we can't find a restore point in this case.
 
   // Make sure we would be able to insert the restore code before the
   // terminator.
   if (Restore == &MBB) {
     for (const MachineInstr &Terminator : MBB.terminators()) {
-      if (!useOrDefCSROrFI(Terminator, RS, /*StackAddressUsed=*/true))
+      if (!useOrDefFI(Terminator, RS, /*StackAddressUsed=*/true) &&
+          !useOrDefCSR(Terminator, RS, nullptr))
         continue;
       // One of the terminator needs to happen before the restore point.
       if (MBB.succ_empty()) {
@@ -719,8 +879,10 @@ void ShrinkWrap::updateSaveRestorePoints(MachineBasicBlock &MBB,
   }
 
   if (!Restore) {
-    LLVM_DEBUG(
-        dbgs() << "Restore point needs to be spanned on several blocks\n");
+    SavedRegs[Reg].first = Save;
+    SavedRegs[Reg].second = nullptr;
+    LLVM_DEBUG(dbgs() << "Restore point needs to be spanned on several blocks "
+                      << Reg << "\n");
     return;
   }
 
@@ -796,6 +958,8 @@ void ShrinkWrap::updateSaveRestorePoints(MachineBasicBlock &MBB,
       }
     }
   }
+  SavedRegs[Reg].first = Save;
+  SavedRegs[Reg].second = Restore;
 }
 
 static bool giveUpWithRemarks(MachineOptimizationRemarkEmitter *ORE,
@@ -811,9 +975,86 @@ static bool giveUpWithRemarks(MachineOptimizationRemarkEmitter *ORE,
   return false;
 }
 
+void ShrinkWrap::setupSaveRestorePoints(MachineFunction &MF) {
+  for (unsigned Reg : getTargetCSRList(MF)) {
+    auto [Save, Restore] = SavedRegs[Reg];
+    if (SavedRegs.contains(Reg) && Save && Restore)
+      continue;
+
+    SavePoints.insertReg(Reg, &MF.front(), SaveBlocks);
+    for (MachineBasicBlock &MBB : MF) {
+      if (MBB.isEHFuncletEntry())
+        SavePoints.insertReg(Reg, &MBB, SaveBlocks);
+      if (MBB.isReturnBlock())
+        RestorePoints.insertReg(Reg, &MBB, RestoreBlocks);
+    }
+  }
+
+  for (auto [Reg, SaveRestoreBlocks] : SavedRegs) {
+    auto [Save, Restore] = SaveRestoreBlocks;
+    if (Save && Restore) {
+      SavePoints.insertReg(Reg, Save, SaveBlocks);
+      if (!Restore->succ_empty() || Restore->isReturnBlock())
+        RestorePoints.insertReg(Reg, Restore, RestoreBlocks);
+      else
+        RestorePoints.insertReg(Reg, Restore, std::nullopt);
+    }
+  }
+}
+
+bool ShrinkWrap::canSplitSaveRestorePoints(
+    const ReversePostOrderTraversal<MachineBasicBlock *> &RPOT,
+    RegScavenger *RS) {
+  for (MachineBasicBlock *MBB : RPOT) {
+    if (MBB->isEHPad() || MBB->isInlineAsmBrIndirectTarget())
+      return false;
+
+    // Check if we found any stack accesses in the predecessors. We are not
+    // doing a full dataflow analysis here to keep things simple but just
+    // rely on a reverse portorder traversal (RPOT) to guarantee predecessors
+    // are already processed except for loops (and accept the conservative
+    // result for loops).
+    bool StackAddressUsed = any_of(MBB->predecessors(), [&](auto *Pred) {
+      return StackAddressUsedBlockInfo.test(Pred->getNumber());
+    });
+
+    for (const MachineInstr &MI : *MBB) {
+      if (useOrDefFI(MI, RS, StackAddressUsed))
+        return false;
+
+      if (useOrDefCSR(MI, RS, nullptr))
+        StackAddressUsed = true;
+    }
+
+    StackAddressUsedBlockInfo[MBB->getNumber()] = StackAddressUsed;
+  }
+  return true;
+}
+
+void ShrinkWrap::performSimpleShrinkWrap(RegScavenger *RS,
+                                         MachineBasicBlock &SavePoint) {
+  auto MF = SavePoint.getParent();
+  auto CSRs = getTargetCSRList(*MF);
+  if (!CSRs.empty()) {
+    for (unsigned Reg : CSRs) {
+      if (SavedRegs.contains(Reg) &&
+          (!SavedRegs[Reg].first || !SavedRegs[Reg].second))
+        continue;
+      updateSaveRestorePoints(SavePoint, Reg, RS);
+    }
+  } else
+    updateSaveRestorePoints(SavePoint, MCRegister::NoRegister, RS);
+}
+
 bool ShrinkWrap::performShrinkWrapping(
     const ReversePostOrderTraversal<MachineBasicBlock *> &RPOT,
     RegScavenger *RS) {
+  const TargetFrameLowering *TFI =
+      MachineFunc->getSubtarget().getFrameLowering();
+
+  bool canSplit = canSplitSaveRestorePoints(RPOT, RS);
+  StackAddressUsedBlockInfo.set();
+
   for (MachineBasicBlock *MBB : RPOT) {
     LLVM_DEBUG(dbgs() << "Look into: " << printMBBReference(*MBB) << '\n');
 
@@ -828,8 +1069,9 @@ bool ShrinkWrap::performShrinkWrapping(
       // are at least at the boundary of the save and restore points.  The
       // problem is that a basic block can jump out from the middle in these
       // cases, which we do not handle.
-      updateSaveRestorePoints(*MBB, RS);
-      if (!ArePointsInteresting()) {
+      performSimpleShrinkWrap(RS, *MBB);
+
+      if (!AreCandidatesFound(false /* splitEnabled */)) {
         LLVM_DEBUG(dbgs() << "EHPad/inlineasm_br prevents shrink-wrapping\n");
         return false;
       }
@@ -849,30 +1091,40 @@ bool ShrinkWrap::performShrinkWrapping(
       }
     }
 
+    std::set<Register> RegsToSave;
+
     for (const MachineInstr &MI : *MBB) {
-      if (useOrDefCSROrFI(MI, RS, StackAddressUsed)) {
-        // Save (resp. restore) point must dominate (resp. post dominate)
-        // MI. Look for the proper basic block for those.
-        updateSaveRestorePoints(*MBB, RS);
-        // If we are at a point where we cannot improve the placement of
-        // save/restore instructions, just give up.
-        if (!ArePointsInteresting()) {
-          LLVM_DEBUG(dbgs() << "No Shrink wrap candidate found\n");
+      RegsToSave.clear();
+      if (useOrDefFI(MI, RS, StackAddressUsed)) {
+        performSimpleShrinkWrap(RS, *MBB);
+        if (!AreCandidatesFound(false /* splitEnabled */)) {
+          LLVM_DEBUG(dbgs() << "No Shrink wrap candidate found!~\n");
           return false;
         }
-        // No need to look for other instructions, this basic block
-        // will already be part of the handled region.
         StackAddressUsed = true;
-        break;
+        continue;
+      }
+
+      if (useOrDefCSR(MI, RS, &RegsToSave)) {
+        if (!EnableShrinkWrapSplitOpt ||
+            !TFI->enableCSRSaveRestorePointsSplit() || !canSplit)
+          performSimpleShrinkWrap(RS, *MBB);
+        else {
+          for (auto Reg : RegsToSave) {
+            // Save (resp. restore) point must dominate (resp. post dominate)
+            // MI. Look for the proper basic block for those.
+            updateSaveRestorePoints(*MBB, Reg, RS);
+          }
+        }
+        StackAddressUsed = true;
       }
     }
     StackAddressUsedBlockInfo[MBB->getNumber()] = StackAddressUsed;
   }
-  if (!ArePointsInteresting()) {
+  if (!AreCandidatesFound(true /* splitEnabled */)) {
     // If the points are not interesting at this point, then they must be null
     // because it means we did not encounter any frame/CSR related code.
     // Otherwise, we would have returned from the previous loop.
-    assert(!Save && !Restore && "We miss a shrink-wrap opportunity?!");
     LLVM_DEBUG(dbgs() << "Nothing to shrink-wrap\n");
     return false;
   }
@@ -880,40 +1132,44 @@ bool ShrinkWrap::performShrinkWrapping(
   LLVM_DEBUG(dbgs() << "\n ** Results **\nFrequency of the Entry: "
                     << EntryFreq.getFrequency() << '\n');
 
-  const TargetFrameLowering *TFI =
-      MachineFunc->getSubtarget().getFrameLowering();
-  do {
-    LLVM_DEBUG(dbgs() << "Shrink wrap candidates (#, Name, Freq):\nSave: "
-                      << printMBBReference(*Save) << ' '
-                      << printBlockFreq(*MBFI, *Save)
-                      << "\nRestore: " << printMBBReference(*Restore) << ' '
-                      << printBlockFreq(*MBFI, *Restore) << '\n');
+  for (auto [Reg, SaveRestoreBlocks] : SavedRegs) {
+    auto [Save, Restore] = SaveRestoreBlocks;
+    if (!Save || !Restore)
+      continue;
 
-    bool IsSaveCheap, TargetCanUseSaveAsPrologue = false;
-    if (((IsSaveCheap = EntryFreq >= MBFI->getBlockFreq(Save)) &&
-         EntryFreq >= MBFI->getBlockFreq(Restore)) &&
-        ((TargetCanUseSaveAsPrologue = TFI->canUseAsPrologue(*Save)) &&
-         TFI->canUseAsEpilogue(*Restore)))
-      break;
-    LLVM_DEBUG(
-        dbgs() << "New points are too expensive or invalid for the target\n");
-    MachineBasicBlock *NewBB;
-    if (!IsSaveCheap || !TargetCanUseSaveAsPrologue) {
-      Save = FindIDom<>(*Save, Save->predecessors(), *MDT);
-      if (!Save)
-        break;
-      NewBB = Save;
-    } else {
-      // Restore is expensive.
-      Restore = FindIDom<>(*Restore, Restore->successors(), *MPDT);
-      if (!Restore)
-        break;
-      NewBB = Restore;
-    }
-    updateSaveRestorePoints(*NewBB, RS);
-  } while (Save && Restore);
+    do {
+      LLVM_DEBUG(dbgs() << "Shrink wrap candidates (#, Name, Freq):\nSave: "
+                        << printMBBReference(*Save) << ' '
+                        << printBlockFreq(*MBFI, *Save)
+                        << "\nRestore: " << printMBBReference(*Restore) << ' '
+                        << printBlockFreq(*MBFI, *Restore) << '\n');
 
-  if (!ArePointsInteresting()) {
+      bool IsSaveCheap, TargetCanUseSaveAsPrologue = false;
+      if (((IsSaveCheap = EntryFreq >= MBFI->getBlockFreq(Save)) &&
+           EntryFreq >= MBFI->getBlockFreq(Restore)) &&
+          ((TargetCanUseSaveAsPrologue = TFI->canUseAsPrologue(*Save)) &&
+           TFI->canUseAsEpilogue(*Restore)))
+        break;
+      LLVM_DEBUG(
+          dbgs() << "New points are too expensive or invalid for the target\n");
+      MachineBasicBlock *NewBB;
+      if (!IsSaveCheap || !TargetCanUseSaveAsPrologue) {
+        Save = FindIDom<>(*Save, Save->predecessors(), *MDT);
+        if (!Save)
+          break;
+        NewBB = Save;
+      } else {
+        // Restore is expensive.
+        Restore = FindIDom<>(*Restore, Restore->successors(), *MPDT);
+        if (!Restore)
+          break;
+        NewBB = Restore;
+      }
+      updateSaveRestorePoints(*NewBB, Reg, RS);
+    } while (Save && Restore);
+  }
+
+  if (!AreCandidatesFound(true /* splitEnabled */)) {
     ++NumCandidatesDropped;
     return false;
   }
@@ -951,30 +1207,49 @@ bool ShrinkWrap::runOnMachineFunction(MachineFunction &MF) {
   // basic block and change the state only for those basic blocks for which we
   // were able to prove the opposite.
   StackAddressUsedBlockInfo.resize(MF.getNumBlockIDs(), true);
-  bool HasCandidate = performShrinkWrapping(RPOT, RS.get());
+  bool HasCandidates = performShrinkWrapping(RPOT, RS.get());
   StackAddressUsedBlockInfo.clear();
-  Changed = postShrinkWrapping(HasCandidate, MF, RS.get());
-  if (!HasCandidate && !Changed)
-    return false;
-  if (!ArePointsInteresting())
-    return Changed;
 
-  LLVM_DEBUG(dbgs() << "Final shrink wrap candidates:\nSave: "
-                    << printMBBReference(*Save) << ' '
-                    << "\nRestore: " << printMBBReference(*Restore) << '\n');
+  if (HasCandidates) {
+    setupSaveRestorePoints(MF);
+    Prolog = SaveBlocks.empty() ? nullptr
+                                : MDT->findNearestCommonDominator(SaveBlocks);
+    Epilog = RestoreBlocks.empty()
+                 ? nullptr
+                 : MPDT->findNearestCommonDominator(RestoreBlocks);
+  }
+
+  if (!HasCandidates ||
+      (!SavePoints.areMultiple() && !RestorePoints.areMultiple())) {
+    Changed =
+        postShrinkWrapping(HasCandidates, MF, RS.get(), SavePoints.getFirst(),
+                           RestorePoints.getFirst());
+    if (!HasCandidates && !Changed)
+      return false;
+
+    if ((!SavePoints.getFirst()) || (!RestorePoints.getFirst()) ||
+        (SavePoints.getFirst() == Entry))
+      return Changed;
+  }
+
+  if (SavePoints.areMultiple() || RestorePoints.areMultiple()) {
+    ++NumFuncWithSplitting;
+  }
+
+  LLVM_DEBUG(dbgs() << "Final shrink wrap candidates:\n");
+
+  LLVM_DEBUG(dbgs() << "SavePoints:\n");
+  LLVM_DEBUG(SavePoints.dump(TRI));
+
+  LLVM_DEBUG(dbgs() << "RestorePoints:\n");
+  LLVM_DEBUG(RestorePoints.dump(TRI));
 
   MachineFrameInfo &MFI = MF.getFrameInfo();
 
-  std::vector<Register> CSRVec;
-  SetOfRegs CSRSet = getCurrentCSRs(RS.get());
-  for (unsigned Reg : CSRSet)
-    CSRVec.push_back(Reg);
-
-  llvm::SaveRestorePoints SavePoints({{Save, CSRVec}});
-  llvm::SaveRestorePoints RestorePoints({{Restore, CSRVec}});
-
-  MFI.setSavePoints(SavePoints);
-  MFI.setRestorePoints(RestorePoints);
+  MFI.setProlog(Prolog);
+  MFI.setEpilog(Epilog);
+  MFI.setSavePoints(SavePoints.get());
+  MFI.setRestorePoints(RestorePoints.get());
   ++NumCandidates;
   return Changed;
 }

@@ -86,6 +86,8 @@ public:
                      MachineFunction &MF, StackOffset Offset,
                      uint64_t RealStackSize, bool EmitCFI) const;
 
+  bool enableCSRSaveRestorePointsSplit() const override;
+
 protected:
   const RISCVSubtarget &STI;
 
