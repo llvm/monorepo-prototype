@@ -3220,7 +3220,8 @@ Instruction *InstCombinerImpl::visitCallInst(CallInst &CI) {
         MaybeSimplifyHint(OBU.Inputs[1]);
       }
 
-      // Try to remove redundant alignment assumptions.
+      // Try to fold alignment assumption into a load's !align metadata, if the
+      // assumption is valid in the load's context and remove redundant ones.
       if (OBU.getTagName() == "align" && OBU.Inputs.size() == 2) {
         RetainedKnowledge RK = getKnowledgeFromBundle(
             *cast<AssumeInst>(II), II->bundle_op_info_begin()[Idx]);
@@ -3228,16 +3229,30 @@ Instruction *InstCombinerImpl::visitCallInst(CallInst &CI) {
             !isPowerOf2_64(RK.ArgValue))
           continue;
 
-        // Try to get the instruction before the assumption to use as context.
-        Instruction *CtxI = nullptr;
-        if (CtxI && II->getParent()->begin() != II->getIterator())
-          CtxI = II->getPrevNode();
+        auto *LI = dyn_cast<LoadInst>(OBU.Inputs[0]);
+        if (LI &&
+            isValidAssumeForContext(II, LI, &DT, /*AllowEphemerals=*/true)) {
 
-        auto Known = computeKnownBits(RK.WasOn, 1, CtxI);
-        unsigned KnownAlign = 1 << Known.countMinTrailingZeros();
-        if (KnownAlign < RK.ArgValue)
+        if (isa<Argument>(LI->getPointerOperand()))
           continue;
 
+          LI->setMetadata(
+              LLVMContext::MD_align,
+              MDNode::get(II->getContext(), ValueAsMetadata::getConstant(
+                                                Builder.getInt64(RK.ArgValue))));
+          MDNode *MD = MDNode::get(II->getContext(), {});
+          LI->setMetadata(LLVMContext::MD_noundef, MD);
+        } else {
+          // Try to get the instruction before the assumption to use as context.
+          Instruction *CtxI = nullptr;
+          if (CtxI && II->getParent()->begin() != II->getIterator())
+            CtxI = II->getPrevNode();
+
+          auto Known = computeKnownBits(RK.WasOn, 1, CtxI);
+          unsigned KnownAlign = 1 << Known.countMinTrailingZeros();
+          if (KnownAlign < RK.ArgValue)
+            continue;
+        }
         auto *New = CallBase::removeOperandBundle(II, OBU.getTagID());
         return New;
       }
