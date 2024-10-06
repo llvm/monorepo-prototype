@@ -32,7 +32,7 @@ void release_file(FILE *fp) {
   fclose(fp);
 }
 
-void acquire_file(FILE *fp, char *timezone) {
+void acquire_file(FILE *fp, char *timezone, size_t timezone_size) {
   while (1) {
     if (file_usage == 0) {
       file_usage = 1;
@@ -40,7 +40,7 @@ void acquire_file(FILE *fp, char *timezone) {
     }
   }
 
-  if (fgets(timezone, sizeof(timezone), fp) == NULL) {
+  if (fgets(timezone, (int)timezone_size, fp) == NULL) {
     release_file(fp);
   }
 }
@@ -148,7 +148,7 @@ int64_t update_from_seconds(int64_t total_seconds, struct tm *tm) {
   if (years > INT_MAX || years < INT_MIN)
     return time_utils::out_of_range();
 
-  char timezone[128];
+  char timezone[TimeConstants::TIMEZONE_SIZE];
 
   FILE *fp = NULL;
   fp = fopen("/etc/timezone", "rb");
@@ -156,7 +156,7 @@ int64_t update_from_seconds(int64_t total_seconds, struct tm *tm) {
     // TODO: implement getting timezone from `TZ` environment variable and
     // storing the value in `timezone`
   } else {
-    acquire_file(fp, timezone);
+    acquire_file(fp, timezone, TimeConstants::TIMEZONE_SIZE);
   }
 
   if (file_usage == 0) {
