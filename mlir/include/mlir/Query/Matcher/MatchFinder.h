@@ -15,6 +15,7 @@
 #define MLIR_TOOLS_MLIRQUERY_MATCHER_MATCHERFINDER_H
 
 #include "MatchersInternal.h"
+#include "mlir/IR/Operation.h"
 
 namespace mlir::query::matcher {
 
@@ -22,17 +23,18 @@ namespace mlir::query::matcher {
 class MatchFinder {
 public:
   // Returns all operations that match the given matcher.
-  static std::vector<Operation *> getMatches(Operation *root,
-                                             DynMatcher matcher) {
-    std::vector<Operation *> matches;
+  static BoundOperationsGraphBuilder getMatches(Operation *root,
+                                                DynMatcher matcher) {
 
-    // Simple match finding with walk.
+    BoundOperationsGraphBuilder Bound;
     root->walk([&](Operation *subOp) {
-      if (matcher.match(subOp))
-        matches.push_back(subOp);
+      if (matcher.match(subOp)) {
+        matcher::BoundOperationNode *currentNode = Bound.addNode(subOp);
+      } else if (matcher.match(subOp, Bound)) {
+        ////
+      }
     });
-
-    return matches;
+    return Bound;
   }
 };
 

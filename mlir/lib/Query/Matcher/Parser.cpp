@@ -135,6 +135,18 @@ private:
     case '\'':
       consumeStringLiteral(&result);
       break;
+    case '0':
+    case '1':
+    case '2':
+    case '3':
+    case '4':
+    case '5':
+    case '6':
+    case '7':
+    case '8':
+    case '9':
+      consumeNumberLiteral(&result);
+      break;
     default:
       parseIdentifierOrInvalid(&result);
       break;
@@ -144,6 +156,53 @@ private:
     return result;
   }
 
+  void consumeNumberLiteral(TokenInfo *result) {
+    bool isFloatingLiteral = false;
+    unsigned length = 1;
+    if (code.size() > 1) {
+      // Consume the 'x' or 'b' radix modifier, if present.
+      switch (tolower(code[1])) {
+      case 'x':
+      case 'b':
+        length = 2;
+      }
+    }
+    while (length < code.size() && isdigit(code[length]))
+      ++length;
+
+    // Try to recognize a floating point literal.
+    while (length < code.size()) {
+      char c = code[length];
+      if (c == '-' || c == '+' || c == '.' || isdigit(c)) {
+        isFloatingLiteral = true;
+        length++;
+      } else {
+        break;
+      }
+    }
+
+    result->text = code.take_front(length);
+    code = code.drop_front(length);
+
+    if (isFloatingLiteral) {
+      char *end;
+      errno = 0;
+      std::string text = result->text.str();
+      double doubleValue = strtod(text.c_str(), &end);
+      if (*end == 0 && errno == 0) {
+        result->kind = TokenKind::Literal;
+        result->value = doubleValue;
+        return;
+      }
+    } else {
+      unsigned value;
+      if (!result->text.getAsInteger(0, value)) {
+        result->kind = TokenKind::Literal;
+        result->value = value;
+        return;
+      }
+    }
+  }
   // Consume a string literal, handle escape sequences and missing closing
   // quote.
   void consumeStringLiteral(TokenInfo *result) {

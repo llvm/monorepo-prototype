@@ -12,8 +12,11 @@
 #include "mlir/IR/IRMapping.h"
 #include "mlir/Query/Matcher/MatchFinder.h"
 #include "mlir/Query/QuerySession.h"
+#include "llvm/ADT/SetVector.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/raw_ostream.h"
+#include <unordered_map>
+#include <unordered_set>
 
 namespace mlir::query {
 
@@ -124,30 +127,130 @@ LogicalResult QuitQuery::run(llvm::raw_ostream &os, QuerySession &qs) const {
   return mlir::success();
 }
 
+void collectMatchNodes(
+    matcher::BoundOperationNode *Node,
+    llvm::SetVector<matcher::BoundOperationNode *> &MatchNodes) {
+  MatchNodes.insert(Node);
+  for (auto ChildNode : Node->Children) {
+    collectMatchNodes(ChildNode, MatchNodes);
+  }
+}
+
+void analyzeAndPrint(llvm::raw_ostream &os, QuerySession &qs,
+                     const matcher::BoundOperationsGraphBuilder &Bound) {
+
+  const auto &Nodes = Bound.getNodes();
+  if (Nodes.empty()) {
+    os << "The graph is empty.\n";
+    return;
+  }
+
+  bool AnyDetailedPrinting = false;
+  for (const auto &Pair : Nodes) {
+    if (Pair.second->DetailedPrinting) {
+      AnyDetailedPrinting = true;
+      break;
+    }
+  }
+
+  unsigned MatchesCounter = 0;
+  if (!AnyDetailedPrinting) {
+    os << "Operations:\n";
+    for (const auto &Pair : Nodes) {
+      os << "\n";
+      os << "  Match #" << ++MatchesCounter << "\n";
+      printMatch(os, qs, Pair.first, "root");
+    }
+    os << MatchesCounter << " matches found!\n";
+    return;
+  }
+
+  // Maps ids to nodes
+  std::unordered_map<Operation *, int> NodeIDs;
+  int id = 0;
+  for (const auto &Pair : Nodes) {
+    NodeIDs[Pair.first] = id++;
+  }
+
+  // Finds root nodes
+  std::vector<matcher::BoundOperationNode *> RootNodes;
+  for (const auto &Pair : Nodes) {
+    matcher::BoundOperationNode *Node = Pair.second.get();
+    if (Node->IsRootNode) {
+      RootNodes.push_back(Node);
+    }
+  }
+
+  for (auto RootNode : RootNodes) {
+    os << "\n";
+    os << "  Match #" << ++MatchesCounter << "\n";
+
+    llvm::SetVector<matcher::BoundOperationNode *> MatchNodes;
+    collectMatchNodes(RootNode, MatchNodes);
+    std::vector<matcher::BoundOperationNode *> SortedMatchNodes(
+        MatchNodes.begin(), MatchNodes.end());
+
+    // Sorts based on file location
+    std::sort(
+        SortedMatchNodes.begin(), SortedMatchNodes.end(),
+        [&](matcher::BoundOperationNode *a, matcher::BoundOperationNode *b) {
+          auto fileLocA = a->op->getLoc()->findInstanceOf<FileLineColLoc>();
+          auto fileLocB = b->op->getLoc()->findInstanceOf<FileLineColLoc>();
+
+          if (!fileLocA && !fileLocB)
+            return false;
+          if (!fileLocA)
+            return false;
+          if (!fileLocB)
+            return true;
+
+          if (fileLocA.getFilename().str() != fileLocB.getFilename().str())
+            return fileLocA.getFilename().str() < fileLocB.getFilename().str();
+          return fileLocA.getLine() < fileLocB.getLine();
+        });
+
+    for (auto Node : SortedMatchNodes) {
+      unsigned NodeID = NodeIDs[Node->op];
+      std::string binding = Node->IsRootNode ? "root" : "";
+      os << NodeID << ": ";
+      printMatch(os, qs, Node->op, binding);
+    }
+
+    // Prints edges
+    os << "Edges:\n";
+    for (auto Node : MatchNodes) {
+      int ParentID = NodeIDs[Node->op];
+      for (auto ChildNode : Node->Children) {
+        if (MatchNodes.count(ChildNode) > 0) {
+          int ChildID = NodeIDs[ChildNode->op];
+          os << "  " << ParentID << " ---> " << ChildID << "\n";
+        }
+      }
+    }
+  }
+  os << "\n" << MatchesCounter << " matches found!\n";
+}
+
 LogicalResult MatchQuery::run(llvm::raw_ostream &os, QuerySession &qs) const {
   Operation *rootOp = qs.getRootOp();
   int matchCount = 0;
-  std::vector<Operation *> matches =
-      matcher::MatchFinder().getMatches(rootOp, matcher);
+  auto matches = matcher::MatchFinder().getMatches(rootOp, matcher);
 
-  // An extract call is recognized by considering if the matcher has a name.
-  // TODO: Consider making the extract more explicit.
-  if (matcher.hasFunctionName()) {
-    auto functionName = matcher.getFunctionName();
-    Operation *function =
-        extractFunction(matches, rootOp->getContext(), functionName);
-    os << "\n" << *function << "\n\n";
-    function->erase();
-    return mlir::success();
-  }
+  // An extract call is recognized by considering if the matcher has a
+  //     name.TODO : Consider making the extract
+  //                     more explicit.
+  // if (matcher.hasFunctionName()) {
+  //   auto functionName = matcher.getFunctionName();
+  //   Operation *function = extractFunction(matches.getOperations(),
+  //                                         rootOp->getContext(),
+  //                                         functionName);
+  //   os << "\n" << *function << "\n\n";
+  //   function->erase();
+  //   return mlir::success();
+  // }
 
   os << "\n";
-  for (Operation *op : matches) {
-    os << "Match #" << ++matchCount << ":\n\n";
-    // Placeholder "root" binding for the initial draft.
-    printMatch(os, qs, op, "root");
-  }
-  os << matchCount << (matchCount == 1 ? " match.\n\n" : " matches.\n\n");
+  analyzeAndPrint(os, qs, matches);
 
   return mlir::success();
 }
