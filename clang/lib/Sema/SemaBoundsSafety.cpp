@@ -454,7 +454,7 @@ HasCountedByAttrOnIncompletePointee(QualType Ty, NamedDecl **ND,
 ///        determined.
 ///
 /// \returns True iff no diagnostic where emitted, false otherwise.
-static bool BoundsSafetyCheckAssignmentToCountAttrPtrWithIncompletePointeeTy(
+static bool CheckAssignmentToCountAttrPtrWithIncompletePointeeTy(
     Sema &S, QualType LHSTy, Expr *RHSExpr, AssignmentAction Action,
     SourceLocation Loc, std::function<std::string()> ComputeAssignee) {
   NamedDecl *IncompleteTyDecl = nullptr;
@@ -495,7 +495,7 @@ static bool BoundsSafetyCheckAssignmentToCountAttrPtrWithIncompletePointeeTy(
 bool Sema::BoundsSafetyCheckAssignmentToCountAttrPtr(
     QualType LHSTy, Expr *RHSExpr, AssignmentAction Action, SourceLocation Loc,
     std::function<std::string()> ComputeAssignee) {
-  return BoundsSafetyCheckAssignmentToCountAttrPtrWithIncompletePointeeTy(
+  return CheckAssignmentToCountAttrPtrWithIncompletePointeeTy(
       *this, LHSTy, RHSExpr, Action, Loc, ComputeAssignee);
 }
 
@@ -517,7 +517,7 @@ bool Sema::BoundsSafetyCheckInitialization(const InitializedEntity &Entity,
   if (Action == AssignmentAction::Initializing &&
       Entity.getKind() != InitializedEntity::EK_Variable) {
 
-    if (!BoundsSafetyCheckAssignmentToCountAttrPtrWithIncompletePointeeTy(
+    if (!CheckAssignmentToCountAttrPtrWithIncompletePointeeTy(
             *this, LHSType, RHSExpr, Action, SL, [&Entity]() -> std::string {
               if (const auto *VD =
                       dyn_cast_or_null<ValueDecl>(Entity.getDecl())) {
