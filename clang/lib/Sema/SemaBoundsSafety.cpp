@@ -536,10 +536,10 @@ bool Sema::BoundsSafetyCheckInitialization(const InitializedEntity &Entity,
   return ChecksPassed;
 }
 
-static bool BoundsSafetyCheckUseOfCountAttrPtrWithIncompletePointeeTy(Sema &S,
-                                                                      Expr *E) {
+bool Sema::BoundsSafetyCheckUseOfCountAttrPtr(Expr *E) {
   QualType T = E->getType();
-  assert(T->isPointerType());
+  if (!T->isPointerType())
+    return true;
 
   const CountAttributedType *CATy = nullptr;
   QualType PointeeTy;
@@ -564,26 +564,17 @@ static bool BoundsSafetyCheckUseOfCountAttrPtrWithIncompletePointeeTy(Sema &S,
     UseStr = DirectCallFn;
   } else {
     llvm::raw_string_ostream SS(UseStr);
-    E->printPretty(SS, nullptr, PrintingPolicy(S.getPrintingPolicy()));
+    E->printPretty(SS, nullptr, PrintingPolicy(getPrintingPolicy()));
   }
   assert(UseStr.size() > 0);
 
-  S.Diag(E->getBeginLoc(), diag::err_counted_by_on_incomplete_type_on_use)
+  Diag(E->getBeginLoc(), diag::err_counted_by_on_incomplete_type_on_use)
       << /*0*/ SelectExprKind << /*1*/ UseStr << /*2*/ T << /*3*/ PointeeTy
       << /*4*/ CATy->GetAttributeName(/*WithMacroPrefix=*/true)
       << /*5*/ CATy->isOrNull() << E->getSourceRange();
 
-  EmitIncompleteCountedByPointeeNotes(S, CATy, IncompleteTyDecl);
+  EmitIncompleteCountedByPointeeNotes(*this, CATy, IncompleteTyDecl);
   return false;
-}
-
-bool Sema::BoundsSafetyCheckUseOfCountAttrPtr(Expr *E) {
-
-  QualType T = E->getType();
-  if (!T->isPointerType())
-    return true;
-
-  return BoundsSafetyCheckUseOfCountAttrPtrWithIncompletePointeeTy(*this, E);
 }
 
 } // namespace clang
