@@ -237,7 +237,7 @@ static void EmitIncompleteCountedByPointeeNotes(Sema &S,
     // Note where the attribute is declared
     auto AttrSrcRange = S.BoundsSafetySourceRangeFor(CATy);
     S.Diag(AttrSrcRange.getBegin(), diag::note_named_attribute)
-        << CATy->GetAttributeName(/*WithMacroPrefix=*/true) << AttrSrcRange;
+        << CATy->getAttributeName(/*WithMacroPrefix=*/true) << AttrSrcRange;
   }
 
   if (!IncompleteTyDecl)
@@ -334,7 +334,7 @@ static bool CheckAssignmentToCountAttrPtrWithIncompletePointeeTy(
     auto D = S.Diag(Loc, diag::err_counted_by_on_incomplete_type_on_assign)
              << (int)Action << Assignee << (Assignee.size() > 0)
              << isa<ImplicitValueInitExpr>(RHSExpr) << LHSTy
-             << CATy->GetAttributeName(/*WithMacroPrefix=*/true) << PointeeTy
+             << CATy->getAttributeName(/*WithMacroPrefix=*/true) << PointeeTy
              << CATy->isOrNull();
 
     if (RHSExpr->getSourceRange().isValid())
@@ -423,7 +423,7 @@ bool Sema::BoundsSafetyCheckUseOfCountAttrPtr(Expr *E) {
 
   Diag(E->getBeginLoc(), diag::err_counted_by_on_incomplete_type_on_use)
       << SelectExprKind << UseStr << T << PointeeTy
-      << CATy->GetAttributeName(/*WithMacroPrefix=*/true) << CATy->isOrNull()
+      << CATy->getAttributeName(/*WithMacroPrefix=*/true) << CATy->isOrNull()
       << E->getSourceRange();
 
   EmitIncompleteCountedByPointeeNotes(*this, CATy, IncompleteTyDecl);

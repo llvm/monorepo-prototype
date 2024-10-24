@@ -3923,7 +3923,11 @@ CountAttributedType::CountAttributedType(
     DeclSlot[i] = CoupledDecls[i];
 }
 
-StringRef CountAttributedType::GetAttributeName(bool WithMacroPrefix) const {
+StringRef CountAttributedType::getAttributeName(bool WithMacroPrefix) const {
+// TODO: This method isn't really ideal because it doesn't return the spelling
+// of the attribute that was used in the user's code. This method is used for
+// diagnostics so the fact it doesn't use the spelling of the attribute in
+// the user's code could be confusing (#113585).
 #define ENUMERATE_ATTRS(PREFIX)                                                \
   do {                                                                         \
     if (isCountInBytes()) {                                                    \
