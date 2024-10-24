@@ -478,11 +478,10 @@ static bool CheckAssignmentToCountAttrPtrWithIncompletePointeeTy(
   std::string Assignee = ComputeAssignee ? ComputeAssignee() : "";
   {
     auto D = S.Diag(Loc, diag::err_counted_by_on_incomplete_type_on_assign)
-             << /*0*/ (int)Action << /*1*/ Assignee
-             << /*2*/ (Assignee.size() > 0)
-             << /*3*/ isa<ImplicitValueInitExpr>(RHSExpr) << /*4*/ LHSTy
-             << /*5*/ CATy->GetAttributeName(/*WithMacroPrefix=*/true)
-             << /*6*/ PointeeTy << /*7*/ CATy->isOrNull();
+             << (int)Action << Assignee << (Assignee.size() > 0)
+             << isa<ImplicitValueInitExpr>(RHSExpr) << LHSTy
+             << CATy->GetAttributeName(/*WithMacroPrefix=*/true) << PointeeTy
+             << CATy->isOrNull();
 
     if (RHSExpr->getSourceRange().isValid())
       D << RHSExpr->getSourceRange();
@@ -569,9 +568,9 @@ bool Sema::BoundsSafetyCheckUseOfCountAttrPtr(Expr *E) {
   assert(UseStr.size() > 0);
 
   Diag(E->getBeginLoc(), diag::err_counted_by_on_incomplete_type_on_use)
-      << /*0*/ SelectExprKind << /*1*/ UseStr << /*2*/ T << /*3*/ PointeeTy
-      << /*4*/ CATy->GetAttributeName(/*WithMacroPrefix=*/true)
-      << /*5*/ CATy->isOrNull() << E->getSourceRange();
+      << SelectExprKind << UseStr << T << PointeeTy
+      << CATy->GetAttributeName(/*WithMacroPrefix=*/true) << CATy->isOrNull()
+      << E->getSourceRange();
 
   EmitIncompleteCountedByPointeeNotes(*this, CATy, IncompleteTyDecl);
   return false;
