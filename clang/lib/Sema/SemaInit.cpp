@@ -8211,8 +8211,8 @@ ExprResult InitializationSequence::Perform(Sema &S,
         // first error.
         S.BoundsSafetyCheckInitialization(Entity, Kind,
                                           AssignmentAction::Initializing,
-                                          /*LHSType=*/Step->Type,
-                                          /*RHSExpr=*/CurInit.get());
+                                          Step->Type,
+                                          CurInit.get());
       }
       break;
     }
@@ -8264,9 +8264,9 @@ ExprResult InitializationSequence::Perform(Sema &S,
       // even though an error might have occurred. For struct initialization it
       // also allows all field assignments to be checked rather than bailing on
       // the first error.
-      (void)S.BoundsSafetyCheckInitialization(
-          Entity, Kind, /*Action=*/getAssignmentAction(Entity, true),
-          /*LHSType=*/Step->Type, /*RHSExpr=*/InitialCurInit.get());
+      S.BoundsSafetyCheckInitialization(Entity, Kind,
+                                        getAssignmentAction(Entity, true),
+                                        Step->Type, InitialCurInit.get());
 
       bool Complained;
       if (S.DiagnoseAssignmentResult(ConvTy, Kind.getLocation(),
