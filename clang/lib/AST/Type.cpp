@@ -2478,7 +2478,7 @@ bool Type::isIncompletableIncompleteType() const {
 
   // Forward declarations of structs, classes, enums, and unions could be later
   // completed in a compilation unit by providing a type definition.
-  if (isStructureOrClassType() || isEnumeralType() || isUnionType())
+  if (getAsTagDecl())
     return false;
 
   // Other types are incompletable.
