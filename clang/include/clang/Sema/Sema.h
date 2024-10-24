@@ -2085,7 +2085,7 @@ public:
   bool BoundsSafetyCheckAssignmentToCountAttrPtr(
       QualType LHSTy, Expr *RHSExpr, AssignmentAction Action,
       SourceLocation Loc,
-      std::function<std::string()> ComputeAssignee = nullptr);
+      llvm::function_ref<std::string()> ComputeAssignee = nullptr);
 
   /// Perform Bounds Safety Semantic checks for initializing a Bounds Safety
   /// pointer.

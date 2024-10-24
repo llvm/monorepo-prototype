@@ -310,7 +310,7 @@ HasCountedByAttrOnIncompletePointee(QualType Ty, NamedDecl **ND,
 /// \returns True iff no diagnostic where emitted, false otherwise.
 static bool CheckAssignmentToCountAttrPtrWithIncompletePointeeTy(
     Sema &S, QualType LHSTy, Expr *RHSExpr, AssignmentAction Action,
-    SourceLocation Loc, std::function<std::string()> ComputeAssignee) {
+    SourceLocation Loc, llvm::function_ref<std::string()> ComputeAssignee) {
   NamedDecl *IncompleteTyDecl = nullptr;
   const CountAttributedType *CATy = nullptr;
   QualType PointeeTy;
@@ -347,7 +347,7 @@ static bool CheckAssignmentToCountAttrPtrWithIncompletePointeeTy(
 
 bool Sema::BoundsSafetyCheckAssignmentToCountAttrPtr(
     QualType LHSTy, Expr *RHSExpr, AssignmentAction Action, SourceLocation Loc,
-    std::function<std::string()> ComputeAssignee) {
+    llvm::function_ref<std::string()> ComputeAssignee) {
   return CheckAssignmentToCountAttrPtrWithIncompletePointeeTy(
       *this, LHSTy, RHSExpr, Action, Loc, ComputeAssignee);
 }
