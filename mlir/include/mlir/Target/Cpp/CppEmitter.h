@@ -14,6 +14,7 @@
 #define MLIR_TARGET_CPP_CPPEMITTER_H
 
 #include "mlir/Support/LLVM.h"
+#include "llvm/ADT/StringRef.h"
 
 namespace mlir {
 class Operation;
@@ -24,7 +25,8 @@ namespace emitc {
 /// 'declareVariablesAtTop' enforces that all variables for op results and block
 /// arguments are declared at the beginning of the function.
 LogicalResult translateToCpp(Operation *op, raw_ostream &os,
-                             bool declareVariablesAtTop = false);
+                             bool declareVariablesAtTop = false,
+                             StringRef onlyTu = "");
 } // namespace emitc
 } // namespace mlir
 
