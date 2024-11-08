@@ -254,6 +254,8 @@ void NVPTXTargetMachine::registerPassBuilderCallbacks(PassBuilder &PB) {
 
   PB.registerPipelineStartEPCallback(
       [this](ModulePassManager &PM, OptimizationLevel Level) {
+        PM.addPass(NVVMUpgradeAnnotationsPass());
+
         FunctionPassManager FPM;
         FPM.addPass(NVVMReflectPass(Subtarget.getSmVersion()));
         // Note: NVVMIntrRangePass was causing numerical discrepancies at one
@@ -348,6 +350,8 @@ void NVPTXPassConfig::addIRPasses() {
     if (auto *WrapperPass = P.getAnalysisIfAvailable<NVPTXAAWrapperPass>())
       AAR.addAAResult(WrapperPass->getResult());
   }));
+
+  addPass(createNVVMUpgradeAnnotationsPass());
 
   // NVVMReflectPass is added in addEarlyAsPossiblePasses, so hopefully running
   // it here does nothing.  But since we need it for correctness when lowering

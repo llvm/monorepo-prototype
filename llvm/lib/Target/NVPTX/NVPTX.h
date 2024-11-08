@@ -52,6 +52,7 @@ FunctionPass *createNVPTXLowerUnreachablePass(bool TrapUnreachable,
                                               bool NoTrapAfterNoreturn);
 MachineFunctionPass *createNVPTXPeephole();
 MachineFunctionPass *createNVPTXProxyRegErasurePass();
+ModulePass *createNVVMUpgradeAnnotationsPass();
 
 struct NVVMIntrRangePass : PassInfoMixin<NVVMIntrRangePass> {
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
@@ -72,6 +73,10 @@ struct GenericToNVVMPass : PassInfoMixin<GenericToNVVMPass> {
 
 struct NVPTXCopyByValArgsPass : PassInfoMixin<NVPTXCopyByValArgsPass> {
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
+};
+
+struct NVVMUpgradeAnnotationsPass : PassInfoMixin<NVVMUpgradeAnnotationsPass> {
+  PreservedAnalyses run(Module &M, ModuleAnalysisManager &AM);
 };
 
 namespace NVPTX {
