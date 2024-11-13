@@ -7,7 +7,25 @@
 //===----------------------------------------------------------------------===//
 
 #include "MipsSelectionDAGInfo.h"
+#include "MipsISelLowering.h"
 
 using namespace llvm;
 
 MipsSelectionDAGInfo::~MipsSelectionDAGInfo() = default;
+
+bool MipsSelectionDAGInfo::isTargetMemoryOpcode(unsigned Opcode) const {
+  switch (static_cast<MipsISD::NodeType>(Opcode)) {
+  default:
+    break;
+  case MipsISD::LWL:
+  case MipsISD::LWR:
+  case MipsISD::SWL:
+  case MipsISD::SWR:
+  case MipsISD::LDL:
+  case MipsISD::LDR:
+  case MipsISD::SDL:
+  case MipsISD::SDR:
+    return true;
+  }
+  return SelectionDAGTargetInfo::isTargetMemoryOpcode(Opcode);
+}
