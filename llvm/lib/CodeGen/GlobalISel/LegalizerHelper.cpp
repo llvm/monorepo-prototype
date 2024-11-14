@@ -2099,7 +2099,7 @@ LegalizerHelper::widenScalarMergeValues(MachineInstr &MI, unsigned TypeIdx,
       const unsigned Offset = (I - 1) * PartSize;
 
       Register SrcReg = MI.getOperand(I).getReg();
-      assert(MRI.getType(SrcReg) == LLT::scalar(PartSize));
+      assert(MRI.getType(SrcReg).isScalar(PartSize));
 
       auto ZextInput = MIRBuilder.buildZExt(WideTy, SrcReg);
 
@@ -6596,7 +6596,7 @@ LegalizerHelper::narrowScalarFPTOI(MachineInstr &MI, unsigned TypeIdx,
   // If all finite floats fit into the narrowed integer type, we can just swap
   // out the result type. This is practically only useful for conversions from
   // half to at least 16-bits, so just handle the one case.
-  if (SrcTy.getScalarType() != LLT::scalar(16) ||
+  if (!SrcTy.getScalarType().isScalar(16) ||
       NarrowTy.getScalarSizeInBits() < (IsSigned ? 17u : 16u))
     return UnableToLegalize;
 
@@ -7471,7 +7471,7 @@ LegalizerHelper::lowerU64ToF32BitOps(MachineInstr &MI) {
   const LLT S32 = LLT::scalar(32);
   const LLT S1 = LLT::scalar(1);
 
-  assert(MRI.getType(Src) == S64 && MRI.getType(Dst) == S32);
+  assert(MRI.getType(Src).isScalar(64) && MRI.getType(Dst).isScalar(32));
 
   // unsigned cul2f(ulong u) {
   //   uint lz = clz(u);
@@ -7529,7 +7529,7 @@ LegalizerHelper::lowerU64ToF32WithSITOFP(MachineInstr &MI) {
   const LLT S32 = LLT::scalar(32);
   const LLT S1 = LLT::scalar(1);
 
-  assert(MRI.getType(Src) == S64 && MRI.getType(Dst) == S32);
+  assert(MRI.getType(Src).isScalar(64) && MRI.getType(Dst).isScalar(32));
 
   // For i64 < INT_MAX we simply reuse SITOFP.
   // Otherwise, divide i64 by 2, round result by ORing with the lowest bit
@@ -7563,7 +7563,7 @@ LegalizerHelper::lowerU64ToF64BitFloatOps(MachineInstr &MI) {
   const LLT S64 = LLT::scalar(64);
   const LLT S32 = LLT::scalar(32);
 
-  assert(MRI.getType(Src) == S64 && MRI.getType(Dst) == S64);
+  assert(MRI.getType(Src).isScalar(64) && MRI.getType(Dst).isScalar(64));
 
   // We create double value from 32 bit parts with 32 exponent difference.
   // Note that + and - are float operations that adjust the implicit leading
@@ -7595,7 +7595,7 @@ LegalizerHelper::lowerU64ToF64BitFloatOps(MachineInstr &MI) {
 LegalizerHelper::LegalizeResult LegalizerHelper::lowerUITOFP(MachineInstr &MI) {
   auto [Dst, DstTy, Src, SrcTy] = MI.getFirst2RegLLTs();
 
-  if (SrcTy == LLT::scalar(1)) {
+  if (SrcTy.isScalar(1)) {
     auto True = MIRBuilder.buildFConstant(DstTy, 1.0);
     auto False = MIRBuilder.buildFConstant(DstTy, 0.0);
     MIRBuilder.buildSelect(Dst, Src, True, False);
@@ -7603,17 +7603,17 @@ LegalizerHelper::LegalizeResult LegalizerHelper::lowerUITOFP(MachineInstr &MI) {
     return Legalized;
   }
 
-  if (SrcTy != LLT::scalar(64))
+  if (!SrcTy.isScalar(64))
     return UnableToLegalize;
 
-  if (DstTy == LLT::scalar(32))
+  if (DstTy.isScalar(32))
     // TODO: SelectionDAG has several alternative expansions to port which may
     // be more reasonable depending on the available instructions. We also need
     // a more advanced mechanism to choose an optimal version depending on
     // target features such as sitofp or CTLZ availability.
     return lowerU64ToF32WithSITOFP(MI);
 
-  if (DstTy == LLT::scalar(64))
+  if (DstTy.isScalar(64))
     return lowerU64ToF64BitFloatOps(MI);
 
   return UnableToLegalize;
@@ -7626,7 +7626,7 @@ LegalizerHelper::LegalizeResult LegalizerHelper::lowerSITOFP(MachineInstr &MI) {
   const LLT S32 = LLT::scalar(32);
   const LLT S1 = LLT::scalar(1);
 
-  if (SrcTy == S1) {
+  if (SrcTy.isScalar(1)) {
     auto True = MIRBuilder.buildFConstant(DstTy, -1.0);
     auto False = MIRBuilder.buildFConstant(DstTy, 0.0);
     MIRBuilder.buildSelect(Dst, Src, True, False);
@@ -7634,10 +7634,10 @@ LegalizerHelper::LegalizeResult LegalizerHelper::lowerSITOFP(MachineInstr &MI) {
     return Legalized;
   }
 
-  if (SrcTy != S64)
+  if (!SrcTy.isScalar(64))
     return UnableToLegalize;
 
-  if (DstTy == S32) {
+  if (DstTy.isScalar(32)) {
     // signed cl2f(long l) {
     //   long s = l >> 63;
     //   float r = cul2f((l + s) ^ s);
@@ -7664,12 +7664,10 @@ LegalizerHelper::LegalizeResult LegalizerHelper::lowerSITOFP(MachineInstr &MI) {
 
 LegalizerHelper::LegalizeResult LegalizerHelper::lowerFPTOUI(MachineInstr &MI) {
   auto [Dst, DstTy, Src, SrcTy] = MI.getFirst2RegLLTs();
-  const LLT S64 = LLT::scalar(64);
-  const LLT S32 = LLT::scalar(32);
 
-  if (SrcTy != S64 && SrcTy != S32)
+  if (!SrcTy.isScalar(64) && !SrcTy.isScalar(32))
     return UnableToLegalize;
-  if (DstTy != S32 && DstTy != S64)
+  if (!DstTy.isScalar(32) && !DstTy.isScalar(64))
     return UnableToLegalize;
 
   // FPTOSI gives same result as FPTOUI for positive signed integers.
@@ -7704,11 +7702,9 @@ LegalizerHelper::LegalizeResult LegalizerHelper::lowerFPTOUI(MachineInstr &MI) {
 
 LegalizerHelper::LegalizeResult LegalizerHelper::lowerFPTOSI(MachineInstr &MI) {
   auto [Dst, DstTy, Src, SrcTy] = MI.getFirst2RegLLTs();
-  const LLT S64 = LLT::scalar(64);
-  const LLT S32 = LLT::scalar(32);
 
   // FIXME: Only f32 to i64 conversions are supported.
-  if (SrcTy.getScalarType() != S32 || DstTy.getScalarType() != S64)
+  if (!SrcTy.getScalarType().isScalar(32) || !DstTy.getScalarType().isScalar(64))
     return UnableToLegalize;
 
   // Expand f32 -> i64 conversion
@@ -7873,8 +7869,8 @@ LegalizerHelper::lowerFPTRUNC_F64_TO_F16(MachineInstr &MI) {
   const LLT S32 = LLT::scalar(32);
 
   auto [Dst, Src] = MI.getFirst2Regs();
-  assert(MRI.getType(Dst).getScalarType() == LLT::scalar(16) &&
-         MRI.getType(Src).getScalarType() == LLT::scalar(64));
+  assert(MRI.getType(Dst).getScalarType().isScalar(16) &&
+         MRI.getType(Src).getScalarType().isScalar(64));
 
   if (MRI.getType(Src).isVector()) // TODO: Handle vectors directly.
     return UnableToLegalize;
@@ -7985,10 +7981,8 @@ LegalizerHelper::lowerFPTRUNC_F64_TO_F16(MachineInstr &MI) {
 LegalizerHelper::LegalizeResult
 LegalizerHelper::lowerFPTRUNC(MachineInstr &MI) {
   auto [DstTy, SrcTy] = MI.getFirst2LLTs();
-  const LLT S64 = LLT::scalar(64);
-  const LLT S16 = LLT::scalar(16);
 
-  if (DstTy.getScalarType() == S16 && SrcTy.getScalarType() == S64)
+  if (DstTy.getScalarType().isScalar(16) && SrcTy.getScalarType().isScalar(64))
     return lowerFPTRUNC_F64_TO_F16(MI);
 
   return UnableToLegalize;
@@ -9263,7 +9257,7 @@ LegalizerHelper::LegalizeResult LegalizerHelper::lowerSelect(MachineInstr &MI) {
 
     // The condition was potentially zero extended before, but we want a sign
     // extended boolean.
-    if (MaskTy != LLT::scalar(1))
+    if (!MaskTy.isScalar(1))
       MaskElt = MIRBuilder.buildSExtInReg(MaskTy, MaskElt, 1).getReg(0);
 
     // Continue the sign extension (or truncate) to match the data type.

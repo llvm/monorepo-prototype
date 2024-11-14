@@ -213,7 +213,7 @@ bool AMDGPUPostLegalizerCombinerImpl::matchUCharToFloat(
   // types are legalized. v4i8 -> v4f32 is probably the only case to worry
   // about in practice.
   LLT Ty = MRI.getType(DstReg);
-  if (Ty == LLT::scalar(32) || Ty == LLT::scalar(16)) {
+  if (Ty.isScalar(32) || Ty.isScalar(16)) {
     Register SrcReg = MI.getOperand(1).getReg();
     unsigned SrcSize = MRI.getType(SrcReg).getSizeInBits();
     assert(SrcSize == 16 || SrcSize == 32 || SrcSize == 64);
@@ -232,10 +232,10 @@ void AMDGPUPostLegalizerCombinerImpl::applyUCharToFloat(
   Register SrcReg = MI.getOperand(1).getReg();
   LLT Ty = MRI.getType(DstReg);
   LLT SrcTy = MRI.getType(SrcReg);
-  if (SrcTy != S32)
+  if (!SrcTy.isScalar(32))
     SrcReg = B.buildAnyExtOrTrunc(S32, SrcReg).getReg(0);
 
-  if (Ty == S32) {
+  if (Ty.isScalar(32)) {
     B.buildInstr(AMDGPU::G_AMDGPU_CVT_F32_UBYTE0, {DstReg}, {SrcReg},
                  MI.getFlags());
   } else {
@@ -349,7 +349,7 @@ void AMDGPUPostLegalizerCombinerImpl::applyCvtF32UByteN(
   const LLT S32 = LLT::scalar(32);
   Register CvtSrc = MatchInfo.CvtVal;
   LLT SrcTy = MRI.getType(MatchInfo.CvtVal);
-  if (SrcTy != S32) {
+  if (!SrcTy.isScalar(32)) {
     assert(SrcTy.isScalar() && SrcTy.getSizeInBits() >= 8);
     CvtSrc = B.buildAnyExt(S32, CvtSrc).getReg(0);
   }
@@ -418,7 +418,7 @@ bool AMDGPUPostLegalizerCombinerImpl::matchCombine_s_mul_u64(
     MachineInstr &MI, unsigned &NewOpcode) const {
   Register Src0 = MI.getOperand(1).getReg();
   Register Src1 = MI.getOperand(2).getReg();
-  if (MRI.getType(Src0) != LLT::scalar(64))
+  if (!MRI.getType(Src0).isScalar(64))
     return false;
 
   if (KB->getKnownBits(Src1).countMinLeadingZeros() >= 32 &&
