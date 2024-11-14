@@ -45,6 +45,8 @@ _LIBCPP_BEGIN_NAMESPACE_STD
 
 namespace chrono {
 
+_LIBCPP_DIAGNOSTIC_PUSH
+_LIBCPP_CLANG_DIAGNOSTIC_IGNORED("-Wmissing-prototypes")
 // This function is weak so it can be overriden in the tests. The
 // declaration is in the test header test/support/test_tzdb.h
 _LIBCPP_WEAK string_view __libcpp_tzdb_directory() {
@@ -54,6 +56,7 @@ _LIBCPP_WEAK string_view __libcpp_tzdb_directory() {
 #  error "unknown path to the IANA Time Zone Database"
 #endif
 }
+_LIBCPP_DIAGNOSTIC_POP
 
 //===----------------------------------------------------------------------===//
 //                           Details
