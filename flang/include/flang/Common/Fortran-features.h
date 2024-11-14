@@ -38,7 +38,7 @@ ENUM_CLASS(LanguageFeature, BackslashEscapes, OldDebugLines,
     DistinguishableSpecifics, DefaultSave, PointerInSeqType, NonCharacterFormat,
     SaveMainProgram, SaveBigMainProgramVariables,
     DistinctArrayConstructorLengths, PPCVector, RelaxedIntentInChecking,
-    ForwardRefImplicitNoneData, NullActualForAllocatable,
+    NullActualForAllocatable, ForwardRefImplicitNoneData,
     ActualIntegerConvertedToSmallerKind, HollerithOrCharacterAsBOZ,
     BindingAsProcedure, StatementFunctionExtensions,
     UseGenericIntrinsicWhenSpecificDoesntMatch, DataStmtExtensions,
@@ -73,7 +73,8 @@ ENUM_CLASS(UsageWarning, Portability, PointerToUndefinable,
     PreviousScalarUse, RedeclaredInaccessibleComponent, ImplicitShared,
     IndexVarRedefinition, IncompatibleImplicitInterfaces, BadTypeForTarget,
     VectorSubscriptFinalization, UndefinedFunctionResult, UselessIomsg,
-    MismatchingDummyProcedure, SubscriptedEmptyArray)
+    MismatchingDummyProcedure, SubscriptedEmptyArray,
+    NullActualForDefaultIntentAllocatable)
 
 using LanguageFeatures = EnumSet<LanguageFeature, LanguageFeature_enumSize>;
 using UsageWarnings = EnumSet<UsageWarning, UsageWarning_enumSize>;
