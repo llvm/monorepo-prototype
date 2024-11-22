@@ -1277,7 +1277,8 @@ class CXXDefaultArgExpr final
   DeclContext *UsedContext;
 
   CXXDefaultArgExpr(StmtClass SC, SourceLocation Loc, ParmVarDecl *Param,
-                    Expr *RewrittenExpr, DeclContext *UsedContext)
+                    DeclContext *UsedContext, Expr *RewrittenExpr,
+                    bool HasRebuiltInit)
       : Expr(SC,
              Param->hasUnparsedDefaultArg()
                  ? Param->getType().getNonReferenceType()
@@ -1287,25 +1288,28 @@ class CXXDefaultArgExpr final
         Param(Param), UsedContext(UsedContext) {
     CXXDefaultArgExprBits.Loc = Loc;
     CXXDefaultArgExprBits.HasRewrittenInit = RewrittenExpr != nullptr;
+    CXXDefaultArgExprBits.HasRebuiltInit = HasRebuiltInit;
     if (RewrittenExpr)
       *getTrailingObjects<Expr *>() = RewrittenExpr;
     setDependence(computeDependence(this));
   }
 
-  CXXDefaultArgExpr(EmptyShell Empty, bool HasRewrittenInit)
+  CXXDefaultArgExpr(EmptyShell Empty, bool HasRewrittenInit,
+                    bool HasRebuiltInit)
       : Expr(CXXDefaultArgExprClass, Empty) {
     CXXDefaultArgExprBits.HasRewrittenInit = HasRewrittenInit;
+    CXXDefaultArgExprBits.HasRebuiltInit = HasRebuiltInit;
   }
 
 public:
-  static CXXDefaultArgExpr *CreateEmpty(const ASTContext &C,
-                                        bool HasRewrittenInit);
+  static CXXDefaultArgExpr *
+  CreateEmpty(const ASTContext &C, bool HasRewrittenInit, bool HasRebuiltInit);
 
   // \p Param is the parameter whose default argument is used by this
   // expression.
   static CXXDefaultArgExpr *Create(const ASTContext &C, SourceLocation Loc,
-                                   ParmVarDecl *Param, Expr *RewrittenExpr,
-                                   DeclContext *UsedContext);
+                                   ParmVarDecl *Param, DeclContext *UsedContext,
+                                   Expr *RewrittenExpr, bool HasRebuiltInit);
   // Retrieve the parameter that the argument was created from.
   const ParmVarDecl *getParam() const { return Param; }
   ParmVarDecl *getParam() { return Param; }
@@ -1313,6 +1317,8 @@ public:
   bool hasRewrittenInit() const {
     return CXXDefaultArgExprBits.HasRewrittenInit;
   }
+
+  bool hasRebuiltInit() const { return CXXDefaultArgExprBits.HasRebuiltInit; }
 
   // Retrieve the argument to the function call.
   Expr *getExpr();
@@ -1385,25 +1391,30 @@ class CXXDefaultInitExpr final
 
   CXXDefaultInitExpr(const ASTContext &Ctx, SourceLocation Loc,
                      FieldDecl *Field, QualType Ty, DeclContext *UsedContext,
-                     Expr *RewrittenInitExpr);
+                     Expr *RewrittenInitExpr, bool HasRebuiltInit);
 
-  CXXDefaultInitExpr(EmptyShell Empty, bool HasRewrittenInit)
+  CXXDefaultInitExpr(EmptyShell Empty, bool HasRewrittenInit,
+                     bool HasRebuiltInit)
       : Expr(CXXDefaultInitExprClass, Empty) {
     CXXDefaultInitExprBits.HasRewrittenInit = HasRewrittenInit;
+    CXXDefaultInitExprBits.HasRebuiltInit = HasRebuiltInit;
   }
 
 public:
-  static CXXDefaultInitExpr *CreateEmpty(const ASTContext &C,
-                                         bool HasRewrittenInit);
+  static CXXDefaultInitExpr *
+  CreateEmpty(const ASTContext &C, bool HasRewrittenInit, bool HasRebuiltInit);
   /// \p Field is the non-static data member whose default initializer is used
   /// by this expression.
   static CXXDefaultInitExpr *Create(const ASTContext &Ctx, SourceLocation Loc,
                                     FieldDecl *Field, DeclContext *UsedContext,
-                                    Expr *RewrittenInitExpr);
+                                    Expr *RewrittenInitExpr,
+                                    bool HasRebuiltInit);
 
   bool hasRewrittenInit() const {
     return CXXDefaultInitExprBits.HasRewrittenInit;
   }
+
+  bool hasRebuiltInit() const { return CXXDefaultInitExprBits.HasRebuiltInit; }
 
   /// Get the field whose initializer will be used.
   FieldDecl *getField() { return Field; }

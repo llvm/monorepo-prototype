@@ -840,6 +840,10 @@ protected:
     LLVM_PREFERRED_TYPE(bool)
     unsigned HasRewrittenInit : 1;
 
+    /// Whether this CXXDefaultArgExpr rebuild its argument and stores a copy.
+    LLVM_PREFERRED_TYPE(bool)
+    unsigned HasRebuiltInit : 1;
+
     /// The location where the default argument expression was used.
     SourceLocation Loc;
   };
@@ -851,10 +855,16 @@ protected:
     LLVM_PREFERRED_TYPE(ExprBitfields)
     unsigned : NumExprBits;
 
-    /// Whether this CXXDefaultInitExprBitfields rewrote its argument and stores
-    /// a copy.
+    /// Whether this CXXDefaultInitExpr rewrote its argument and stores
+    /// a copy, unlike HasRebuiltInit, when this flag is true, the argument may
+    /// be partial rebuilt.
     LLVM_PREFERRED_TYPE(bool)
     unsigned HasRewrittenInit : 1;
+
+    /// Whether this CXXDefaultInitExpr fully rebuild its argument and stores a
+    /// copy.
+    LLVM_PREFERRED_TYPE(bool)
+    unsigned HasRebuiltInit : 1;
 
     /// The location where the default initializer expression was used.
     SourceLocation Loc;
