@@ -73,9 +73,11 @@ add_entrypoint_object(
     ctime.cpp
   HDRS
     ctime.h
+    timezone.h
   DEPENDS
     .time_utils
     .time_constants
+    .timezone
     libc.hdr.types.time_t
     libc.include.time
 )
@@ -84,11 +86,13 @@ add_entrypoint_object(
   ctime_r
   SRCS
     ctime_r.cpp
+    timezone.h
   HDRS
     ctime_r.h
   DEPENDS
     .time_utils
     .time_constants
+    .timezone
     libc.hdr.types.time_t
     libc.include.time
 )
@@ -99,6 +103,7 @@ add_entrypoint_object(
     localtime.cpp
   HDRS
     localtime.h
+    timezone.h
   DEPENDS
     .time_utils
     .timezone
@@ -112,8 +117,10 @@ add_entrypoint_object(
     localtime_r.cpp
   HDRS
     localtime_r.h
+    timezone.h
   DEPENDS
     .time_utils
+    .timezone
     libc.hdr.types.time_t
     libc.include.time
 )
@@ -124,8 +131,10 @@ add_entrypoint_object(
     localtime_s.cpp
   HDRS
     localtime_s.h
+    timezone.h
   DEPENDS
     .time_utils
+    .timezone
     libc.hdr.types.time_t
     libc.include.time
 )
