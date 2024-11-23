@@ -39,30 +39,6 @@
 #include "../ConvertibleToIntegral.h"
 #include "../CustomTestLayouts.h"
 
-// Clang 16 does not support argument packs as input to operator []
-#if defined(__clang_major__) && __clang_major__ < 17
-template <class MDS>
-constexpr auto& access(MDS mds) {
-  return mds[];
-}
-template <class MDS>
-constexpr auto& access(MDS mds, int64_t i0) {
-  return mds[i0];
-}
-template <class MDS>
-constexpr auto& access(MDS mds, int64_t i0, int64_t i1) {
-  return mds[i0, i1];
-}
-template <class MDS>
-constexpr auto& access(MDS mds, int64_t i0, int64_t i1, int64_t i2) {
-  return mds[i0, i1, i2];
-}
-template <class MDS>
-constexpr auto& access(MDS mds, int64_t i0, int64_t i1, int64_t i2, int64_t i3) {
-  return mds[i0, i1, i2, i3];
-}
-#endif
-
 template <class MDS, class... Indices>
 concept operator_constraints = requires(MDS m, Indices... idxs) {
   { std::is_same_v<decltype(m[idxs...]), typename MDS::reference> };
@@ -84,11 +60,7 @@ template <class MDS, class... Args>
 constexpr void iterate(MDS mds, Args... args) {
   constexpr int r = static_cast<int>(MDS::extents_type::rank()) - 1 - static_cast<int>(sizeof...(Args));
   if constexpr (-1 == r) {
-#if defined(__clang_major__) && __clang_major__ < 17
-    int* ptr1 = &access(mds, args...);
-#else
     int* ptr1 = &mds[args...];
-#endif
     int* ptr2 = &(mds.accessor().access(mds.data_handle(), mds.mapping()(args...)));
     assert(ptr1 == ptr2);
 
