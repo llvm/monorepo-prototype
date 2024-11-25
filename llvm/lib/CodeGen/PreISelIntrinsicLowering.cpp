@@ -335,9 +335,9 @@ bool PreISelIntrinsicLowering::expandMemIntrinsicUses(Function &F) const {
   return Changed;
 }
 
-static bool lowerExpIntrinsicToLoop(Module &M, Function &F, CallInst *CI) {
+static bool lowerExpIntrinsicToLoop(Module &M, CallInst *CI) {
   ScalableVectorType *ScalableTy =
-      dyn_cast<ScalableVectorType>(F.getArg(0)->getType());
+      dyn_cast<ScalableVectorType>(CI->getArgOperand(0)->getType());
   if (!ScalableTy) {
     return false;
   }
@@ -370,7 +370,7 @@ static bool lowerExpIntrinsicToLoop(Module &M, Function &F, CallInst *CI) {
 
   Value *Elem = LoopBuilder.CreateExtractElement(Vec, LoopIndex);
   Function *Exp = Intrinsic::getOrInsertDeclaration(
-      &M, Intrinsic::exp, ScalableTy->getElementType());
+      &M, CI->getIntrinsicID(), ScalableTy->getElementType());
   Value *Res = LoopBuilder.CreateCall(Exp, Elem);
   Value *NewVec = LoopBuilder.CreateInsertElement(Vec, Res, LoopIndex);
   Vec->addIncoming(NewVec, LoopBB);
@@ -508,7 +508,7 @@ bool PreISelIntrinsicLowering::lowerIntrinsics(Module &M) const {
       break;
     case Intrinsic::exp:
       Changed |= forEachCall(
-          F, [&](CallInst *CI) { return lowerExpIntrinsicToLoop(M, F, CI); });
+          F, [&](CallInst *CI) { return lowerExpIntrinsicToLoop(M, CI); });
       break;
     }
   }
