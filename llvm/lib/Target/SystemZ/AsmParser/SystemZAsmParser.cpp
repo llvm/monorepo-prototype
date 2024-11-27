@@ -888,6 +888,7 @@ ParseStatus SystemZAsmParser::parseRegister(OperandVector &Operands,
     return ParseStatus::NoMatch;
 
   // Determine the LLVM register number according to Kind.
+  // clang-format off
   const unsigned *Regs;
   switch (Kind) {
   case GR32Reg:  Regs = SystemZMC::GR32Regs;  break;
@@ -905,6 +906,7 @@ ParseStatus SystemZAsmParser::parseRegister(OperandVector &Operands,
   case AR32Reg:  Regs = SystemZMC::AR32Regs;  break;
   case CR64Reg:  Regs = SystemZMC::CR64Regs;  break;
   }
+  // clang-format on
   if (Regs[Reg.Num] == 0)
     return Error(Reg.StartLoc, "invalid register pair");
 
