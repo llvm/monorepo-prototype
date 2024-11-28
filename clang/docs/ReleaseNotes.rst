@@ -455,6 +455,10 @@ Modified Compiler Flags
   ``memset`` and similar functions for which it is a documented undefined
   behavior. It is implied by ``-Wnontrivial-memaccess``
 
+- The ``-Og`` optimization flag now sets ``-fextend-variable-liveness``, a new
+  compiler flag which trades a small amount of optimization in exchange for
+  improved variable visibility.
+
 Removed Compiler Flags
 -------------------------
 
