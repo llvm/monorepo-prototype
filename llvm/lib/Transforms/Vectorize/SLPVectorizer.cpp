@@ -19410,7 +19410,8 @@ class HorizontalReduction {
       if (UseSelect &&
           LHS->getType() == CmpInst::makeCmpResultType(LHS->getType()))
         return Builder.CreateSelect(LHS, Builder.getTrue(), RHS, Name);
-      unsigned RdxOpcode = RecurrenceDescriptor::getOpcode(Kind);
+      unsigned RdxOpcode =
+          RecurrenceDescriptor::getOpcode(Kind, LHS->getType());
       return Builder.CreateBinOp((Instruction::BinaryOps)RdxOpcode, LHS, RHS,
                                  Name);
     }
@@ -19418,7 +19419,8 @@ class HorizontalReduction {
       if (UseSelect &&
           LHS->getType() == CmpInst::makeCmpResultType(LHS->getType()))
         return Builder.CreateSelect(LHS, RHS, Builder.getFalse(), Name);
-      unsigned RdxOpcode = RecurrenceDescriptor::getOpcode(Kind);
+      unsigned RdxOpcode =
+          RecurrenceDescriptor::getOpcode(Kind, LHS->getType());
       return Builder.CreateBinOp((Instruction::BinaryOps)RdxOpcode, LHS, RHS,
                                  Name);
     }
@@ -19427,7 +19429,8 @@ class HorizontalReduction {
     case RecurKind::Xor:
     case RecurKind::FAdd:
     case RecurKind::FMul: {
-      unsigned RdxOpcode = RecurrenceDescriptor::getOpcode(Kind);
+      unsigned RdxOpcode =
+          RecurrenceDescriptor::getOpcode(Kind, LHS->getType());
       return Builder.CreateBinOp((Instruction::BinaryOps)RdxOpcode, LHS, RHS,
                                  Name);
     }
@@ -20550,7 +20553,7 @@ private:
     case RecurKind::Xor:
     case RecurKind::FAdd:
     case RecurKind::FMul: {
-      unsigned RdxOpcode = RecurrenceDescriptor::getOpcode(RdxKind);
+      unsigned RdxOpcode = RecurrenceDescriptor::getOpcode(RdxKind, ScalarTy);
       if (!AllConsts) {
         if (auto *VecTy = dyn_cast<FixedVectorType>(ScalarTy)) {
           assert(SLPReVec && "FixedVectorType is not expected.");
@@ -20679,8 +20682,7 @@ private:
     case RecurKind::Mul:
     case RecurKind::FMul:
     case RecurKind::FMulAdd:
-    case RecurKind::IAnyOf:
-    case RecurKind::FAnyOf:
+    case RecurKind::AnyOf:
     case RecurKind::IFindLastIV:
     case RecurKind::FFindLastIV:
     case RecurKind::None:
@@ -20778,8 +20780,7 @@ private:
     case RecurKind::Mul:
     case RecurKind::FMul:
     case RecurKind::FMulAdd:
-    case RecurKind::IAnyOf:
-    case RecurKind::FAnyOf:
+    case RecurKind::AnyOf:
     case RecurKind::IFindLastIV:
     case RecurKind::FFindLastIV:
     case RecurKind::None:
