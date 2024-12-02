@@ -11,15 +11,38 @@
 
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Error.h"
+#include <utility>
+#include <vector>
 
 namespace lldb_dap {
 
-/// Redirects the output of a given file descriptor to a callback.
-///
-/// \return
-///     \a Error::success if the redirection was set up correctly, or an error
-///     otherwise.
-llvm::Error RedirectFd(int fd, std::function<void(llvm::StringRef)> callback);
+/// Manages the lifetime of file descriptor redirects.
+struct OutputRedirector {
+  OutputRedirector() = default;
+
+  OutputRedirector(const OutputRedirector &) = delete;
+  OutputRedirector &operator=(const OutputRedirector &) = delete;
+
+  ~OutputRedirector();
+
+  /// Redirects the output of a given file descriptor to a callback.
+  ///
+  /// \param[in] fd
+  ///     Either -1 or the fd duplicate into the new handle.
+  ///
+  /// \param[in] callback
+  ///     A callback invoked each time the file is written.
+  ///
+  /// \return
+  ///     A new file handle for the output.
+  llvm::Expected<int> RedirectFd(int fd,
+                                 std::function<void(llvm::StringRef)> callback);
+
+private:
+  std::vector<int> m_fds; // owned fds, closed on dealloc.
+  std::vector<std::pair<int, int>>
+      m_redirects; // pairs (new, old) of redirected fds.
+};
 
 } // namespace lldb_dap
 

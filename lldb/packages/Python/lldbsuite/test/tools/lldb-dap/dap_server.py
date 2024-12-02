@@ -903,7 +903,7 @@ class DebugCommunication(object):
             "sourceModified": False,
         }
         if line_array is not None:
-            args_dict["lines"] = "%s" % line_array
+            args_dict["lines"] = line_array
             breakpoints = []
             for i, line in enumerate(line_array):
                 breakpoint_data = None
@@ -1150,38 +1150,42 @@ class DebugCommunication(object):
         }
         return self.send_recv(command_dict)
 
+
 class DebugAdaptorServer(DebugCommunication):
     def __init__(
         self,
         executable=None,
-        port=None,
+        launch=True,
+        connection=None,
         init_commands=[],
         log_file=None,
         env=None,
     ):
         self.process = None
-        if executable is not None:
-            adaptor_env = os.environ.copy()
-            if env is not None:
-                adaptor_env.update(env)
-
-            if log_file:
-                adaptor_env["LLDBDAP_LOG"] = log_file
-            self.process = subprocess.Popen(
-                [executable],
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                env=adaptor_env,
+        if launch:
+            self.process, connection = DebugAdaptorServer.launch(
+                executable,
+                connection=connection,
+                log_file=log_file,
+                env=env,
             )
+
+        if connection:
+            if connection.startswith("unix-connect://"):  # unix-connect:///path
+                s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                s.connect(connection.removeprefix("unix-connect://"))
+            elif connection.startswith("connection://"):  # connection://[host]:port
+                host, port = connection.removeprefix("connection://").rsplit(":", 1)
+                # create_connection with try both ipv4 and ipv6.
+                s = socket.create_connection((host.strip("[]"), int(port)))
+            else:
+                raise ValueError("invalid connection: {}".format(connection))
+            DebugCommunication.__init__(
+                self, s.makefile("rb"), s.makefile("wb"), init_commands, log_file
+            )
+        else:
             DebugCommunication.__init__(
                 self, self.process.stdout, self.process.stdin, init_commands, log_file
-            )
-        elif port is not None:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect(("127.0.0.1", port))
-            DebugCommunication.__init__(
-                self, s.makefile("r"), s.makefile("w"), init_commands
             )
 
     def get_pid(self):
@@ -1195,6 +1199,53 @@ class DebugAdaptorServer(DebugCommunication):
             self.process.terminate()
             self.process.wait()
             self.process = None
+
+    @classmethod
+    def launch(
+        cls, executable: str, /, connection=None, log_file=None, env=None
+    ) -> tuple[subprocess.Popen, str]:
+        adaptor_env = os.environ.copy()
+        if env:
+            adaptor_env.update(env)
+
+        if log_file:
+            adaptor_env["LLDBDAP_LOG"] = log_file
+
+        args = [executable]
+        bufsize = -1
+        if connection:
+            bufsize = 0
+            args.append("--connection")
+            args.append(connection)
+
+        proc = subprocess.Popen(
+            args,
+            bufsize=bufsize,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=sys.stdout,
+            env=adaptor_env,
+        )
+
+        if connection:
+            # If a conneciton is specified, lldb-dap will print the listening
+            # address once the listener is made to stdout. The listener is
+            # formatted like `tcp://host:port` or `unix:///path`.
+            expected_prefix = "Listening for: "
+            out = proc.stdout.readline().decode()
+            if not out.startswith(expected_prefix):
+                proc.kill()
+                raise ValueError(
+                    "lldb-dap failed to print listening address, expected '{}', got '{}'".format(
+                        expected_prefix, out
+                    )
+                )
+
+            # If the listener expanded into multiple addresses, use the first.
+            connection = out.removeprefix(expected_prefix).rstrip("\r\n")
+            return proc, connection
+
+        return proc, None
 
 
 def attach_options_specified(options):

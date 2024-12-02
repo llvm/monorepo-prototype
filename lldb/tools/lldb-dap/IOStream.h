@@ -22,7 +22,6 @@ typedef int SOCKET;
 #endif
 
 #include "llvm/ADT/StringRef.h"
-
 #include <fstream>
 #include <string>
 
@@ -32,17 +31,16 @@ typedef int SOCKET;
 // treat them identically.
 namespace lldb_dap {
 struct StreamDescriptor {
-  StreamDescriptor();
+  explicit StreamDescriptor();
   ~StreamDescriptor();
   StreamDescriptor(StreamDescriptor &&other);
 
   StreamDescriptor &operator=(StreamDescriptor &&other);
 
-  static StreamDescriptor from_socket(SOCKET s, bool close);
-  static StreamDescriptor from_file(int fd, bool close);
+  static StreamDescriptor from_socket(SOCKET s);
+  static StreamDescriptor from_file(int fd);
 
   bool m_is_socket = false;
-  bool m_close = false;
   union {
     int m_fd;
     SOCKET m_socket;
