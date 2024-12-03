@@ -13,6 +13,8 @@
 #ifndef LLVM_TRANSFORMS_UTILS_LOWERMATHINTRINSICS_H
 #define LLVM_TRANSFORMS_UTILS_LOWERMATHINTRINSICS_H
 
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/Module.h"
 #include <cstdint>
 #include <optional>
 
