@@ -1242,7 +1242,7 @@ class DebugAdaptorServer(DebugCommunication):
                 )
 
             # If the listener expanded into multiple addresses, use the first.
-            connection = out.removeprefix(expected_prefix).rstrip("\r\n")
+            connection = out.removeprefix(expected_prefix).rstrip("\r\n").split(",", 1)[0]
             return proc, connection
 
         return proc, None

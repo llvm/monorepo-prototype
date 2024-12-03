@@ -5042,8 +5042,7 @@ int main(int argc, char *argv[]) {
       if (log)
         *log << "configureIO failed: " << llvm::toStringWithoutConsuming(Err)
              << "\n";
-      std::cerr << "failed to configureIO: " << llvm::toString(std::move(Err))
-                << std::endl;
+      llvm::errs() << "failed to configureIO: " << Err << "\n";
       return false;
     }
 
@@ -5056,8 +5055,7 @@ int main(int argc, char *argv[]) {
         *log << "Transport Error: " << llvm::toStringWithoutConsuming(Err)
              << "\n";
 
-      std::cerr << "Transpot Error: " << llvm::toString(std::move(Err))
-                << std::endl;
+      llvm::errs() << "Transpot Error: " << Err << "\n";
 
       return false;
     }
@@ -5071,8 +5069,8 @@ int main(int argc, char *argv[]) {
   if (!connection.empty()) {
     auto maybeProtoclAndName = parseConnection(connection);
     if (auto Err = maybeProtoclAndName.takeError()) {
-      std::cerr << "Invalid connection specification "
-                << llvm::toString(std::move(Err)) << std::endl;
+      llvm::errs() << "Invalid connection specification "
+                << Err << "\n";
       return EXIT_FAILURE;
     }
 
@@ -5081,31 +5079,30 @@ int main(int argc, char *argv[]) {
     std::tie(protocol, name) = *maybeProtoclAndName;
 
     Status error;
-    std::unique_ptr<Socket> listener = Socket::Create(protocol, false, error);
+    std::unique_ptr<Socket> listener = Socket::Create(protocol, error);
     if (error.Fail()) {
-      std::cerr << "Failed to create listener for protocol "
-                << Socket::FindSchemeByProtocol(protocol)
-                << ", error: " << llvm::toString(error.takeError())
-                << std::endl;
+      llvm::errs() << "Failed to create listener for protocol "
+                   << Socket::FindSchemeByProtocol(protocol)
+                   << ", error: " << error.takeError() << "\n";
       return EXIT_FAILURE;
     }
 
     error = listener->Listen(name, /* backlog */ 5);
     if (error.Fail()) {
-      std::cerr << "Failed to listen, error: "
-                << llvm::toString(error.takeError()) << std::endl;
+      llvm::errs() << "Failed to listen, error: "
+                << error.takeError() << "\n";
       return EXIT_FAILURE;
     }
 
-    std::string address = listener->GetListeningConnectionURI();
+    std::string address = llvm::join(listener->GetListeningConnectionURI(), ", ");
 
     if (log)
       *log << "started with connection listeners " << address << "\n";
 
-    std::cout << "Listening for: " << address << std::endl;
+    llvm::outs() << "Listening for: " << address << "\n";
     // Ensure listening address are flushed for calles to retrieve the resolve
     // address.
-    std::flush(std::cout);
+    llvm::outs().flush();
 
     MainLoop mainloop;
     mainloop.RegisterSignal(
@@ -5123,15 +5120,14 @@ int main(int argc, char *argv[]) {
 
     auto handles = listener->Accept(mainloop, OnAccept);
     if (auto Err = handles.takeError()) {
-      std::cerr << "failed to register accept() with the main loop: "
-                << llvm::toString(std::move(Err)) << std::endl;
+      llvm::errs() << "failed to register accept() with the main loop: "
+                   << Err << "\n";
       return EXIT_FAILURE;
     }
 
     error = mainloop.Run();
     if (error.Fail()) {
-      std::cerr << "failed to accept()" << llvm::toString(error.takeError())
-                << std::endl;
+      llvm::errs() << "failed to accept()" << error.takeError() << "\n";
       return EXIT_FAILURE;
     }
 
