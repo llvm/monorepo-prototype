@@ -90,6 +90,10 @@ void testTemplate() {
 
   auto sub4 = s.subspan(1, 2);  // No warning
   auto sub5 = s.subspan(2);     // No warning
+
+  auto complex = s.subspan(0 + (s.size() - 2), 3);  // No warning
+
+  auto complex2 = s.subspan(100 + (s.size() - 2));  // No warning
 }
 
 // Test instantiation

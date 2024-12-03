@@ -18,108 +18,77 @@ using namespace clang::ast_matchers;
 namespace clang::tidy::readability {
 
 void UseSpanFirstLastCheck::registerMatchers(MatchFinder *Finder) {
-  // Match span::subspan calls
   const auto HasSpanType =
       hasType(hasUnqualifiedDesugaredType(recordType(hasDeclaration(
           classTemplateSpecializationDecl(hasName("::std::span"))))));
 
-  Finder->addMatcher(cxxMemberCallExpr(callee(memberExpr(hasDeclaration(
-                                           cxxMethodDecl(hasName("subspan"))))),
-                                       on(expr(HasSpanType)))
-                         .bind("subspan"),
-                     this);
+  // Match span.subspan(0, n) -> first(n)
+  Finder->addMatcher(
+      cxxMemberCallExpr(
+          callee(memberExpr(hasDeclaration(cxxMethodDecl(hasName("subspan"))))),
+          on(expr(HasSpanType).bind("span_object")),
+          hasArgument(0, integerLiteral(equals(0))),
+          hasArgument(1, expr().bind("count")), argumentCountIs(2))
+          .bind("first_subspan"),
+      this);
+
+  // Match span.subspan(size() - n) -> last(n)
+  const auto SizeCall = cxxMemberCallExpr(
+      callee(memberExpr(hasDeclaration(cxxMethodDecl(hasName("size"))))));
+
+  Finder->addMatcher(
+      cxxMemberCallExpr(
+          callee(memberExpr(hasDeclaration(cxxMethodDecl(hasName("subspan"))))),
+          on(expr(HasSpanType).bind("span_object")),
+          hasArgument(0, binaryOperator(hasOperatorName("-"), hasLHS(SizeCall),
+                                        hasRHS(expr().bind("count")))),
+          argumentCountIs(1))
+          .bind("last_subspan"),
+      this);
 }
 
 void UseSpanFirstLastCheck::check(const MatchFinder::MatchResult &Result) {
-  const auto *Call = Result.Nodes.getNodeAs<CXXMemberCallExpr>("subspan");
-  if (!Call)
+  const auto *SpanObj = Result.Nodes.getNodeAs<Expr>("span_object");
+  if (!SpanObj)
     return;
 
-  handleSubspanCall(Result, Call);
-}
+  StringRef SpanText = Lexer::getSourceText(
+      CharSourceRange::getTokenRange(SpanObj->getSourceRange()),
+      *Result.SourceManager, Result.Context->getLangOpts());
 
-void UseSpanFirstLastCheck::handleSubspanCall(
-    const MatchFinder::MatchResult &Result, const CXXMemberCallExpr *Call) {
-  unsigned NumArgs = Call->getNumArgs();
-  if (NumArgs == 0 || NumArgs > 2)
-    return;
+  if (const auto *FirstCall =
+          Result.Nodes.getNodeAs<CXXMemberCallExpr>("first_subspan")) {
+    const auto *Count = Result.Nodes.getNodeAs<Expr>("count");
+    if (!Count)
+      return;
 
-  const Expr *Offset = Call->getArg(0);
-  const Expr *Count = NumArgs > 1 ? Call->getArg(1) : nullptr;
-  auto &Context = *Result.Context;
-
-  class SubspanVisitor : public RecursiveASTVisitor<SubspanVisitor> {
-  public:
-    SubspanVisitor(const ASTContext &Context) : Context(Context) {}
-
-    TraversalKind getTraversalKind() const {
-      return TK_IgnoreUnlessSpelledInSource;
-    }
-
-    bool VisitIntegerLiteral(IntegerLiteral *IL) {
-      if (IL->getValue() == 0)
-        IsZeroOffset = true;
-      return true;
-    }
-
-    bool VisitBinaryOperator(BinaryOperator *BO) {
-      if (BO->getOpcode() == BO_Sub) {
-        if (const auto *SizeCall = dyn_cast<CXXMemberCallExpr>(BO->getLHS())) {
-          if (SizeCall->getMethodDecl()->getName() == "size") {
-            IsSizeMinusN = true;
-            SizeMinusArg = BO->getRHS();
-          }
-        }
-      }
-      return true;
-    }
-
-    bool IsZeroOffset = false;
-    bool IsSizeMinusN = false;
-    const Expr *SizeMinusArg = nullptr;
-
-  private:
-    const ASTContext &Context;
-  };
-
-  SubspanVisitor Visitor(Context);
-  Visitor.TraverseStmt(const_cast<Expr *>(Offset->IgnoreImpCasts()));
-
-  // Build replacement text
-  std::string Replacement;
-  if (Visitor.IsZeroOffset && Count) {
-    // subspan(0, count) -> first(count)
-    const StringRef CountStr = Lexer::getSourceText(
+    StringRef CountText = Lexer::getSourceText(
         CharSourceRange::getTokenRange(Count->getSourceRange()),
-        Context.getSourceManager(), Context.getLangOpts());
-    const auto *Base =
-        cast<CXXMemberCallExpr>(Call)->getImplicitObjectArgument();
-    const StringRef BaseStr = Lexer::getSourceText(
-        CharSourceRange::getTokenRange(Base->getSourceRange()),
-        Context.getSourceManager(), Context.getLangOpts());
-    Replacement = BaseStr.str() + ".first(" + CountStr.str() + ")";
-  } else if (Visitor.IsSizeMinusN && Visitor.SizeMinusArg) {
-    // subspan(size() - n) -> last(n)
-    const StringRef ArgStr = Lexer::getSourceText(
-        CharSourceRange::getTokenRange(Visitor.SizeMinusArg->getSourceRange()),
-        Context.getSourceManager(), Context.getLangOpts());
-    const auto *Base =
-        cast<CXXMemberCallExpr>(Call)->getImplicitObjectArgument();
-    const StringRef BaseStr = Lexer::getSourceText(
-        CharSourceRange::getTokenRange(Base->getSourceRange()),
-        Context.getSourceManager(), Context.getLangOpts());
-    Replacement = BaseStr.str() + ".last(" + ArgStr.str() + ")";
+        *Result.SourceManager, Result.Context->getLangOpts());
+
+    std::string Replacement =
+        SpanText.str() + ".first(" + CountText.str() + ")";
+
+    diag(FirstCall->getBeginLoc(), "prefer 'span::first()' over 'subspan()'")
+        << FixItHint::CreateReplacement(FirstCall->getSourceRange(),
+                                        Replacement);
   }
 
-  if (!Replacement.empty()) {
-    if (Visitor.IsZeroOffset && Count) {
-      diag(Call->getBeginLoc(), "prefer 'span::first()' over 'subspan()'")
-          << FixItHint::CreateReplacement(Call->getSourceRange(), Replacement);
-    } else {
-      diag(Call->getBeginLoc(), "prefer 'span::last()' over 'subspan()'")
-          << FixItHint::CreateReplacement(Call->getSourceRange(), Replacement);
-    }
+  if (const auto *LastCall =
+          Result.Nodes.getNodeAs<CXXMemberCallExpr>("last_subspan")) {
+    const auto *Count = Result.Nodes.getNodeAs<Expr>("count");
+    if (!Count)
+      return;
+
+    StringRef CountText = Lexer::getSourceText(
+        CharSourceRange::getTokenRange(Count->getSourceRange()),
+        *Result.SourceManager, Result.Context->getLangOpts());
+
+    std::string Replacement = SpanText.str() + ".last(" + CountText.str() + ")";
+
+    diag(LastCall->getBeginLoc(), "prefer 'span::last()' over 'subspan()'")
+        << FixItHint::CreateReplacement(LastCall->getSourceRange(),
+                                        Replacement);
   }
 }
-
 } // namespace clang::tidy::readability

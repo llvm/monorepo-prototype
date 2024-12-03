@@ -36,10 +36,6 @@ public:
   bool isLanguageVersionSupported(const LangOptions &LangOpts) const override {
     return LangOpts.CPlusPlus20;
   }
-
-private:
-  void handleSubspanCall(const ast_matchers::MatchFinder::MatchResult &Result,
-                         const CXXMemberCallExpr *Call);
 };
 
 } // namespace clang::tidy::readability
