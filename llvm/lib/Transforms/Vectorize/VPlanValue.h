@@ -360,7 +360,6 @@ public:
     VPEVLBasedIVPHISC,
     VPFirstOrderRecurrencePHISC,
     VPWidenIntOrFpInductionSC,
-    VPWidenIntOrFpInductionPHISC,
     VPWidenPointerInductionSC,
     VPScalarPHISC,
     VPReductionPHISC,

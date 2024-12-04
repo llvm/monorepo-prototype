@@ -1969,7 +1969,8 @@ expandVPWidenIntOrFpInduction(VPWidenIntOrFpInductionRecipe *WidenIVR,
 
   // Create the widened phi of the vector IV.
   auto *WidePHI =
-      new VPWidenIntOrFpInductionPHIRecipe(IV, Init, WidenIVR->getDebugLoc());
+      new VPWidenPHIRecipe(IV, nullptr, WidenIVR->getDebugLoc(), "vec.ind");
+  WidePHI->addIncoming(Init, Plan->getVectorPreheader());
   WidePHI->insertBefore(WidenIVR);
 
   // Create the backedge value for the vector IV.
@@ -1997,7 +1998,7 @@ expandVPWidenIntOrFpInduction(VPWidenIntOrFpInductionRecipe *WidenIVR,
   auto *Next = Builder.createNaryOp(AddOp, {Prev, Inc}, FMFs,
                                     WidenIVR->getDebugLoc(), "vec.ind.next");
 
-  WidePHI->addOperand(Next);
+  WidePHI->addIncoming(Next, ExitingBB);
 
   WidenIVR->replaceAllUsesWith(WidePHI);
   WidenIVR->eraseFromParent();

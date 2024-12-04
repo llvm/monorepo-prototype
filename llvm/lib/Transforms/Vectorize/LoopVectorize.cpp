@@ -2622,6 +2622,19 @@ static void replaceVPBBWithIRVPBB(VPBasicBlock *VPBB, BasicBlock *IRBB) {
   }
 
   VPBlockUtils::reassociateBlocks(VPBB, IRVPBB);
+
+  // Replace any references of VPBB in widened phi incoming blocks with IRBB.
+  for (auto *BB : IRVPBB->successors()) {
+    while (auto *Region = dyn_cast<VPRegionBlock>(BB))
+      BB = Region->getEntry();
+
+    for (auto &R : *cast<VPBasicBlock>(BB))
+      if (auto *WidenPhiR = dyn_cast<VPWidenPHIRecipe>(&R))
+        for (unsigned I = 0; I < WidenPhiR->getNumOperands(); I++)
+          if (WidenPhiR->getIncomingBlock(I) == VPBB)
+            WidenPhiR->setIncomingBlock(I, IRVPBB);
+  }
+
   // VPBB is now dead and will be cleaned up when the plan gets destroyed.
 }
 
@@ -2978,8 +2991,7 @@ LoopVectorizationCostModel::getVectorIntrinsicCost(CallInst *CI,
 
 void InnerLoopVectorizer::fixVectorizedLoop(VPTransformState &State) {
   // Fix widened non-induction PHIs by setting up the PHI operands.
-  if (EnableVPlanNativePath)
-    fixNonInductionPHIs(State);
+  fixNonInductionPHIs(State);
 
   // Forget the original basic block.
   PSE.getSE()->forgetLoop(OrigLoop);
