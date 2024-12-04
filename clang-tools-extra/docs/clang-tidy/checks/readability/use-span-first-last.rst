@@ -9,12 +9,12 @@ to provide more expressive alternatives to common subspan operations.
 
 Covered scenarios:
 
-=============================== ============
-Expression                      Replacement
-------------------------------- ------------
-``s.subspan(0, n)``            ``s.first(n)``
-``s.subspan(s.size() - n)``    ``s.last(n)``
-=============================== ============
+=========================== ============
+Expression                  Replacement
+--------------------------- ------------
+``s.subspan(0, n)``         ``s.first(n)``
+``s.subspan(s.size() - n)`` ``s.last(n)``
+=========================== ============
 
 
 Non-zero offset with count (like ``subspan(1, n)``) or offset-only calls 
