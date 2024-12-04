@@ -13,12 +13,13 @@
 #ifndef LLVM_TRANSFORMS_UTILS_LOWERMATHINTRINSICS_H
 #define LLVM_TRANSFORMS_UTILS_LOWERMATHINTRINSICS_H
 
-#include "llvm/IR/Instructions.h"
-#include "llvm/IR/Module.h"
 #include <cstdint>
 #include <optional>
 
 namespace llvm {
+
+class CallInst;
+class Module;
 
 /// Lower \p CI as a loop. \p CI is a unary math intrinsic with a scalable
 /// vector argument and is deleted and replaced with a loop.

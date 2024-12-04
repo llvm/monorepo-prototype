@@ -1,4 +1,4 @@
-//===- LowerMathIntrinsics.cpp ---------------------------------*- C++ -*--===//
+//===- LowerMathIntrinsics.cpp --------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -32,7 +32,7 @@ bool llvm::lowerUnaryMathIntrinsicWithScalableVecArgAsLoop(Module &M,
   BasicBlock *LoopBB = BasicBlock::Create(Ctx, "", ParentFunc, PostLoopBB);
   PreLoopBB->getTerminator()->setSuccessor(0, LoopBB);
 
-  // loop preheader
+  // Loop preheader
   IRBuilder<> PreLoopBuilder(PreLoopBB->getTerminator());
   Value *VScale = PreLoopBuilder.CreateVScale(
       ConstantInt::get(PreLoopBuilder.getInt64Ty(), 1));
@@ -40,7 +40,7 @@ bool llvm::lowerUnaryMathIntrinsicWithScalableVecArgAsLoop(Module &M,
                               ScalableTy->getMinNumElements());
   Value *LoopEnd = PreLoopBuilder.CreateMul(VScale, N);
 
-  // loop body
+  // Loop body
   IRBuilder<> LoopBuilder(LoopBB);
   Type *Int64Ty = LoopBuilder.getInt64Ty();
 
