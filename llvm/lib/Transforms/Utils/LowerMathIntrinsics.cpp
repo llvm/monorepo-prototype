@@ -15,13 +15,9 @@
 
 using namespace llvm;
 
-bool llvm::lowerUnaryMathIntrinsicWithScalableVecArgAsLoop(Module &M,
-                                                           CallInst *CI) {
-  ScalableVectorType *ScalableTy =
-      dyn_cast<ScalableVectorType>(CI->getArgOperand(0)->getType());
-  if (!ScalableTy) {
-    return false;
-  }
+bool llvm::lowerUnaryMathIntrinsicWithVecArgAsLoop(Module &M, CallInst *CI) {
+  Type *ArgTy = CI->getArgOperand(0)->getType();
+  VectorType *VecTy = cast<VectorType>(ArgTy);
 
   BasicBlock *PreLoopBB = CI->getParent();
   BasicBlock *PostLoopBB = nullptr;
@@ -34,11 +30,19 @@ bool llvm::lowerUnaryMathIntrinsicWithScalableVecArgAsLoop(Module &M,
 
   // Loop preheader
   IRBuilder<> PreLoopBuilder(PreLoopBB->getTerminator());
-  Value *VScale = PreLoopBuilder.CreateVScale(
-      ConstantInt::get(PreLoopBuilder.getInt64Ty(), 1));
-  Value *N = ConstantInt::get(PreLoopBuilder.getInt64Ty(),
-                              ScalableTy->getMinNumElements());
-  Value *LoopEnd = PreLoopBuilder.CreateMul(VScale, N);
+  Value *LoopEnd = nullptr;
+  if (VecTy->isScalableTy()) {
+    ScalableVectorType *ScalableVecTy = cast<ScalableVectorType>(VecTy);
+    Value *VScale = PreLoopBuilder.CreateVScale(
+        ConstantInt::get(PreLoopBuilder.getInt64Ty(), 1));
+    Value *N = ConstantInt::get(PreLoopBuilder.getInt64Ty(),
+                                ScalableVecTy->getMinNumElements());
+    LoopEnd = PreLoopBuilder.CreateMul(VScale, N);
+  } else {
+    FixedVectorType *FixedVecTy = cast<FixedVectorType>(VecTy);
+    LoopEnd = ConstantInt::get(PreLoopBuilder.getInt64Ty(),
+                               FixedVecTy->getNumElements());
+  }
 
   // Loop body
   IRBuilder<> LoopBuilder(LoopBB);
@@ -46,12 +50,12 @@ bool llvm::lowerUnaryMathIntrinsicWithScalableVecArgAsLoop(Module &M,
 
   PHINode *LoopIndex = LoopBuilder.CreatePHI(Int64Ty, 2);
   LoopIndex->addIncoming(ConstantInt::get(Int64Ty, 0U), PreLoopBB);
-  PHINode *Vec = LoopBuilder.CreatePHI(ScalableTy, 2);
+  PHINode *Vec = LoopBuilder.CreatePHI(VecTy, 2);
   Vec->addIncoming(CI->getArgOperand(0), PreLoopBB);
 
   Value *Elem = LoopBuilder.CreateExtractElement(Vec, LoopIndex);
-  Function *Exp = Intrinsic::getOrInsertDeclaration(
-      &M, CI->getIntrinsicID(), ScalableTy->getElementType());
+  Function *Exp = Intrinsic::getOrInsertDeclaration(&M, CI->getIntrinsicID(),
+                                                    VecTy->getElementType());
   Value *Res = LoopBuilder.CreateCall(Exp, Elem);
   Value *NewVec = LoopBuilder.CreateInsertElement(Vec, Res, LoopIndex);
   Vec->addIncoming(NewVec, LoopBB);

@@ -21,9 +21,9 @@ namespace llvm {
 class CallInst;
 class Module;
 
-/// Lower \p CI as a loop. \p CI is a unary math intrinsic with a scalable
-/// vector argument and is deleted and replaced with a loop.
-bool lowerUnaryMathIntrinsicWithScalableVecArgAsLoop(Module &M, CallInst *CI);
+/// Lower \p CI as a loop. \p CI is a unary math intrinsic with a vector
+/// argument and is deleted and replaced with a loop.
+bool lowerUnaryMathIntrinsicWithVecArgAsLoop(Module &M, CallInst *CI);
 
 } // namespace llvm
 

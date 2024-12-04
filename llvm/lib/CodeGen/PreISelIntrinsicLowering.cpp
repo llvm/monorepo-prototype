@@ -456,7 +456,11 @@ bool PreISelIntrinsicLowering::lowerIntrinsics(Module &M) const {
       break;
     case Intrinsic::exp:
       Changed |= forEachCall(F, [&](CallInst *CI) {
-        return lowerUnaryMathIntrinsicWithScalableVecArgAsLoop(M, CI);
+        // TODO: Check legality
+        if (!CI->getArgOperand(0)->getType()->isVectorTy()) {
+          return false;
+        }
+        return lowerUnaryMathIntrinsicWithVecArgAsLoop(M, CI);
       });
       break;
     }
