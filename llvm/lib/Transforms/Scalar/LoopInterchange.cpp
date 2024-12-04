@@ -69,6 +69,9 @@ using CharMatrix = std::vector<std::vector<char>>;
 // Maximum number of dependencies that can be handled in the dependency matrix.
 static const unsigned MaxMemInstrCount = 100;
 
+// Minimum loop depth supported.
+static const unsigned MinLoopNestDepth = 2;
+
 // Maximum loop depth supported.
 static const unsigned MaxLoopNestDepth = 10;
 
@@ -239,10 +242,12 @@ static void populateWorklist(Loop &L, LoopVector &LoopList) {
   LoopList.push_back(CurrentLoop);
 }
 
-static bool hasMinimumLoopDepth(SmallVectorImpl<Loop *> &LoopList) {
+static bool hasSupportedLoopDepth(SmallVectorImpl<Loop *> &LoopList) {
   unsigned LoopNestDepth = LoopList.size();
-  if (LoopNestDepth < 2) {
-    LLVM_DEBUG(dbgs() << "Loop doesn't contain minimum nesting level.\n");
+  if (LoopNestDepth < MinLoopNestDepth || LoopNestDepth > MaxLoopNestDepth) {
+    LLVM_DEBUG(dbgs() << "Unsupported depth of loop nest " << LoopNestDepth
+                      << " should be [" << MinLoopNestDepth << ", "
+                      << MaxLoopNestDepth << "]\n");
     return false;
   }
   return true;
@@ -430,15 +435,10 @@ struct LoopInterchange {
   bool processLoopList(SmallVectorImpl<Loop *> &LoopList) {
     bool Changed = false;
 
-    // Ensure minimum loop nest depth.
-    assert(hasMinimumLoopDepth(LoopList) && "Loop nest does not meet minimum depth.");
+    // Ensure proper loop nest depth.
+    assert(hasSupportedLoopDepth(LoopList) && "Unsupported depth of loop nest.");
 
     unsigned LoopNestDepth = LoopList.size();
-    if (LoopNestDepth > MaxLoopNestDepth) {
-      LLVM_DEBUG(dbgs() << "Cannot handle loops of depth greater than "
-                        << MaxLoopNestDepth << "\n");
-      return false;
-    }
     if (!isComputableLoopNest(LoopList)) {
       LLVM_DEBUG(dbgs() << "Not valid loop candidate for interchange\n");
       return false;
@@ -1725,8 +1725,8 @@ PreservedAnalyses LoopInterchangePass::run(LoopNest &LN,
                                            LPMUpdater &U) {
   Function &F = *LN.getParent();
   SmallVector<Loop *, 8> LoopList(LN.getLoops());
-  // Ensure minimum depth of the loop nest to do the interchange.
-  if (!hasMinimumLoopDepth(LoopList))
+  // Ensure proper depth of the loop nest to do the interchange.
+  if (!hasSupportedLoopDepth(LoopList))
     return PreservedAnalyses::all();
 
   DependenceInfo DI(&F, &AR.AA, &AR.SE, &AR.LI);
