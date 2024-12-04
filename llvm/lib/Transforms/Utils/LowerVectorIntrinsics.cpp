@@ -1,4 +1,4 @@
-//===- LowerMathIntrinsics.cpp --------------------------------------------===//
+//===- LowerVectorIntrinsics.cpp ------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -6,16 +6,16 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "llvm/Transforms/Utils/LowerMathIntrinsics.h"
+#include "llvm/Transforms/Utils/LowerVectorIntrinsics.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/IntrinsicInst.h"
 #include "llvm/Support/Debug.h"
 
-#define DEBUG_TYPE "lower-math-intrinsics"
+#define DEBUG_TYPE "lower-vector-intrinsics"
 
 using namespace llvm;
 
-bool llvm::lowerUnaryMathIntrinsicWithVecArgAsLoop(Module &M, CallInst *CI) {
+bool llvm::lowerUnaryVectorIntrinsicAsLoop(Module &M, CallInst *CI) {
   Type *ArgTy = CI->getArgOperand(0)->getType();
   VectorType *VecTy = cast<VectorType>(ArgTy);
 

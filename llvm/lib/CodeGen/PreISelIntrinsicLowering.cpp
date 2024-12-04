@@ -32,8 +32,8 @@
 #include "llvm/Support/Casting.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/Scalar/LowerConstantIntrinsics.h"
-#include "llvm/Transforms/Utils/LowerMathIntrinsics.h"
 #include "llvm/Transforms/Utils/LowerMemIntrinsics.h"
+#include "llvm/Transforms/Utils/LowerVectorIntrinsics.h"
 
 using namespace llvm;
 
@@ -456,11 +456,11 @@ bool PreISelIntrinsicLowering::lowerIntrinsics(Module &M) const {
       break;
     case Intrinsic::exp:
       Changed |= forEachCall(F, [&](CallInst *CI) {
-        // TODO: Check legality
+        // TODO: Check legality and check if scalable
         if (!CI->getArgOperand(0)->getType()->isVectorTy()) {
           return false;
         }
-        return lowerUnaryMathIntrinsicWithVecArgAsLoop(M, CI);
+        return lowerUnaryVectorIntrinsicAsLoop(M, CI);
       });
       break;
     }
