@@ -31,8 +31,7 @@ bool llvm::lowerUnaryVectorIntrinsicAsLoop(Module &M, CallInst *CI) {
   // Loop preheader
   IRBuilder<> PreLoopBuilder(PreLoopBB->getTerminator());
   Value *LoopEnd = nullptr;
-  if (VecTy->isScalableTy()) {
-    ScalableVectorType *ScalableVecTy = cast<ScalableVectorType>(VecTy);
+  if (auto *ScalableVecTy = dyn_cast<ScalableVectorType>(VecTy)) {
     Value *VScale = PreLoopBuilder.CreateVScale(
         ConstantInt::get(PreLoopBuilder.getInt64Ty(), 1));
     Value *N = ConstantInt::get(PreLoopBuilder.getInt64Ty(),
