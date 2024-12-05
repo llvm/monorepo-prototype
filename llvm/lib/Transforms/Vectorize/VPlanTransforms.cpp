@@ -661,6 +661,60 @@ static void recursivelyDeleteDeadRecipes(VPValue *V) {
   }
 }
 
+void VPlanTransforms::optimizeForTCAndVF(VPlan &Plan, unsigned TC,
+                                         ElementCount BestVF) {
+  assert(Plan.hasVF(BestVF) && "BestVF is not available in Plan");
+  if (!TC || !BestVF.isFixed())
+    return;
+
+  // Calculate the widest type required for known TC and VF.
+  uint64_t Width = BestVF.getKnownMinValue();
+  uint64_t MaxVal = alignTo(TC, Width) - 1;
+  unsigned MaxActiveBits = Log2_64_Ceil(MaxVal);
+  unsigned NewBitWidth = std::max<unsigned>(PowerOf2Ceil(MaxActiveBits), 8);
+  LLVMContext &Ctx = Plan.getCanonicalIV()->getScalarType()->getContext();
+  auto *NewIVTy = IntegerType::get(Ctx, NewBitWidth);
+
+  bool MadeChange = false;
+
+  VPBasicBlock *HeaderVPBB = Plan.getVectorLoopRegion()->getEntryBasicBlock();
+  for (VPRecipeBase &Phi : HeaderVPBB->phis()) {
+    auto *WideIV = dyn_cast<VPWidenIntOrFpInductionRecipe>(&Phi);
+    if (!WideIV || !WideIV->isCanonical())
+      continue;
+
+    if (WideIV->hasMoreThanOneUniqueUser())
+      continue;
+
+    // Currently only handle cases where the single user is a header-mask
+    // comparison with the backedge-taken-count.
+    VPValue *Bound;
+    using namespace VPlanPatternMatch;
+    auto *Cmp = dyn_cast<VPInstruction>(*WideIV->user_begin());
+    if (!Cmp ||
+        !match(Cmp, m_Binary<Instruction::ICmp>(m_Specific(WideIV),
+                                                m_VPValue(Bound))) ||
+        Bound != Plan.getOrCreateBackedgeTakenCount())
+      continue;
+
+    if (NewIVTy == WideIV->getScalarType())
+      continue;
+
+    // Update IV operands and comparison bound to use new narrower type.
+    auto *NewStart = Plan.getOrAddLiveIn(ConstantInt::get(NewIVTy, 0));
+    WideIV->setStartValue(NewStart);
+    auto *NewStep = Plan.getOrAddLiveIn(ConstantInt::get(NewIVTy, 1));
+    WideIV->setStepValue(NewStep);
+    auto *NewBound = Plan.getOrAddLiveIn(ConstantInt::get(NewIVTy, TC - 1));
+    Cmp->setOperand(1, NewBound);
+
+    MadeChange = true;
+  }
+
+  if (MadeChange)
+    Plan.setVF(BestVF);
+}
+
 void VPlanTransforms::optimizeForVFAndUF(VPlan &Plan, ElementCount BestVF,
                                          unsigned BestUF,
                                          PredicatedScalarEvolution &PSE) {

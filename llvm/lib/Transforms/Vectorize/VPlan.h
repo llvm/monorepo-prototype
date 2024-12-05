@@ -2150,6 +2150,9 @@ public:
   VPValue *getStepValue() { return getOperand(1); }
   const VPValue *getStepValue() const { return getOperand(1); }
 
+  /// Update the start value of the recipe.
+  void setStepValue(VPValue *V) { setOperand(1, V); }
+
   VPValue *getVFValue() { return getOperand(2); }
   const VPValue *getVFValue() const { return getOperand(2); }
 

@@ -15,6 +15,7 @@
 
 #include "VPlan.h"
 #include "llvm/ADT/STLFunctionalExtras.h"
+#include "llvm/Support/TypeSize.h"
 
 namespace llvm {
 
@@ -57,6 +58,9 @@ struct VPlanTransforms {
   static void optimizeForVFAndUF(VPlan &Plan, ElementCount BestVF,
                                  unsigned BestUF,
                                  PredicatedScalarEvolution &PSE);
+
+  /// Optimize \p Plan based on \p TC and \p BestVF.
+  static void optimizeForTCAndVF(VPlan &Plan, unsigned TC, ElementCount BestVF);
 
   /// Apply VPlan-to-VPlan optimizations to \p Plan, including induction recipe
   /// optimizations, dead recipe removal, replicate region optimizations and
