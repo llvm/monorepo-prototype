@@ -186,12 +186,12 @@ entry:
   ret i32 %c
 }
 
-; FIXME: Should preserve metadata on loads, except !noundef and !invariant.load.
+; Preserve metadata on loads, except !noundef and !invariant.load.
 define ptr @preserve_load_metadata_after_select_transform1(i1 %c, ptr dereferenceable(8) %a, ptr dereferenceable(8) %b) {
 ; CHECK-LABEL: @preserve_load_metadata_after_select_transform1(
 ; CHECK-NEXT:  entry:
-; CHECK-NEXT:    [[B_VAL:%.*]] = load ptr, ptr [[B:%.*]], align 1
-; CHECK-NEXT:    [[A_VAL:%.*]] = load ptr, ptr [[A:%.*]], align 1
+; CHECK-NEXT:    [[B_VAL:%.*]] = load ptr, ptr [[B:%.*]], align 1, !tbaa [[TBAA0]], !dereferenceable [[META8]], !llvm.access.group [[META6]]
+; CHECK-NEXT:    [[A_VAL:%.*]] = load ptr, ptr [[A:%.*]], align 1, !tbaa [[TBAA0]], !dereferenceable [[META8]], !llvm.access.group [[META6]]
 ; CHECK-NEXT:    [[L_SEL:%.*]] = select i1 [[C:%.*]], ptr [[B_VAL]], ptr [[A_VAL]]
 ; CHECK-NEXT:    ret ptr [[L_SEL]]
 ;
