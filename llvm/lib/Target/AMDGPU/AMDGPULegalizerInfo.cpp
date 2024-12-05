@@ -253,7 +253,8 @@ static bool isRegisterType(const GCNSubtarget &ST, LLT Ty) {
 
 // Any combination of 32 or 64-bit elements up the maximum register size, and
 // multiples of v2s16.
-static LegalityPredicate isRegisterType(const GCNSubtarget &ST, unsigned TypeIdx) {
+static LegalityPredicate isRegisterType(const GCNSubtarget &ST,
+                                        unsigned TypeIdx) {
   return [=, &ST](const LegalityQuery &Query) {
     return isRegisterType(ST, Query.Types[TypeIdx]);
   };
@@ -262,7 +263,8 @@ static LegalityPredicate isRegisterType(const GCNSubtarget &ST, unsigned TypeIdx
 // RegisterType that doesn't have a corresponding RegClass.
 // TODO: Once `isRegisterType` is replaced with `isRegisterClassType` this
 // should be removed.
-static LegalityPredicate isIllegalRegisterType(const GCNSubtarget &ST, unsigned TypeIdx) {
+static LegalityPredicate isIllegalRegisterType(const GCNSubtarget &ST,
+                                               unsigned TypeIdx) {
   return [=, &ST](const LegalityQuery &Query) {
     LLT Ty = Query.Types[TypeIdx];
     return isRegisterType(ST, Ty) &&
@@ -356,10 +358,11 @@ static bool isRegisterClassType(const GCNSubtarget &ST, LLT Ty) {
   return is_contained(AllS32Vectors, Ty) || is_contained(AllS64Vectors, Ty) ||
          is_contained(AllScalarTypes, Ty) ||
          (ST.useRealTrue16Insts() && Ty == S16) ||
-		 is_contained(AllS16Vectors, Ty);
+         is_contained(AllS16Vectors, Ty);
 }
 
-static LegalityPredicate isRegisterClassType(const GCNSubtarget &ST, unsigned TypeIdx) {
+static LegalityPredicate isRegisterClassType(const GCNSubtarget &ST,
+                                             unsigned TypeIdx) {
   return [&ST, TypeIdx](const LegalityQuery &Query) {
     return isRegisterClassType(ST, Query.Types[TypeIdx]);
   };
@@ -1782,7 +1785,7 @@ AMDGPULegalizerInfo::AMDGPULegalizerInfo(const GCNSubtarget &ST_,
     unsigned IdxTypeIdx = 2;
 
     getActionDefinitionsBuilder(Op)
-      .customIf([=](const LegalityQuery &Query) {
+        .customIf([=](const LegalityQuery &Query) {
           const LLT EltTy = Query.Types[EltTypeIdx];
           const LLT VecTy = Query.Types[VecTypeIdx];
           const LLT IdxTy = Query.Types[IdxTypeIdx];
@@ -1803,36 +1806,37 @@ AMDGPULegalizerInfo::AMDGPULegalizerInfo(const GCNSubtarget &ST_,
                   IdxTy.getSizeInBits() == 32 &&
                   isLegalVecType;
         })
-      .bitcastIf(all(sizeIsMultipleOf32(VecTypeIdx), scalarOrEltNarrowerThan(VecTypeIdx, 32)),
-                 bitcastToVectorElement32(VecTypeIdx))
-      //.bitcastIf(vectorSmallerThan(1, 32), bitcastToScalar(1))
-      .bitcastIf(
-        all(sizeIsMultipleOf32(VecTypeIdx), scalarOrEltWiderThan(VecTypeIdx, 64)),
-        [=](const LegalityQuery &Query) {
-          // For > 64-bit element types, try to turn this into a 64-bit
-          // element vector since we may be able to do better indexing
-          // if this is scalar. If not, fall back to 32.
-          const LLT EltTy = Query.Types[EltTypeIdx];
-          const LLT VecTy = Query.Types[VecTypeIdx];
-          const unsigned DstEltSize = EltTy.getSizeInBits();
-          const unsigned VecSize = VecTy.getSizeInBits();
+        .bitcastIf(all(sizeIsMultipleOf32(VecTypeIdx),
+                       scalarOrEltNarrowerThan(VecTypeIdx, 32)),
+                   bitcastToVectorElement32(VecTypeIdx))
+        //.bitcastIf(vectorSmallerThan(1, 32), bitcastToScalar(1))
+        .bitcastIf(all(sizeIsMultipleOf32(VecTypeIdx),
+                       scalarOrEltWiderThan(VecTypeIdx, 64)),
+                   [=](const LegalityQuery &Query) {
+                     // For > 64-bit element types, try to turn this into a
+                     // 64-bit element vector since we may be able to do better
+                     // indexing if this is scalar. If not, fall back to 32.
+                     const LLT EltTy = Query.Types[EltTypeIdx];
+                     const LLT VecTy = Query.Types[VecTypeIdx];
+                     const unsigned DstEltSize = EltTy.getSizeInBits();
+                     const unsigned VecSize = VecTy.getSizeInBits();
 
-          const unsigned TargetEltSize = DstEltSize % 64 == 0 ? 64 : 32;
-          return std::pair(
-              VecTypeIdx,
-              LLT::fixed_vector(VecSize / TargetEltSize, TargetEltSize));
-        })
-      .clampScalar(EltTypeIdx, S32, S64)
-      .clampScalar(VecTypeIdx, S32, S64)
-      .clampScalar(IdxTypeIdx, S32, S32)
-      .clampMaxNumElements(VecTypeIdx, S32, 32)
-      // TODO: Clamp elements for 64-bit vectors?
-      .moreElementsIf(
-        isIllegalRegisterType(ST, VecTypeIdx),
-        moreElementsToNextExistingRegClass(VecTypeIdx))
-      // It should only be necessary with variable indexes.
-      // As a last resort, lower to the stack
-      .lower();
+                     const unsigned TargetEltSize =
+                         DstEltSize % 64 == 0 ? 64 : 32;
+                     return std::pair(VecTypeIdx,
+                                      LLT::fixed_vector(VecSize / TargetEltSize,
+                                                        TargetEltSize));
+                   })
+        .clampScalar(EltTypeIdx, S32, S64)
+        .clampScalar(VecTypeIdx, S32, S64)
+        .clampScalar(IdxTypeIdx, S32, S32)
+        .clampMaxNumElements(VecTypeIdx, S32, 32)
+        // TODO: Clamp elements for 64-bit vectors?
+        .moreElementsIf(isIllegalRegisterType(ST, VecTypeIdx),
+                        moreElementsToNextExistingRegClass(VecTypeIdx))
+        // It should only be necessary with variable indexes.
+        // As a last resort, lower to the stack
+        .lower();
   }
 
   getActionDefinitionsBuilder(G_EXTRACT_VECTOR_ELT)
@@ -1879,15 +1883,15 @@ AMDGPULegalizerInfo::AMDGPULegalizerInfo(const GCNSubtarget &ST_,
 
   }
 
-  auto &BuildVector = getActionDefinitionsBuilder(G_BUILD_VECTOR)
-    .legalForCartesianProduct(AllS32Vectors, {S32})
-    .legalForCartesianProduct(AllS64Vectors, {S64})
-    .clampNumElements(0, V16S32, V32S32)
-    .clampNumElements(0, V2S64, V16S64)
-    .fewerElementsIf(isWideVec16(0), changeTo(0, V2S16))
-    .moreElementsIf(
-      isIllegalRegisterType(ST, 0),
-      moreElementsToNextExistingRegClass(0));
+  auto &BuildVector =
+      getActionDefinitionsBuilder(G_BUILD_VECTOR)
+          .legalForCartesianProduct(AllS32Vectors, {S32})
+          .legalForCartesianProduct(AllS64Vectors, {S64})
+          .clampNumElements(0, V16S32, V32S32)
+          .clampNumElements(0, V2S64, V16S64)
+          .fewerElementsIf(isWideVec16(0), changeTo(0, V2S16))
+          .moreElementsIf(isIllegalRegisterType(ST, 0),
+                          moreElementsToNextExistingRegClass(0));
 
   if (ST.hasScalarPackInsts()) {
     BuildVector
@@ -1911,10 +1915,10 @@ AMDGPULegalizerInfo::AMDGPULegalizerInfo(const GCNSubtarget &ST_,
 
   // FIXME: Clamp maximum size
   getActionDefinitionsBuilder(G_CONCAT_VECTORS)
-    .legalIf(all(isRegisterType(ST, 0), isRegisterType(ST, 1)))
-    .clampMaxNumElements(0, S32, 32)
-    .clampMaxNumElements(1, S16, 2) // TODO: Make 4?
-    .clampMaxNumElements(0, S16, 64);
+      .legalIf(all(isRegisterType(ST, 0), isRegisterType(ST, 1)))
+      .clampMaxNumElements(0, S32, 32)
+      .clampMaxNumElements(1, S16, 2) // TODO: Make 4?
+      .clampMaxNumElements(0, S16, 64);
 
   getActionDefinitionsBuilder(G_SHUFFLE_VECTOR).lower();
 
@@ -1935,34 +1939,40 @@ AMDGPULegalizerInfo::AMDGPULegalizerInfo(const GCNSubtarget &ST_,
       return false;
     };
 
-    auto &Builder = getActionDefinitionsBuilder(Op)
-      .legalIf(all(isRegisterType(ST, 0), isRegisterType(ST, 1)))
-      .lowerFor({{S16, V2S16}})
-      .lowerIf([=](const LegalityQuery &Query) {
-          const LLT BigTy = Query.Types[BigTyIdx];
-          return BigTy.getSizeInBits() == 32;
-        })
-      // Try to widen to s16 first for small types.
-      // TODO: Only do this on targets with legal s16 shifts
-      .minScalarOrEltIf(scalarNarrowerThan(LitTyIdx, 16), LitTyIdx, S16)
-      .widenScalarToNextPow2(LitTyIdx, /*Min*/ 16)
-      .moreElementsIf(isSmallOddVector(BigTyIdx), oneMoreElement(BigTyIdx))
-      .fewerElementsIf(all(typeIs(0, S16), vectorWiderThan(1, 32),
-                           elementTypeIs(1, S16)),
-                       changeTo(1, V2S16))
-      // Clamp the little scalar to s8-s256 and make it a power of 2. It's not
-      // worth considering the multiples of 64 since 2*192 and 2*384 are not
-      // valid.
-      .clampScalar(LitTyIdx, S32, S512)
-      .widenScalarToNextPow2(LitTyIdx, /*Min*/ 32)
-      // Break up vectors with weird elements into scalars
-      .fewerElementsIf(
-        [=](const LegalityQuery &Query) { return notValidElt(Query, LitTyIdx); },
-        scalarize(0))
-      .fewerElementsIf(
-        [=](const LegalityQuery &Query) { return notValidElt(Query, BigTyIdx); },
-        scalarize(1))
-      .clampScalar(BigTyIdx, S32, MaxScalar);
+    auto &Builder =
+        getActionDefinitionsBuilder(Op)
+            .legalIf(all(isRegisterType(ST, 0), isRegisterType(ST, 1)))
+            .lowerFor({{S16, V2S16}})
+            .lowerIf([=](const LegalityQuery &Query) {
+              const LLT BigTy = Query.Types[BigTyIdx];
+              return BigTy.getSizeInBits() == 32;
+            })
+            // Try to widen to s16 first for small types.
+            // TODO: Only do this on targets with legal s16 shifts
+            .minScalarOrEltIf(scalarNarrowerThan(LitTyIdx, 16), LitTyIdx, S16)
+            .widenScalarToNextPow2(LitTyIdx, /*Min*/ 16)
+            .moreElementsIf(isSmallOddVector(BigTyIdx),
+                            oneMoreElement(BigTyIdx))
+            .fewerElementsIf(all(typeIs(0, S16), vectorWiderThan(1, 32),
+                                 elementTypeIs(1, S16)),
+                             changeTo(1, V2S16))
+            // Clamp the little scalar to s8-s256 and make it a power of 2. It's
+            // not worth considering the multiples of 64 since 2*192 and 2*384
+            // are not valid.
+            .clampScalar(LitTyIdx, S32, S512)
+            .widenScalarToNextPow2(LitTyIdx, /*Min*/ 32)
+            // Break up vectors with weird elements into scalars
+            .fewerElementsIf(
+                [=](const LegalityQuery &Query) {
+                  return notValidElt(Query, LitTyIdx);
+                },
+                scalarize(0))
+            .fewerElementsIf(
+                [=](const LegalityQuery &Query) {
+                  return notValidElt(Query, BigTyIdx);
+                },
+                scalarize(1))
+            .clampScalar(BigTyIdx, S32, MaxScalar);
 
     if (Op == G_MERGE_VALUES) {
       Builder.widenScalarIf(
