@@ -143,7 +143,7 @@ New checks
   causes cross-compiler incompatibility.
 
 - New :doc:`readability-use-span-first-last
-  <clang-tidy/checks/readability/readability-use-span-first-last>` check.
+  <clang-tidy/checks/readability/use-span-first-last>` check.
 
   Suggests using ``std::span::first()`` and ``std::span::last()`` member functions instead of
   equivalent ``subspan()``.

@@ -33,8 +33,11 @@ void UseSpanFirstLastCheck::registerMatchers(MatchFinder *Finder) {
       this);
 
   // Match span.subspan(size() - n) -> last(n)
-  const auto SizeCall = cxxMemberCallExpr(
-      callee(memberExpr(hasDeclaration(cxxMethodDecl(hasName("size"))))));
+  const auto SizeCall = anyOf(
+      cxxMemberCallExpr(
+          callee(memberExpr(hasDeclaration(cxxMethodDecl(hasName("size")))))),
+      callExpr(callee(
+          functionDecl(hasAnyName("::std::size", "::std::ranges::size")))));
 
   Finder->addMatcher(
       cxxMemberCallExpr(
@@ -59,15 +62,14 @@ void UseSpanFirstLastCheck::check(const MatchFinder::MatchResult &Result) {
   if (const auto *FirstCall =
           Result.Nodes.getNodeAs<CXXMemberCallExpr>("first_subspan")) {
     const auto *Count = Result.Nodes.getNodeAs<Expr>("count");
-    if (!Count)
-      return;
+    assert(Count && "Count expression must exist due to AST matcher");
 
     StringRef CountText = Lexer::getSourceText(
         CharSourceRange::getTokenRange(Count->getSourceRange()),
         *Result.SourceManager, Result.Context->getLangOpts());
 
     std::string Replacement =
-        SpanText.str() + ".first(" + CountText.str() + ")";
+        (Twine(SpanText) + ".first(" + CountText + ")").str();
 
     diag(FirstCall->getBeginLoc(), "prefer 'span::first()' over 'subspan()'")
         << FixItHint::CreateReplacement(FirstCall->getSourceRange(),
@@ -77,8 +79,7 @@ void UseSpanFirstLastCheck::check(const MatchFinder::MatchResult &Result) {
   if (const auto *LastCall =
           Result.Nodes.getNodeAs<CXXMemberCallExpr>("last_subspan")) {
     const auto *Count = Result.Nodes.getNodeAs<Expr>("count");
-    if (!Count)
-      return;
+    assert(Count && "Count expression must exist due to AST matcher");
 
     StringRef CountText = Lexer::getSourceText(
         CharSourceRange::getTokenRange(Count->getSourceRange()),

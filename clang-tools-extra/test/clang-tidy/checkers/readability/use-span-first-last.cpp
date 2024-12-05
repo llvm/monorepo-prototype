@@ -29,6 +29,12 @@ public:
 };
 } // namespace std
 
+// Add here, right after the std namespace closes:
+namespace std::ranges {
+  template<typename T>
+  __SIZE_TYPE__ size(const span<T>& s) { return s.size(); }
+}
+
 void test() {
   int arr[] = {1, 2, 3, 4, 5};
   std::span<int> s(arr, 5);
@@ -99,4 +105,18 @@ void testTemplate() {
 // Test instantiation
 void testInt() {
   testTemplate<int>();
+}
+
+void test_ranges() {
+  int arr[] = {1, 2, 3, 4, 5};
+  std::span<int> s(arr, 5);
+
+  auto sub1 = s.subspan(std::ranges::size(s) - 2);
+  // CHECK-MESSAGES: :[[@LINE-1]]:15: warning: prefer 'span::last()' over 'subspan()'
+  // CHECK-FIXES: auto sub1 = s.last(2);
+
+  __SIZE_TYPE__ n = 2;
+  auto sub2 = s.subspan(std::ranges::size(s) - n);
+  // CHECK-MESSAGES: :[[@LINE-1]]:15: warning: prefer 'span::last()' over 'subspan()'
+  // CHECK-FIXES: auto sub2 = s.last(n);
 }
