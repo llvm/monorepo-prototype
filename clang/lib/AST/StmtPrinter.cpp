@@ -53,6 +53,7 @@
 #include <cassert>
 #include <optional>
 #include <string>
+#include <tuple>
 
 using namespace clang;
 
@@ -737,8 +738,44 @@ void StmtPrinter::PrintOMPExecutableDirective(OMPExecutableDirective *S,
 
 void StmtPrinter::VisitOMPCompoundRootDirective(
     OMPCompoundRootDirective *Node) {
-  OS << "OMPCompoundRootDirective\n";
-  PrintStmt(Node, /*ForceNoStmt=*/false);
+  llvm::omp::Directive CompKind = Node->getDirectiveKind();
+
+  Indent() << "#pragma omp " << llvm::omp::getOpenMPDirectiveName(CompKind);
+  OMPClausePrinter Printer(OS, Policy);
+  for (auto *Clause : Node->clauses()) {
+    if (Clause && !Clause->isImplicit()) {
+      OS << ' ';
+      Printer.Visit(Clause);
+    }
+  }
+  OS << NL;
+
+  SmallVector<OpenMPDirectiveKind> Parts;
+  std::ignore = llvm::omp::getLeafOrCompositeConstructs(CompKind, Parts);
+  Stmt *X = Node;
+  for (llvm::omp::Directive Unit : Parts) {
+    // Find the next nested OMPExecutableDirective.
+    // First, skip CapturedStmts.
+    for (X = cast<OMPExecutableDirective>(X)->getAssociatedStmt();
+         isa<CapturedStmt>(X); X = cast<CapturedStmt>(X)->getCapturedStmt())
+      ;
+    // If a CompoundStmt is next (could be there to handle pre-inits),
+    // walk it to find the first OMPExecutableDirective.
+    // Otherwise expect the next statement to be an OMPExecutableDirective.
+    if (auto *CS = dyn_cast<CompoundStmt>(X)) {
+      for (auto *B : CS->body()) {
+        if (!isa<OMPExecutableDirective>(B))
+          continue;
+        X = B;
+        break;
+      }
+    }
+    assert(isa<OMPExecutableDirective>(X));
+    assert(cast<OMPExecutableDirective>(X)->getDirectiveKind() == Unit);
+  }
+
+  Stmt *Nested = cast<OMPExecutableDirective>(X)->getAssociatedStmt();
+  PrintStmt(Nested, /*ForceNoStmt=*/false);
 }
 
 void StmtPrinter::VisitOMPOpaqueBlockDirective(OMPOpaqueBlockDirective *Node) {
