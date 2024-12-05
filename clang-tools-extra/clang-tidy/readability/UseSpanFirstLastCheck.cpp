@@ -32,7 +32,8 @@ void UseSpanFirstLastCheck::registerMatchers(MatchFinder *Finder) {
           .bind("first_subspan"),
       this);
 
-  // Match span.subspan(size() - n) -> last(n)
+  // Match span.subspan(size() - n) or span.subspan(std::ranges::size(span) - n)
+  // -> last(n)
   const auto SizeCall = anyOf(
       cxxMemberCallExpr(
           callee(memberExpr(hasDeclaration(cxxMethodDecl(hasName("size")))))),
