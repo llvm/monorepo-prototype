@@ -22,9 +22,9 @@ contains
   ! CHECK-LABEL: func @_QMtest_dinitPlocal()
   subroutine local
     ! CHECK: %[[x:.*]] = fir.alloca !fir.type<_QMtest_dinitTt{i:i32}>
-    ! CHECK: %[[xbox:.*]] = fir.embox %[[x]] : (!fir.ref<!fir.type<_QMtest_dinitTt{i:i32}>>) -> !fir.box<!fir.type<_QMtest_dinitTt{i:i32}>>
-    ! CHECK: %[[xboxNone:.*]] = fir.convert %[[xbox]]
-    ! CHECK: fir.call @_FortranAInitialize(%[[xboxNone]], %{{.*}}, %{{.*}}) {{.*}}: (!fir.box<none>, !fir.ref<i8>, i32) -> none
+    ! CHECK: %[[ADDR:.*]] = fir.address_of(@_QMtest_dinitFlocalEx_globalinit) : !fir.ref<!fir.type<_QMtest_dinitTt{i:i32}>>
+    ! CHECK: %[[LOADED_VAL:.*]] = fir.load %[[ADDR]] : !fir.ref<!fir.type<_QMtest_dinitTt{i:i32}>>
+    ! CHECK: fir.store %[[LOADED_VAL]] to %[[x]] : !fir.ref<!fir.type<_QMtest_dinitTt{i:i32}>>
     type(t) :: x
     print *, x%i
   end subroutine 
@@ -56,9 +56,9 @@ contains
   ! CHECK-LABEL: func @_QMtest_dinitPresult() -> !fir.type<_QMtest_dinitTt{i:i32}>
   function result()
     ! CHECK: %[[x:.*]] = fir.alloca !fir.type<_QMtest_dinitTt{i:i32}>
-    ! CHECK: %[[xbox:.*]] = fir.embox %[[x]] : (!fir.ref<!fir.type<_QMtest_dinitTt{i:i32}>>) -> !fir.box<!fir.type<_QMtest_dinitTt{i:i32}>>
-    ! CHECK: %[[xboxNone:.*]] = fir.convert %[[xbox]]
-    ! CHECK: fir.call @_FortranAInitialize(%[[xboxNone]], %{{.*}}, %{{.*}}) {{.*}}: (!fir.box<none>, !fir.ref<i8>, i32) -> none
+    ! CHECK: %[[ADDR:.*]] = fir.address_of(@_QMtest_dinitFresultEresult_globalinit) : !fir.ref<!fir.type<_QMtest_dinitTt{i:i32}>>
+    ! CHECK: %[[LOADED_VAL:.*]] = fir.load %[[ADDR]] : !fir.ref<!fir.type<_QMtest_dinitTt{i:i32}>>
+    ! CHECK: fir.store %[[LOADED_VAL]] to %[[x]] : !fir.ref<!fir.type<_QMtest_dinitTt{i:i32}>> 
     type(t) :: result
   end function
 
@@ -66,9 +66,9 @@ contains
   ! CHECK-LABEL: func @_QMtest_dinitPintent_out(
   ! CHECK-SAME: %[[x:.*]]: !fir.ref<!fir.type<_QMtest_dinitTt{i:i32}>>
   subroutine intent_out(x)
-    ! CHECK: %[[xbox:.*]] = fir.embox %[[x]] : (!fir.ref<!fir.type<_QMtest_dinitTt{i:i32}>>) -> !fir.box<!fir.type<_QMtest_dinitTt{i:i32}>>
-    ! CHECK: %[[xboxNone:.*]] = fir.convert %[[xbox]]
-    ! CHECK: fir.call @_FortranAInitialize(%[[xboxNone]], %{{.*}}, %{{.*}}) {{.*}}: (!fir.box<none>, !fir.ref<i8>, i32) -> none
+   ! CHECK: %[[ADDR:.*]] = fir.address_of(@_QMtest_dinitFintent_outEx_globalinit) : !fir.ref<!fir.type<_QMtest_dinitTt{i:i32}>>
+   ! CHECK: %[[LOADED_VAL:.*]] = fir.load %[[ADDR]] : !fir.ref<!fir.type<_QMtest_dinitTt{i:i32}>>
+   ! CHECK: fir.store %[[LOADED_VAL]] to %[[x]] : !fir.ref<!fir.type<_QMtest_dinitTt{i:i32}>>
     type(t), intent(out) :: x
   end subroutine
 

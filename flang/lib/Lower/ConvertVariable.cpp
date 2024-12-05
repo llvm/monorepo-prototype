@@ -776,9 +776,10 @@ mustBeDefaultInitializedAtRuntime(const Fortran::lower::pft::Variable &var) {
 /// Call default initialization runtime routine to initialize \p var.
 void Fortran::lower::defaultInitializeAtRuntime(
     Fortran::lower::AbstractConverter &converter,
-    const Fortran::semantics::Symbol &sym, Fortran::lower::SymMap &symMap) {
+    const Fortran::lower::pft::Variable &var, Fortran::lower::SymMap &symMap) {
   fir::FirOpBuilder &builder = converter.getFirOpBuilder();
   mlir::Location loc = converter.getCurrentLocation();
+  const Fortran::semantics::Symbol &sym = var.getSymbol();
   fir::ExtendedValue exv = converter.getSymbolExtendedValue(sym, &symMap);
   if (Fortran::semantics::IsOptional(sym)) {
     // 15.5.2.12 point 3, absent optional dummies are not initialized.
@@ -793,11 +794,35 @@ void Fortran::lower::defaultInitializeAtRuntime(
         })
         .end();
   } else {
-    mlir::Value box = builder.createBox(loc, exv);
-    fir::runtime::genDerivedTypeInitialize(builder, loc, box);
+    /// For "simpler" types, relying on "_FortranAInitialize"
+    /// leads to poor runtime performance. Hence optimize
+    /// the same.
+    const Fortran::semantics::DeclTypeSpec *declTy = sym.GetType();
+    mlir::Type symTy = converter.genType(var);
+    if (!var.isAlias() && !hasAllocatableDirectComponent(sym) &&
+        declTy->category() ==
+            Fortran::semantics::DeclTypeSpec::Category::TypeDerived &&
+        !mlir::isa<fir::SequenceType>(symTy) &&
+        !sym.test(Fortran::semantics::Symbol::Flag::OmpPrivate) &&
+        !sym.test(Fortran::semantics::Symbol::Flag::OmpFirstPrivate)) {
+      std::string globalName = converter.mangleName(sym) + "_globalinit";
+      mlir::Location loc = genLocation(converter, sym);
+      mlir::StringAttr linkage = getLinkageAttribute(builder, var);
+      cuf::DataAttributeAttr dataAttr =
+          Fortran::lower::translateSymbolCUFDataAttribute(builder.getContext(),
+                                                          sym);
+      fir::GlobalOp global =
+          defineGlobal(converter, var, globalName, linkage, dataAttr);
+      auto addrOf = builder.create<fir::AddrOfOp>(loc, global.resultType(),
+                                                  global.getSymbol());
+      fir::LoadOp load = builder.create<fir::LoadOp>(loc, addrOf.getResult());
+      builder.create<fir::StoreOp>(loc, load, fir::getBase(exv));
+    } else {
+      mlir::Value box = builder.createBox(loc, exv);
+      fir::runtime::genDerivedTypeInitialize(builder, loc, box);
+    }
   }
 }
-
 enum class VariableCleanUp { Finalize, Deallocate };
 /// Check whether a local variable needs to be finalized according to clause
 /// 7.5.6.3 point 3 or if it is an allocatable that must be deallocated. Note
@@ -943,8 +968,7 @@ static void instantiateLocal(Fortran::lower::AbstractConverter &converter,
   if (needDummyIntentoutFinalization(var))
     finalizeAtRuntime(converter, var, symMap);
   if (mustBeDefaultInitializedAtRuntime(var))
-    Fortran::lower::defaultInitializeAtRuntime(converter, var.getSymbol(),
-                                               symMap);
+    Fortran::lower::defaultInitializeAtRuntime(converter, var, symMap);
   if (Fortran::semantics::NeedCUDAAlloc(var.getSymbol())) {
     auto *builder = &converter.getFirOpBuilder();
     mlir::Location loc = converter.getCurrentLocation();
@@ -1185,8 +1209,7 @@ static void instantiateAlias(Fortran::lower::AbstractConverter &converter,
   // do not try optimizing this to single default initializations of
   // the equivalenced storages. Keep lowering simple.
   if (mustBeDefaultInitializedAtRuntime(var))
-    Fortran::lower::defaultInitializeAtRuntime(converter, var.getSymbol(),
-                                               symMap);
+    Fortran::lower::defaultInitializeAtRuntime(converter, var, symMap);
 }
 
 //===--------------------------------------------------------------===//

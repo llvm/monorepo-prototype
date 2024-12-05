@@ -118,7 +118,8 @@ void DataSharingProcessor::cloneSymbol(const semantics::Symbol *sym) {
   bool isFirstPrivate = sym->test(semantics::Symbol::Flag::OmpFirstPrivate);
   if (!isFirstPrivate &&
       Fortran::lower::hasDefaultInitialization(sym->GetUltimate()))
-    Fortran::lower::defaultInitializeAtRuntime(converter, *sym, *symTable);
+    Fortran::lower::defaultInitializeAtRuntime(converter, pft::Variable{*sym},
+                                               *symTable);
 }
 
 void DataSharingProcessor::copyFirstPrivateSymbol(

@@ -67,7 +67,7 @@ bool hasDefaultInitialization(const Fortran::semantics::Symbol &sym);
 
 /// Call default initialization runtime routine to initialize \p var.
 void defaultInitializeAtRuntime(Fortran::lower::AbstractConverter &converter,
-                                const Fortran::semantics::Symbol &sym,
+                                const Fortran::lower::pft::Variable &var,
                                 Fortran::lower::SymMap &symMap);
 
 /// Create a fir::GlobalOp given a module variable definition. This is intended
