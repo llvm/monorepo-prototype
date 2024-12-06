@@ -124,7 +124,8 @@ CreateFrontendBaseAction(CompilerInstance &CI) {
   }
 
   case RewriteMacros:          return std::make_unique<RewriteMacrosAction>();
-  case RewriteTest:            return std::make_unique<RewriteTestAction>();
+  case RewriteTest:
+    return std::make_unique<RewriteTestAction>();
 #if CLANG_ENABLE_STATIC_ANALYZER
   case RunAnalysis:            return std::make_unique<ento::AnalysisAction>();
 #else
