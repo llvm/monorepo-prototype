@@ -1171,7 +1171,7 @@ unsigned RecurrenceDescriptor::getOpcode(RecurKind Kind) {
 SmallVector<Instruction *, 4>
 RecurrenceDescriptor::getReductionOpChain(PHINode *Phi, Loop *L) const {
   SmallVector<Instruction *, 4> ReductionOperations;
-  bool IsArithmetic = isArithmeticRecurrenceKind(Kind);
+  bool IsNonArithmetic = !isArithmeticRecurrenceKind(Kind);
 
   // Search down from the Phi to the LoopExitInstr, looking for instructions
   // with a single user of the correct type for the reduction.
@@ -1189,7 +1189,7 @@ RecurrenceDescriptor::getReductionOpChain(PHINode *Phi, Loop *L) const {
   // more expensive than out-of-loop reductions, and need to be costed more
   // carefully.
   unsigned ExpectedUses = 1;
-  if (!IsArithmetic)
+  if (IsNonArithmetic)
     ExpectedUses = 2;
 
   auto getNextInstruction = [&](Instruction *Cur) -> Instruction * {
@@ -1197,7 +1197,7 @@ RecurrenceDescriptor::getReductionOpChain(PHINode *Phi, Loop *L) const {
       Instruction *UI = cast<Instruction>(User);
       if (isa<PHINode>(UI))
         continue;
-      if (!IsArithmetic) {
+      if (IsNonArithmetic) {
         // We are expecting a icmp/select pair, which we go to the next select
         // instruction if we can. We already know that Cur has 2 uses.
         if (isa<SelectInst>(UI))
@@ -1209,7 +1209,7 @@ RecurrenceDescriptor::getReductionOpChain(PHINode *Phi, Loop *L) const {
     return nullptr;
   };
   auto isCorrectOpcode = [&](Instruction *Cur) {
-    if (!IsArithmetic) {
+    if (IsNonArithmetic) {
       Value *LHS, *RHS;
       return SelectPatternResult::isMinOrMax(
           matchSelectPattern(Cur, LHS, RHS).Flavor);
