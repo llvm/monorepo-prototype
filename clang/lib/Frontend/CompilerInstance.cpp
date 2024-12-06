@@ -1031,10 +1031,6 @@ bool CompilerInstance::ExecuteAction(FrontendAction &Act) {
   if (!createTarget())
     return false;
 
-  // rewriter project will change target built-in bool type from its default.
-  if (getFrontendOpts().ProgramAction == frontend::RewriteObjC)
-    getTarget().noSignedCharForObjCBool();
-
   // Validate/process some options.
   if (getHeaderSearchOpts().Verbose)
     OS << "clang -cc1 version " CLANG_VERSION_STRING << " based upon LLVM "

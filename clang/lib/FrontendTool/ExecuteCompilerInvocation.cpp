@@ -11,7 +11,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "clang/ARCMigrate/ARCMTActions.h"
 #include "clang/CodeGen/CodeGenAction.h"
 #include "clang/Config/config.h"
 #include "clang/Driver/Options.h"
@@ -126,17 +125,6 @@ CreateFrontendBaseAction(CompilerInstance &CI) {
 
   case RewriteMacros:          return std::make_unique<RewriteMacrosAction>();
   case RewriteTest:            return std::make_unique<RewriteTestAction>();
-#if CLANG_ENABLE_OBJC_REWRITER
-  case RewriteObjC:            return std::make_unique<RewriteObjCAction>();
-#else
-  case RewriteObjC:            Action = "RewriteObjC"; break;
-#endif
-#if CLANG_ENABLE_ARCMT
-  case MigrateSource:
-    return std::make_unique<arcmt::MigrateSourceAction>();
-#else
-  case MigrateSource:          Action = "MigrateSource"; break;
-#endif
 #if CLANG_ENABLE_STATIC_ANALYZER
   case RunAnalysis:            return std::make_unique<ento::AnalysisAction>();
 #else
@@ -147,8 +135,7 @@ CreateFrontendBaseAction(CompilerInstance &CI) {
     return std::make_unique<PrintDependencyDirectivesSourceMinimizerAction>();
   }
 
-#if !CLANG_ENABLE_ARCMT || !CLANG_ENABLE_STATIC_ANALYZER \
-  || !CLANG_ENABLE_OBJC_REWRITER
+#if !CLANG_ENABLE_STATIC_ANALYZER
   CI.getDiagnostics().Report(diag::err_fe_action_not_available) << Action;
   return 0;
 #else
@@ -168,35 +155,6 @@ CreateFrontendAction(CompilerInstance &CI) {
   if (FEOpts.FixAndRecompile) {
     Act = std::make_unique<FixItRecompile>(std::move(Act));
   }
-
-#if CLANG_ENABLE_ARCMT
-  if (CI.getFrontendOpts().ProgramAction != frontend::MigrateSource &&
-      CI.getFrontendOpts().ProgramAction != frontend::GeneratePCH) {
-    // Potentially wrap the base FE action in an ARC Migrate Tool action.
-    switch (FEOpts.ARCMTAction) {
-    case FrontendOptions::ARCMT_None:
-      break;
-    case FrontendOptions::ARCMT_Check:
-      Act = std::make_unique<arcmt::CheckAction>(std::move(Act));
-      break;
-    case FrontendOptions::ARCMT_Modify:
-      Act = std::make_unique<arcmt::ModifyAction>(std::move(Act));
-      break;
-    case FrontendOptions::ARCMT_Migrate:
-      Act = std::make_unique<arcmt::MigrateAction>(std::move(Act),
-                                     FEOpts.MTMigrateDir,
-                                     FEOpts.ARCMTMigrateReportOut,
-                                     FEOpts.ARCMTMigrateEmitARCErrors);
-      break;
-    }
-
-    if (FEOpts.ObjCMTAction != FrontendOptions::ObjCMT_None) {
-      Act = std::make_unique<arcmt::ObjCMigrateAction>(std::move(Act),
-                                                        FEOpts.MTMigrateDir,
-                                                        FEOpts.ObjCMTAction);
-    }
-  }
-#endif
 
   // Wrap the base FE action in an extract api action to generate
   // symbol graph as a biproduct of compilation (enabled with

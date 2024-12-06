@@ -1409,8 +1409,7 @@ static void InitializePredefinedMacros(const TargetInfo &TI,
   if (LangOpts.FastRelaxedMath)
     Builder.defineMacro("__FAST_RELAXED_MATH__");
 
-  if (FEOpts.ProgramAction == frontend::RewriteObjC ||
-      LangOpts.getGC() != LangOptions::NonGC) {
+  if (LangOpts.getGC() != LangOptions::NonGC) {
     Builder.defineMacro("__weak", "__attribute__((objc_gc(weak)))");
     Builder.defineMacro("__strong", "__attribute__((objc_gc(strong)))");
     Builder.defineMacro("__autoreleasing", "");
