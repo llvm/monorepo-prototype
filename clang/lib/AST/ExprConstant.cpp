@@ -14858,6 +14858,7 @@ bool IntExprEvaluator::VisitCastExpr(const CastExpr *E) {
   case CK_IntegralToFixedPoint:
   case CK_MatrixCast:
     // TODO does CK_HLSLAggregateCast belong here?
+  case CK_HLSLSplatCast:
     llvm_unreachable("invalid cast kind for integral value");
 
   case CK_BitCast:
@@ -15735,6 +15736,7 @@ bool ComplexExprEvaluator::VisitCastExpr(const CastExpr *E) {
   case CK_MatrixCast:
   case CK_HLSLVectorTruncation:
   case CK_HLSLAggregateCast:
+  case CK_HLSLSplatCast:
     llvm_unreachable("invalid cast kind for complex value");
 
   case CK_LValueToRValue:

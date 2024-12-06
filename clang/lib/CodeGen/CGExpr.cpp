@@ -5321,6 +5321,7 @@ LValue CodeGenFunction::EmitCastLValue(const CastExpr *E) {
   case CK_HLSLVectorTruncation:
   case CK_HLSLArrayRValue:
   case CK_HLSLAggregateCast:
+    // TODO is CK_HLSLSplatCast an lvalue?
     return EmitUnsupportedLValue(E, "unexpected cast lvalue");
 
   case CK_Dependent:
