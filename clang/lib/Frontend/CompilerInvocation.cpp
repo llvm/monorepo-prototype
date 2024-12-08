@@ -1836,6 +1836,14 @@ bool CompilerInvocation::ParseCodeGenArgs(CodeGenOptions &Opts, ArgList &Args,
     Opts.setInlining(CodeGenOptions::NormalInlining);
   }
 
+  // If we have specified -Og and have not explicitly set -fno-extend-lifetimes,
+  // then default to -fextend-lifetimes.
+  if (Arg *A = Args.getLastArg(options::OPT_O_Group);
+      A && A->containsValue("g")) {
+    if (!Args.hasArg(options::OPT_fextend_lifetimes))
+      Opts.ExtendLifetimes = true;
+  }
+
   // PIC defaults to -fno-direct-access-external-data while non-PIC defaults to
   // -fdirect-access-external-data.
   Opts.DirectAccessExternalData =
