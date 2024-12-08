@@ -1026,6 +1026,8 @@ clang-format
   ``Never``, and ``true`` to ``Always``.
 - Adds ``RemoveEmptyLinesInUnwrappedLines`` option.
 - Adds ``KeepFormFeed`` option and set it to ``true`` for ``GNU`` style.
+- Adds ``AlignAfterOpenBracketBreak`` sub-options for better control of
+  ``AlignAfterOpenBracket`` with ``AlwaysBreak`` or ``BlockIndent`` modes.
 
 libclang
 --------
