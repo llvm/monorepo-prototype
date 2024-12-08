@@ -39,6 +39,28 @@ void constant_idx_unsafe(unsigned idx) {
   buffer[10] = 0;       // expected-note{{used in buffer access here}}
 }
 
+enum FooEnum {
+  A = 0,
+  B = 1,
+  C = 2,
+  D
+};
+
+void constant_enum_safe() {
+  int buffer[FooEnum::D] = { 0, 1, 2 }; // expected-warning{{'buffer' is an unsafe buffer that does not perform bounds checks}}
+                                        // expected-note@-1{{change type of 'buffer' to 'std::array' to label it for hardening}}
+  buffer[A] = 0; // no-warning
+  buffer[C] = 0; // no-warning
+  buffer[D] = 0; // expected-note{{used in buffer access here}}
+}
+
+void constant_enum_unsafe(FooEnum e) {
+  int buffer[FooEnum::D] = { 0, 1, 2 }; // expected-warning{{'buffer' is an unsafe buffer that does not perform bounds checks}}
+                                        // expected-note@-1{{change type of 'buffer' to 'std::array' to label it for hardening}}
+
+  buffer[e] = 0; // expected-note{{used in buffer access here}}
+}
+
 void constant_id_string(unsigned idx) {
   char safe_char = "abc"[1]; // no-warning
   safe_char = ""[0];

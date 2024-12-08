@@ -445,8 +445,16 @@ AST_MATCHER(ArraySubscriptExpr, isSafeArraySubscript) {
       dyn_cast<StringLiteral>(Node.getBase()->IgnoreParenImpCasts());
   uint64_t size;
 
-  if (!BaseDRE && !SLiteral)
-    return false;
+  if (!BaseDRE && !SLiteral) {
+    // Try harder to find something that looks like a DeclRefExpr
+    const auto *Member = dyn_cast<MemberExpr>(Node.getBase()->IgnoreParenImpCasts());
+    if (!Member) return false;
+
+    const auto *Value = Finder->getASTContext().getAsConstantArrayType(Member->getMemberDecl()->getType());
+    if (!Value) return false;
+
+    size = Value->getLimitedSize();
+  }
 
   if (BaseDRE) {
     if (!BaseDRE->getDecl())
@@ -467,6 +475,13 @@ AST_MATCHER(ArraySubscriptExpr, isSafeArraySubscript) {
     // bug
     if (ArrIdx.isNonNegative() && ArrIdx.getLimitedValue() < size)
       return true;
+  }
+
+  // Array index wasn't an integer literal, let's see if it was an enum or
+  // something similar
+  const auto IntConst = Node.getIdx()->getIntegerConstantExpr(Finder->getASTContext());
+  if (IntConst && 0 <= *IntConst && *IntConst < size) {
+    return true;
   }
 
   return false;
