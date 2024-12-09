@@ -109,7 +109,7 @@ __host__ __device__ void tests_hd(void *t) {
 }
 
 // Make sure that we've generated the kernel used by A::~A.
-// DEVICE-LABEL: define void @_Z1fIiEvT_
+// DEVICE: define void @_Z1fIiEvT_{{.*}} #[[ATTR0:[0-9]+]]
 
 // Make sure we've picked deallocator for the correct side of compilation.
 
@@ -148,4 +148,4 @@ __host__ __device__ void tests_hd(void *t) {
 // DEVICE: call void @dev_fn()
 // HOST: call void @host_fn()
 
-// DEVICE: !0 = !{ptr @_Z1fIiEvT_, !"kernel", i32 1}
+// DEVICE: attributes #[[ATTR0]] = {{{.*}} "nvvm.kernel" {{.*}}}

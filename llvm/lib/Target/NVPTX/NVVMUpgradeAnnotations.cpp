@@ -19,6 +19,7 @@
 #include "llvm/IR/Attributes.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/Function.h"
+#include "llvm/IR/GlobalValue.h"
 #include "llvm/IR/Metadata.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/PassManager.h"
@@ -48,10 +49,11 @@ public:
 
 char NVVMUpgradeAnnotationsLegacyPass::ID = 0;
 
-bool static autoUpgradeAnnotation(Function *F, StringRef K, const Metadata *V) {
+bool static autoUpgradeAnnotation(GlobalValue *GV, StringRef K,
+                                  const Metadata *V) {
   if (K == "kernel") {
     assert(mdconst::extract<ConstantInt>(V)->getZExtValue() == 1);
-    F->addFnAttr("nvvm.kernel");
+    cast<Function>(GV)->addFnAttr("nvvm.kernel");
     return true;
   }
   if (K == "align") {
@@ -61,8 +63,8 @@ bool static autoUpgradeAnnotation(Function *F, StringRef K, const Metadata *V) {
     // TODO: Skip adding the stackalign attribute for returns, for now.
     if (!Idx)
       return false;
-    F->addAttributeAtIndex(
-        Idx, Attribute::getWithStackAlignment(F->getContext(), StackAlign));
+    cast<Function>(GV)->addAttributeAtIndex(
+        Idx, Attribute::getWithStackAlignment(GV->getContext(), StackAlign));
     return true;
   }
 
@@ -82,7 +84,7 @@ void static upgradeNVAnnotations(Module &M) {
       continue;
     SeenNodes.insert(MD);
 
-    Function *F = mdconst::dyn_extract_or_null<Function>(MD->getOperand(0));
+    auto *F = mdconst::dyn_extract_or_null<GlobalValue>(MD->getOperand(0));
     if (!F)
       continue;
 

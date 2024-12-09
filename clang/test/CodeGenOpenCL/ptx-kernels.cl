@@ -6,6 +6,6 @@ void device_function() {
 
 __kernel void kernel_function() {
 }
-// CHECK-LABEL: define{{.*}} spir_kernel void @kernel_function()
+// CHECK: define{{.*}} spir_kernel void @kernel_function() #[[ATTR0:[0-9]+]]
 
-// CHECK: !{{[0-9]+}} = !{ptr @kernel_function, !"kernel", i32 1}
+// CHECK: attributes #[[ATTR0]] = {{{.*}} "nvvm.kernel" {{.*}}}
