@@ -423,6 +423,7 @@ C23 Feature Support
 - Clang now officially supports `N3030 <https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3030.htm>`_ Enhancements to Enumerations. Clang already supported it as an extension, so there were no changes to compiler behavior.
 - Fixed the value of ``BOOL_WIDTH`` in ``<limits.h>`` to return ``1``
   explicitly, as mandated by the standard. Fixes #GH117348
+- Clang now supports `N3006 <https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3006.htm>`_ Underspecified object declarations.
 
 Non-comprehensive list of changes in this release
 -------------------------------------------------
@@ -717,7 +718,7 @@ Improvements to Clang's diagnostics
 
 - Clang now diagnoses dangling references for C++20's parenthesized aggregate initialization (#101957).
 
-- Fixed a bug where Clang would not emit ``-Wunused-private-field`` warnings when an unrelated class 
+- Fixed a bug where Clang would not emit ``-Wunused-private-field`` warnings when an unrelated class
   defined a defaulted comparison operator (#GH116270).
 
   .. code-block:: c++
