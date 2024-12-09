@@ -136,6 +136,12 @@ New checks
   Gives warnings for tagged unions, where the number of tags is
   different from the number of data members inside the union.
 
+- New :doc:`cppcoreguidelines-pro-bounds-avoid-unchecked-container-accesses
+  <clang-tidy/checks/cppcoreguidelines/pro-bounds-avoid-unchecked-container-accesses>`
+
+  Flags calls to ``operator[]`` in STL containers and suggests replacing it with
+  safe alternatives.
+
 - New :doc:`portability-template-virtual-member-function
   <clang-tidy/checks/portability/template-virtual-member-function>` check.
 
