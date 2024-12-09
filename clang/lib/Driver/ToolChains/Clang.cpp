@@ -5199,8 +5199,6 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
   if (isa<AnalyzeJobAction>(JA)) {
     assert(JA.getType() == types::TY_Plist && "Invalid output type.");
     CmdArgs.push_back("-analyze");
-  } else if (isa<MigrateJobAction>(JA)) {
-    CmdArgs.push_back("-migrate");
   } else if (isa<PreprocessJobAction>(JA)) {
     if (Output.getType() == types::TY_Dependencies)
       CmdArgs.push_back("-Eonly");

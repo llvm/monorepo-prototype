@@ -707,10 +707,6 @@ def no_round_trip_args : Flag<["-"], "no-round-trip-args">,
   Visibility<[CC1Option]>,
   HelpText<"Disable command line arguments round-trip.">;
 
-// FIXME: What does this even do?
-def _migrate : Flag<["--"], "migrate">, Flags<[NoXarchOption]>,
-  HelpText<"Run the migrator">;
-
 // Make sure all other -ccc- options are rejected.
 def ccc_ : Joined<["-"], "ccc-">, Group<internal_Group>, Flags<[Unsupported]>;
 
@@ -7808,8 +7804,6 @@ def rewrite_test : Flag<["-"], "rewrite-test">,
   HelpText<"Rewriter playground">;
 def rewrite_macros : Flag<["-"], "rewrite-macros">,
   HelpText<"Expand macros without full preprocessing">;
-def migrate : Flag<["-"], "migrate">, // FIXME: What does this do?
-  HelpText<"Migrate source code">;
 def compiler_options_dump : Flag<["-"], "compiler-options-dump">,
   HelpText<"Dump the compiler configuration options">;
 def print_dependency_directives_minimized_source : Flag<["-"],
