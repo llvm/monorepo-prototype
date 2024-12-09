@@ -27,7 +27,8 @@ const char *Action::getClassName(ActionClass AC) {
   case PrecompileJobClass: return "precompiler";
   case ExtractAPIJobClass:
     return "api-extractor";
-  case AnalyzeJobClass: return "analyzer";
+  case AnalyzeJobClass:
+    return "analyzer";
   case CompileJobClass: return "compiler";
   case BackendJobClass: return "backend";
   case AssembleJobClass: return "assembler";
