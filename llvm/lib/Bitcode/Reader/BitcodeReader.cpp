@@ -7142,6 +7142,8 @@ Error BitcodeReader::materializeModule() {
 
   UpgradeModuleFlags(*TheModule);
 
+  UpgradeNVVMAnnotations(*TheModule);
+
   UpgradeARCRuntime(*TheModule);
 
   return Error::success();

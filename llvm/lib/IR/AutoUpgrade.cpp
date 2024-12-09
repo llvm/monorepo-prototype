@@ -5022,6 +5022,69 @@ bool llvm::UpgradeDebugInfo(Module &M) {
   return Modified;
 }
 
+bool static upgradeSingleNVVMAnnotation(GlobalValue *GV, StringRef K,
+                                        const Metadata *V) {
+  if (K == "kernel") {
+    assert(mdconst::extract<ConstantInt>(V)->getZExtValue() == 1);
+    cast<Function>(GV)->addFnAttr("nvvm.kernel");
+    return true;
+  }
+  if (K == "align") {
+    const uint64_t AlignBits = mdconst::extract<ConstantInt>(V)->getZExtValue();
+    const unsigned Idx = (AlignBits >> 16);
+    const Align StackAlign = Align(AlignBits & 0xFFFF);
+    // TODO: Skip adding the stackalign attribute for returns, for now.
+    if (!Idx)
+      return false;
+    cast<Function>(GV)->addAttributeAtIndex(
+        Idx, Attribute::getWithStackAlignment(GV->getContext(), StackAlign));
+    return true;
+  }
+
+  return false;
+}
+
+void llvm::UpgradeNVVMAnnotations(Module &M) {
+  NamedMDNode *NamedMD = M.getNamedMetadata("nvvm.annotations");
+  if (!NamedMD)
+    return;
+
+  SmallVector<MDNode *, 8> NewNodes;
+  SmallSet<const MDNode *, 8> SeenNodes;
+  for (MDNode *MD : NamedMD->operands()) {
+    if (SeenNodes.contains(MD))
+      continue;
+    SeenNodes.insert(MD);
+
+    auto *F = mdconst::dyn_extract_or_null<GlobalValue>(MD->getOperand(0));
+    if (!F)
+      continue;
+
+    assert(MD && "Invalid MDNode for annotation");
+    assert((MD->getNumOperands() % 2) == 1 && "Invalid number of operands");
+
+    SmallVector<Metadata *, 8> NewOperands;
+    // start index = 1, to skip the global variable key
+    // increment = 2, to skip the value for each property-value pairs
+    for (unsigned j = 1, je = MD->getNumOperands(); j < je; j += 2) {
+      MDString *K = cast<MDString>(MD->getOperand(j));
+      const MDOperand &V = MD->getOperand(j + 1);
+      bool Upgraded = upgradeSingleNVVMAnnotation(F, K->getString(), V);
+      if (!Upgraded)
+        NewOperands.append({K, V});
+    }
+
+    if (!NewOperands.empty()) {
+      NewOperands.insert(NewOperands.begin(), MD->getOperand(0));
+      NewNodes.push_back(MDNode::get(M.getContext(), NewOperands));
+    }
+  }
+
+  NamedMD->clearOperands();
+  for (MDNode *N : NewNodes)
+    NamedMD->addOperand(N);
+}
+
 /// This checks for objc retain release marker which should be upgraded. It
 /// returns true if module is modified.
 static bool upgradeRetainReleaseMarker(Module &M) {
