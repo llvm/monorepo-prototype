@@ -124,6 +124,10 @@ public:
   bool initializeFrameInfo(PerFunctionMIParsingState &PFS,
                            const yaml::MachineFunction &YamlMF);
 
+  bool initializeSaveRestorePoints(PerFunctionMIParsingState &PFS,
+                                   const yaml::SaveRestorePoints &YamlSRP,
+                                   bool IsSavePoints);
+
   bool initializeCallSiteInfo(PerFunctionMIParsingState &PFS,
                               const yaml::MachineFunction &YamlMF);
 
@@ -832,18 +836,9 @@ bool MIRParserImpl::initializeFrameInfo(PerFunctionMIParsingState &PFS,
   MFI.setHasTailCall(YamlMFI.HasTailCall);
   MFI.setCalleeSavedInfoValid(YamlMFI.IsCalleeSavedInfoValid);
   MFI.setLocalFrameSize(YamlMFI.LocalFrameSize);
-  if (!YamlMFI.SavePoint.Value.empty()) {
-    MachineBasicBlock *MBB = nullptr;
-    if (parseMBBReference(PFS, MBB, YamlMFI.SavePoint))
-      return true;
-    MFI.setSavePoint(MBB);
-  }
-  if (!YamlMFI.RestorePoint.Value.empty()) {
-    MachineBasicBlock *MBB = nullptr;
-    if (parseMBBReference(PFS, MBB, YamlMFI.RestorePoint))
-      return true;
-    MFI.setRestorePoint(MBB);
-  }
+  initializeSaveRestorePoints(PFS, YamlMFI.SavePoints, true /*IsSavePoints*/);
+  initializeSaveRestorePoints(PFS, YamlMFI.RestorePoints,
+                              false /*IsSavePoints*/);
 
   std::vector<CalleeSavedInfo> CSIInfo;
   // Initialize the fixed frame objects.
@@ -1058,8 +1053,40 @@ bool MIRParserImpl::initializeConstantPool(PerFunctionMIParsingState &PFS,
   return false;
 }
 
-bool MIRParserImpl::initializeJumpTableInfo(PerFunctionMIParsingState &PFS,
-    const yaml::MachineJumpTable &YamlJTI) {
+bool MIRParserImpl::initializeSaveRestorePoints(
+    PerFunctionMIParsingState &PFS, const yaml::SaveRestorePoints &YamlSRP,
+    bool IsSavePoints) {
+  SMDiagnostic Error;
+  MachineFunction &MF = PFS.MF;
+  MachineFrameInfo &MFI = MF.getFrameInfo();
+  llvm::SaveRestorePoints SRPoints;
+
+  for (const auto &Entry : YamlSRP) {
+    const auto &MBBSource = Entry.Point;
+    MachineBasicBlock *MBB = nullptr;
+    if (parseMBBReference(PFS, MBB, MBBSource.Value))
+      return true;
+
+    std::vector<Register> Registers{};
+    for (auto &RegStr : Entry.Registers) {
+      Register Reg;
+      if (parseNamedRegisterReference(PFS, Reg, RegStr.Value, Error))
+        return error(Error, RegStr.SourceRange);
+
+      Registers.push_back(Reg);
+    }
+    SRPoints.insert(std::make_pair(MBB, Registers));
+  }
+
+  if (IsSavePoints)
+    MFI.setSavePoints(SRPoints);
+  else
+    MFI.setRestorePoints(SRPoints);
+  return false;
+}
+
+bool MIRParserImpl::initializeJumpTableInfo(
+    PerFunctionMIParsingState &PFS, const yaml::MachineJumpTable &YamlJTI) {
   MachineJumpTableInfo *JTI = PFS.MF.getOrCreateJumpTableInfo(YamlJTI.Kind);
   for (const auto &Entry : YamlJTI.Entries) {
     std::vector<MachineBasicBlock *> Blocks;

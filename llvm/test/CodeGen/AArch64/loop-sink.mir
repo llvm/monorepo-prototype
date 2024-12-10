@@ -299,8 +299,8 @@ frameInfo:
   hasVAStart:      false
   hasMustTailInVarArgFunc: false
   localFrameSize:  0
-  savePoint:       ''
-  restorePoint:    ''
+  savePoints:      []
+  restorePoints:   []
 fixedStack:      []
 stack:           []
 callSites:       []
@@ -547,8 +547,8 @@ frameInfo:
   hasVAStart:      false
   hasMustTailInVarArgFunc: false
   localFrameSize:  0
-  savePoint:       ''
-  restorePoint:    ''
+  savePoints:      []
+  restorePoints:   []
 fixedStack:      []
 stack:           []
 callSites:       []
@@ -674,8 +674,8 @@ frameInfo:
   hasVAStart:      false
   hasMustTailInVarArgFunc: false
   localFrameSize:  0
-  savePoint:       ''
-  restorePoint:    ''
+  savePoints:      []
+  restorePoints:   []
 fixedStack:      []
 stack:           []
 callSites:       []
@@ -804,8 +804,8 @@ frameInfo:
   hasVAStart:      false
   hasMustTailInVarArgFunc: false
   localFrameSize:  0
-  savePoint:       ''
-  restorePoint:    ''
+  savePoints:      []
+  restorePoints:   []
 fixedStack:      []
 stack:           []
 callSites:       []
@@ -944,8 +944,8 @@ frameInfo:
   hasVAStart:      false
   hasMustTailInVarArgFunc: false
   localFrameSize:  0
-  savePoint:       ''
-  restorePoint:    ''
+  savePoints:      []
+  restorePoints:   []
 fixedStack:      []
 stack:           []
 callSites:       []
@@ -1070,8 +1070,8 @@ frameInfo:
   hasVAStart:      false
   hasMustTailInVarArgFunc: false
   localFrameSize:  0
-  savePoint:       ''
-  restorePoint:    ''
+  savePoints:      []
+  restorePoints:   []
 fixedStack:      []
 stack:           []
 callSites:       []
@@ -1211,8 +1211,8 @@ frameInfo:
   hasVAStart:      false
   hasMustTailInVarArgFunc: false
   localFrameSize:  0
-  savePoint:       ''
-  restorePoint:    ''
+  savePoints:      []
+  restorePoints:   []
 fixedStack:      []
 stack:           []
 callSites:       []
@@ -1358,8 +1358,8 @@ frameInfo:
   hasVAStart:      false
   hasMustTailInVarArgFunc: false
   localFrameSize:  0
-  savePoint:       ''
-  restorePoint:    ''
+  savePoints:      []
+  restorePoints:   []
 fixedStack:      []
 stack:           []
 callSites:       []
