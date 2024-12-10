@@ -474,6 +474,17 @@ future string_view
 future tuple
 future typeinfo
 future version
+generator compare
+generator cstddef
+generator cstdint
+generator cstdlib
+generator cstring
+generator initializer_list
+generator limits
+generator new
+generator tuple
+generator typeinfo
+generator version
 initializer_list version
 iomanip cctype
 iomanip cerrno
@@ -834,6 +845,7 @@ random version
 ranges cctype
 ranges compare
 ranges concepts
+ranges cstddef
 ranges cstdint
 ranges cstdio
 ranges cstring
