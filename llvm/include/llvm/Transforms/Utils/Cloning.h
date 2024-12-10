@@ -182,6 +182,29 @@ void CloneFunctionAttributesInto(Function *NewFunc, const Function *OldFunc,
                                  ValueMapTypeRemapper *TypeMapper = nullptr,
                                  ValueMaterializer *Materializer = nullptr);
 
+/// Clone OldFunc's metadata into NewFunc.
+///
+/// The caller is expected to populate \p VMap beforehand and set an appropriate
+/// \p RemapFlag.
+///
+/// NOTE: This function doesn't clone !llvm.dbg.cu when cloning into a different
+/// module. Use CloneFunctionInto for that behavior.
+void CloneFunctionMetadataInto(Function *NewFunc, const Function *OldFunc,
+                               ValueToValueMapTy &VMap, RemapFlags RemapFlag,
+                               ValueMapTypeRemapper *TypeMapper = nullptr,
+                               ValueMaterializer *Materializer = nullptr,
+                               const MetadataSetTy *IdentityMD = nullptr);
+
+/// Clone OldFunc's body into NewFunc.
+void CloneFunctionBodyInto(Function *NewFunc, const Function *OldFunc,
+                           ValueToValueMapTy &VMap, RemapFlags RemapFlag,
+                           SmallVectorImpl<ReturnInst *> &Returns,
+                           const char *NameSuffix = "",
+                           ClonedCodeInfo *CodeInfo = nullptr,
+                           ValueMapTypeRemapper *TypeMapper = nullptr,
+                           ValueMaterializer *Materializer = nullptr,
+                           const MetadataSetTy *IdentityMD = nullptr);
+
 void CloneAndPruneIntoFromInst(Function *NewFunc, const Function *OldFunc,
                                const Instruction *StartingInst,
                                ValueToValueMapTy &VMap, bool ModuleLevelChanges,
@@ -202,7 +225,7 @@ void CloneAndPruneIntoFromInst(Function *NewFunc, const Function *OldFunc,
 ///
 void CloneAndPruneFunctionInto(Function *NewFunc, const Function *OldFunc,
                                ValueToValueMapTy &VMap, bool ModuleLevelChanges,
-                               SmallVectorImpl<ReturnInst*> &Returns,
+                               SmallVectorImpl<ReturnInst *> &Returns,
                                const char *NameSuffix = "",
                                ClonedCodeInfo *CodeInfo = nullptr);
 
@@ -219,6 +242,13 @@ void CloneAndPruneFunctionInto(Function *NewFunc, const Function *OldFunc,
 DISubprogram *CollectDebugInfoForCloning(const Function &F,
                                          CloneFunctionChangeType Changes,
                                          DebugInfoFinder &DIFinder);
+
+/// Based on \p Changes and \p DIFinder populate \p MD with debug info that
+/// needs to be identity mapped during Metadata cloning.
+void FindDebugInfoToIdentityMap(MetadataSetTy &MD,
+                                CloneFunctionChangeType Changes,
+                                DebugInfoFinder &DIFinder,
+                                DISubprogram *SPClonedWithinModule);
 
 /// This class captures the data input to the InlineFunction call, and records
 /// the auxiliary results produced by it.
@@ -341,32 +371,31 @@ void updateProfileCallee(
 /// Find the 'llvm.experimental.noalias.scope.decl' intrinsics in the specified
 /// basic blocks and extract their scope. These are candidates for duplication
 /// when cloning.
-void identifyNoAliasScopesToClone(
-    ArrayRef<BasicBlock *> BBs, SmallVectorImpl<MDNode *> &NoAliasDeclScopes);
+void identifyNoAliasScopesToClone(ArrayRef<BasicBlock *> BBs,
+                                  SmallVectorImpl<MDNode *> &NoAliasDeclScopes);
 
 /// Find the 'llvm.experimental.noalias.scope.decl' intrinsics in the specified
 /// instruction range and extract their scope. These are candidates for
 /// duplication when cloning.
-void identifyNoAliasScopesToClone(
-    BasicBlock::iterator Start, BasicBlock::iterator End,
-    SmallVectorImpl<MDNode *> &NoAliasDeclScopes);
+void identifyNoAliasScopesToClone(BasicBlock::iterator Start,
+                                  BasicBlock::iterator End,
+                                  SmallVectorImpl<MDNode *> &NoAliasDeclScopes);
 
 /// Duplicate the specified list of noalias decl scopes.
 /// The 'Ext' string is added as an extension to the name.
 /// Afterwards, the ClonedScopes contains the mapping of the original scope
 /// MDNode onto the cloned scope.
 /// Be aware that the cloned scopes are still part of the original scope domain.
-void cloneNoAliasScopes(
-    ArrayRef<MDNode *> NoAliasDeclScopes,
-    DenseMap<MDNode *, MDNode *> &ClonedScopes,
-    StringRef Ext, LLVMContext &Context);
+void cloneNoAliasScopes(ArrayRef<MDNode *> NoAliasDeclScopes,
+                        DenseMap<MDNode *, MDNode *> &ClonedScopes,
+                        StringRef Ext, LLVMContext &Context);
 
 /// Adapt the metadata for the specified instruction according to the
 /// provided mapping. This is normally used after cloning an instruction, when
 /// some noalias scopes needed to be cloned.
-void adaptNoAliasScopes(
-    llvm::Instruction *I, const DenseMap<MDNode *, MDNode *> &ClonedScopes,
-    LLVMContext &Context);
+void adaptNoAliasScopes(llvm::Instruction *I,
+                        const DenseMap<MDNode *, MDNode *> &ClonedScopes,
+                        LLVMContext &Context);
 
 /// Clone the specified noalias decl scopes. Then adapt all instructions in the
 /// NewBlocks basicblocks to the cloned versions.
