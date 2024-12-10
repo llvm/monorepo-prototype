@@ -486,6 +486,9 @@ public:
   struct CallSiteInfo {
     /// Vector of call argument and its forwarding register.
     SmallVector<ArgRegPair, 1> ArgRegPairs;
+
+    /// Callee type id.
+    ConstantInt *TypeId = nullptr;
   };
 
 private:
