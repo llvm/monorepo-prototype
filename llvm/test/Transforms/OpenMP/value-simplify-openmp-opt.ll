@@ -853,8 +853,8 @@ declare void @llvm.assume(i1)
 !20 = !{ptr @kernel_unknown_and_not_aligned1, !"kernel", i32 1}
 
 ;.
-; TUNIT: attributes #[[ATTR0]] = { norecurse "kernel" }
-; TUNIT: attributes #[[ATTR1]] = { "kernel" }
+; TUNIT: attributes #[[ATTR0]] = { norecurse "kernel" "nvvm.kernel" }
+; TUNIT: attributes #[[ATTR1]] = { "kernel" "nvvm.kernel" }
 ; TUNIT: attributes #[[ATTR2:[0-9]+]] = { nocallback norecurse nounwind "llvm.assume"="ompx_aligned_barrier" }
 ; TUNIT: attributes #[[ATTR3:[0-9]+]] = { nocallback norecurse nosync nounwind }
 ; TUNIT: attributes #[[ATTR4:[0-9]+]] = { nocallback }
@@ -862,8 +862,8 @@ declare void @llvm.assume(i1)
 ; TUNIT: attributes #[[ATTR6]] = { nounwind "llvm.assume"="ompx_aligned_barrier" }
 ; TUNIT: attributes #[[ATTR7]] = { nounwind }
 ;.
-; CGSCC: attributes #[[ATTR0]] = { norecurse "kernel" }
-; CGSCC: attributes #[[ATTR1]] = { "kernel" }
+; CGSCC: attributes #[[ATTR0]] = { norecurse "kernel" "nvvm.kernel" }
+; CGSCC: attributes #[[ATTR1]] = { "kernel" "nvvm.kernel" }
 ; CGSCC: attributes #[[ATTR2:[0-9]+]] = { nocallback norecurse nounwind "llvm.assume"="ompx_aligned_barrier" }
 ; CGSCC: attributes #[[ATTR3:[0-9]+]] = { nocallback norecurse nosync nounwind }
 ; CGSCC: attributes #[[ATTR4:[0-9]+]] = { nocallback }
@@ -872,45 +872,7 @@ declare void @llvm.assume(i1)
 ;.
 ; TUNIT: [[META0:![0-9]+]] = !{i32 7, !"openmp", i32 50}
 ; TUNIT: [[META1:![0-9]+]] = !{i32 7, !"openmp-device", i32 50}
-; TUNIT: [[META2:![0-9]+]] = !{ptr @kernel, !"kernel", i32 1}
-; TUNIT: [[META3:![0-9]+]] = !{ptr @kernel2, !"kernel", i32 1}
-; TUNIT: [[META4:![0-9]+]] = !{ptr @kernel3, !"kernel", i32 1}
-; TUNIT: [[META5:![0-9]+]] = !{ptr @kernel4a1, !"kernel", i32 1}
-; TUNIT: [[META6:![0-9]+]] = !{ptr @kernel4b1, !"kernel", i32 1}
-; TUNIT: [[META7:![0-9]+]] = !{ptr @kernel4a2, !"kernel", i32 1}
-; TUNIT: [[META8:![0-9]+]] = !{ptr @kernel4b2, !"kernel", i32 1}
-; TUNIT: [[META9:![0-9]+]] = !{ptr @kernel4a3, !"kernel", i32 1}
-; TUNIT: [[META10:![0-9]+]] = !{ptr @kernel4b3, !"kernel", i32 1}
-; TUNIT: [[META11:![0-9]+]] = !{ptr @kernel4c1, !"kernel", i32 1}
-; TUNIT: [[META12:![0-9]+]] = !{ptr @kernel4d1, !"kernel", i32 1}
-; TUNIT: [[META13:![0-9]+]] = !{ptr @kernel4c2, !"kernel", i32 1}
-; TUNIT: [[META14:![0-9]+]] = !{ptr @kernel4d2, !"kernel", i32 1}
-; TUNIT: [[META15:![0-9]+]] = !{ptr @kernel4c3, !"kernel", i32 1}
-; TUNIT: [[META16:![0-9]+]] = !{ptr @kernel4d3, !"kernel", i32 1}
-; TUNIT: [[META17:![0-9]+]] = !{ptr @kernel_unknown_and_aligned1, !"kernel", i32 1}
-; TUNIT: [[META18:![0-9]+]] = !{ptr @kernel_unknown_and_aligned2, !"kernel", i32 1}
-; TUNIT: [[META19:![0-9]+]] = !{ptr @kernel_unknown_and_aligned3, !"kernel", i32 1}
-; TUNIT: [[META20:![0-9]+]] = !{ptr @kernel_unknown_and_not_aligned1, !"kernel", i32 1}
 ;.
 ; CGSCC: [[META0:![0-9]+]] = !{i32 7, !"openmp", i32 50}
 ; CGSCC: [[META1:![0-9]+]] = !{i32 7, !"openmp-device", i32 50}
-; CGSCC: [[META2:![0-9]+]] = !{ptr @kernel, !"kernel", i32 1}
-; CGSCC: [[META3:![0-9]+]] = !{ptr @kernel2, !"kernel", i32 1}
-; CGSCC: [[META4:![0-9]+]] = !{ptr @kernel3, !"kernel", i32 1}
-; CGSCC: [[META5:![0-9]+]] = !{ptr @kernel4a1, !"kernel", i32 1}
-; CGSCC: [[META6:![0-9]+]] = !{ptr @kernel4b1, !"kernel", i32 1}
-; CGSCC: [[META7:![0-9]+]] = !{ptr @kernel4a2, !"kernel", i32 1}
-; CGSCC: [[META8:![0-9]+]] = !{ptr @kernel4b2, !"kernel", i32 1}
-; CGSCC: [[META9:![0-9]+]] = !{ptr @kernel4a3, !"kernel", i32 1}
-; CGSCC: [[META10:![0-9]+]] = !{ptr @kernel4b3, !"kernel", i32 1}
-; CGSCC: [[META11:![0-9]+]] = !{ptr @kernel4c1, !"kernel", i32 1}
-; CGSCC: [[META12:![0-9]+]] = !{ptr @kernel4d1, !"kernel", i32 1}
-; CGSCC: [[META13:![0-9]+]] = !{ptr @kernel4c2, !"kernel", i32 1}
-; CGSCC: [[META14:![0-9]+]] = !{ptr @kernel4d2, !"kernel", i32 1}
-; CGSCC: [[META15:![0-9]+]] = !{ptr @kernel4c3, !"kernel", i32 1}
-; CGSCC: [[META16:![0-9]+]] = !{ptr @kernel4d3, !"kernel", i32 1}
-; CGSCC: [[META17:![0-9]+]] = !{ptr @kernel_unknown_and_aligned1, !"kernel", i32 1}
-; CGSCC: [[META18:![0-9]+]] = !{ptr @kernel_unknown_and_aligned2, !"kernel", i32 1}
-; CGSCC: [[META19:![0-9]+]] = !{ptr @kernel_unknown_and_aligned3, !"kernel", i32 1}
-; CGSCC: [[META20:![0-9]+]] = !{ptr @kernel_unknown_and_not_aligned1, !"kernel", i32 1}
 ;.

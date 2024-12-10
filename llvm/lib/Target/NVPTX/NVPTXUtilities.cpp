@@ -317,9 +317,6 @@ bool isKernelFunction(const Function &F) {
   if (F.hasFnAttribute("nvvm.kernel"))
     return true;
 
-  if (const auto X = findOneNVVMAnnotation(&F, "kernel"))
-    return (*X == 1);
-
   return false;
 }
 
@@ -329,14 +326,17 @@ MaybeAlign getAlign(const Function &F, unsigned Index) {
           F.getAttributes().getAttributes(Index).getStackAlignment())
     return StackAlign;
 
-  // If that is missing, check the legacy nvvm metadata
-  std::vector<unsigned> Vs;
-  bool retval = findAllNVVMAnnotation(&F, "align", Vs);
-  if (!retval)
-    return std::nullopt;
-  for (unsigned V : Vs)
-    if ((V >> 16) == Index)
-      return Align(V & 0xFFFF);
+  // check the legacy nvvm metadata only for the return value since llvm does
+  // not support stackalign attribute for this.
+  if (Index == 0) {
+    std::vector<unsigned> Vs;
+    bool retval = findAllNVVMAnnotation(&F, "align", Vs);
+    if (!retval)
+      return std::nullopt;
+    for (unsigned V : Vs)
+      if ((V >> 16) == Index)
+        return Align(V & 0xFFFF);
+  }
 
   return std::nullopt;
 }

@@ -326,7 +326,7 @@ declare void @llvm.lifetime.end.p0(i64 immarg, ptr nocapture) #11
 !4 = !{i32 7, !"openmp", i32 50}
 !5 = !{i32 7, !"openmp-device", i32 50}
 ;.
-; CHECK: attributes #[[ATTR0:[0-9]+]] = { "kernel" }
+; CHECK: attributes #[[ATTR0:[0-9]+]] = { "kernel" "nvvm.kernel" }
 ; CHECK: attributes #[[ATTR1:[0-9]+]] = { nosync nounwind allocsize(0) }
 ; CHECK: attributes #[[ATTR2]] = { nounwind }
 ; CHECK: attributes #[[ATTR3:[0-9]+]] = { alwaysinline }
@@ -336,8 +336,6 @@ declare void @llvm.lifetime.end.p0(i64 immarg, ptr nocapture) #11
 ;.
 ; CHECK: [[META0:![0-9]+]] = !{i32 0, i32 66306, i32 776160, !"main", i32 13, i32 0, i32 0}
 ; CHECK: [[META1:![0-9]+]] = !{i32 0, i32 66306, i32 776160, !"main", i32 16, i32 0, i32 1}
-; CHECK: [[META2:![0-9]+]] = !{ptr @__omp_offloading_10302_bd7e0_main_l13, !"kernel", i32 1}
-; CHECK: [[META3:![0-9]+]] = !{ptr @__omp_offloading_10302_bd7e0_main_l16, !"kernel", i32 1}
-; CHECK: [[META4:![0-9]+]] = !{i32 7, !"openmp", i32 50}
-; CHECK: [[META5:![0-9]+]] = !{i32 7, !"openmp-device", i32 50}
+; CHECK: [[META2:![0-9]+]] = !{i32 7, !"openmp", i32 50}
+; CHECK: [[META3:![0-9]+]] = !{i32 7, !"openmp-device", i32 50}
 ;.

@@ -14,7 +14,8 @@ define weak void @openmp_kernel() "kernel" {
 }
 
 define weak_odr void @non_openmp_kernel() {
-; CHECK-LABEL: define weak_odr void @non_openmp_kernel() {
+; CHECK-LABEL: define weak_odr void @non_openmp_kernel(
+; CHECK-SAME: ) #[[ATTR1:[0-9]+]] {
 ; CHECK-NEXT:    ret void
 ;
   ret void

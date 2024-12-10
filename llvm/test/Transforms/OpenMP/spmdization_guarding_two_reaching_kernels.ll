@@ -336,7 +336,7 @@ attributes #5 = { convergent }
 !8 = !{i32 7, !"frame-pointer", i32 2}
 !9 = !{!"clang version 14.0.0"}
 ;.
-; CHECK: attributes #[[ATTR0]] = { convergent noinline norecurse nounwind "frame-pointer"="all" "kernel" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="sm_53" "target-features"="+ptx32,+sm_53" }
+; CHECK: attributes #[[ATTR0]] = { convergent noinline norecurse nounwind "frame-pointer"="all" "kernel" "min-legal-vector-width"="0" "no-trapping-math"="true" "nvvm.kernel" "stack-protector-buffer-size"="8" "target-cpu"="sm_53" "target-features"="+ptx32,+sm_53" }
 ; CHECK: attributes #[[ATTR1]] = { noinline nounwind "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="sm_53" "target-features"="+ptx32,+sm_53" }
 ; CHECK: attributes #[[ATTR2]] = { noinline norecurse nounwind "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="sm_53" "target-features"="+ptx32,+sm_53" }
 ; CHECK: attributes #[[ATTR3]] = { nounwind }
@@ -346,7 +346,7 @@ attributes #5 = { convergent }
 ; CHECK: attributes #[[ATTR7]] = { convergent nosync nounwind memory(write) }
 ; CHECK: attributes #[[ATTR8]] = { convergent }
 ;.
-; CHECK-DISABLE-SPMDIZATION: attributes #[[ATTR0]] = { convergent noinline norecurse nounwind "frame-pointer"="all" "kernel" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="sm_53" "target-features"="+ptx32,+sm_53" }
+; CHECK-DISABLE-SPMDIZATION: attributes #[[ATTR0]] = { convergent noinline norecurse nounwind "frame-pointer"="all" "kernel" "min-legal-vector-width"="0" "no-trapping-math"="true" "nvvm.kernel" "stack-protector-buffer-size"="8" "target-cpu"="sm_53" "target-features"="+ptx32,+sm_53" }
 ; CHECK-DISABLE-SPMDIZATION: attributes #[[ATTR1]] = { noinline nounwind "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="sm_53" "target-features"="+ptx32,+sm_53" }
 ; CHECK-DISABLE-SPMDIZATION: attributes #[[ATTR2]] = { noinline norecurse nounwind "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="sm_53" "target-features"="+ptx32,+sm_53" }
 ; CHECK-DISABLE-SPMDIZATION: attributes #[[ATTR3]] = { nounwind }
@@ -358,23 +358,19 @@ attributes #5 = { convergent }
 ;.
 ; CHECK: [[META0:![0-9]+]] = !{i32 0, i32 43, i32 17011637, !"spmd", i32 12, i32 0}
 ; CHECK: [[META1:![0-9]+]] = !{i32 0, i32 43, i32 17011637, !"generic", i32 20, i32 1}
-; CHECK: [[META2:![0-9]+]] = !{ptr @__omp_offloading_2b_10393b5_spmd_l12, !"kernel", i32 1}
-; CHECK: [[META3:![0-9]+]] = !{ptr @__omp_offloading_2b_10393b5_generic_l20, !"kernel", i32 1}
-; CHECK: [[META4:![0-9]+]] = !{i32 1, !"wchar_size", i32 4}
-; CHECK: [[META5:![0-9]+]] = !{i32 7, !"openmp", i32 50}
-; CHECK: [[META6:![0-9]+]] = !{i32 7, !"openmp-device", i32 50}
-; CHECK: [[META7:![0-9]+]] = !{i32 8, !"PIC Level", i32 2}
-; CHECK: [[META8:![0-9]+]] = !{i32 7, !"frame-pointer", i32 2}
-; CHECK: [[META9:![0-9]+]] = !{!"{{.*}}clang version {{.*}}"}
+; CHECK: [[META2:![0-9]+]] = !{i32 1, !"wchar_size", i32 4}
+; CHECK: [[META3:![0-9]+]] = !{i32 7, !"openmp", i32 50}
+; CHECK: [[META4:![0-9]+]] = !{i32 7, !"openmp-device", i32 50}
+; CHECK: [[META5:![0-9]+]] = !{i32 8, !"PIC Level", i32 2}
+; CHECK: [[META6:![0-9]+]] = !{i32 7, !"frame-pointer", i32 2}
+; CHECK: [[META7:![0-9]+]] = !{!"{{.*}}clang version {{.*}}"}
 ;.
 ; CHECK-DISABLE-SPMDIZATION: [[META0:![0-9]+]] = !{i32 0, i32 43, i32 17011637, !"spmd", i32 12, i32 0}
 ; CHECK-DISABLE-SPMDIZATION: [[META1:![0-9]+]] = !{i32 0, i32 43, i32 17011637, !"generic", i32 20, i32 1}
-; CHECK-DISABLE-SPMDIZATION: [[META2:![0-9]+]] = !{ptr @__omp_offloading_2b_10393b5_spmd_l12, !"kernel", i32 1}
-; CHECK-DISABLE-SPMDIZATION: [[META3:![0-9]+]] = !{ptr @__omp_offloading_2b_10393b5_generic_l20, !"kernel", i32 1}
-; CHECK-DISABLE-SPMDIZATION: [[META4:![0-9]+]] = !{i32 1, !"wchar_size", i32 4}
-; CHECK-DISABLE-SPMDIZATION: [[META5:![0-9]+]] = !{i32 7, !"openmp", i32 50}
-; CHECK-DISABLE-SPMDIZATION: [[META6:![0-9]+]] = !{i32 7, !"openmp-device", i32 50}
-; CHECK-DISABLE-SPMDIZATION: [[META7:![0-9]+]] = !{i32 8, !"PIC Level", i32 2}
-; CHECK-DISABLE-SPMDIZATION: [[META8:![0-9]+]] = !{i32 7, !"frame-pointer", i32 2}
-; CHECK-DISABLE-SPMDIZATION: [[META9:![0-9]+]] = !{!"{{.*}}clang version {{.*}}"}
+; CHECK-DISABLE-SPMDIZATION: [[META2:![0-9]+]] = !{i32 1, !"wchar_size", i32 4}
+; CHECK-DISABLE-SPMDIZATION: [[META3:![0-9]+]] = !{i32 7, !"openmp", i32 50}
+; CHECK-DISABLE-SPMDIZATION: [[META4:![0-9]+]] = !{i32 7, !"openmp-device", i32 50}
+; CHECK-DISABLE-SPMDIZATION: [[META5:![0-9]+]] = !{i32 8, !"PIC Level", i32 2}
+; CHECK-DISABLE-SPMDIZATION: [[META6:![0-9]+]] = !{i32 7, !"frame-pointer", i32 2}
+; CHECK-DISABLE-SPMDIZATION: [[META7:![0-9]+]] = !{!"{{.*}}clang version {{.*}}"}
 ;.

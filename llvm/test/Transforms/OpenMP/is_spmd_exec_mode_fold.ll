@@ -216,15 +216,11 @@ declare void @bar()
 !4 = !{ptr @non_spmd, !"kernel", i32 1}
 !5 = !{ptr @will_not_be_spmd, !"kernel", i32 1}
 ;.
-; CHECK: attributes #[[ATTR0]] = { "kernel" }
+; CHECK: attributes #[[ATTR0]] = { "kernel" "nvvm.kernel" }
 ; CHECK: attributes #[[ATTR1:[0-9]+]] = { "llvm.assume"="ompx_spmd_amenable" }
 ; CHECK: attributes #[[ATTR2:[0-9]+]] = { alwaysinline }
 ; CHECK: attributes #[[ATTR3]] = { nounwind }
 ;.
 ; CHECK: [[META0:![0-9]+]] = !{i32 7, !"openmp", i32 50}
 ; CHECK: [[META1:![0-9]+]] = !{i32 7, !"openmp-device", i32 50}
-; CHECK: [[META2:![0-9]+]] = !{ptr @is_spmd, !"kernel", i32 1}
-; CHECK: [[META3:![0-9]+]] = !{ptr @will_be_spmd, !"kernel", i32 1}
-; CHECK: [[META4:![0-9]+]] = !{ptr @non_spmd, !"kernel", i32 1}
-; CHECK: [[META5:![0-9]+]] = !{ptr @will_not_be_spmd, !"kernel", i32 1}
 ;.
