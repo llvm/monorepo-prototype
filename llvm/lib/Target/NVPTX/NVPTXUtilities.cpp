@@ -330,12 +330,10 @@ MaybeAlign getAlign(const Function &F, unsigned Index) {
   // not support stackalign attribute for this.
   if (Index == 0) {
     std::vector<unsigned> Vs;
-    bool retval = findAllNVVMAnnotation(&F, "align", Vs);
-    if (!retval)
-      return std::nullopt;
-    for (unsigned V : Vs)
-      if ((V >> 16) == Index)
-        return Align(V & 0xFFFF);
+    if (findAllNVVMAnnotation(&F, "align", Vs))
+      for (unsigned V : Vs)
+        if ((V >> 16) == Index)
+          return Align(V & 0xFFFF);
   }
 
   return std::nullopt;

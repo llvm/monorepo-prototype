@@ -6,6 +6,7 @@ void device_function() {
 
 __kernel void kernel_function() {
 }
-// CHECK: define{{.*}} spir_kernel void @kernel_function() {{.*}} #[[ATTR0:[0-9]+]]
+// CHECK-LABEL: define{{.*}} spir_kernel void @kernel_function()
+// CHECK-SAME: #[[ATTR0:[0-9]+]]
 
 // CHECK: attributes #[[ATTR0]] = {{{.*}} "nvvm.kernel" {{.*}}}

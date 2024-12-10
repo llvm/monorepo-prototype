@@ -5025,14 +5025,19 @@ bool llvm::UpgradeDebugInfo(Module &M) {
 bool static upgradeSingleNVVMAnnotation(GlobalValue *GV, StringRef K,
                                         const Metadata *V) {
   if (K == "kernel") {
-    assert(mdconst::extract<ConstantInt>(V)->getZExtValue() == 1);
-    cast<Function>(GV)->addFnAttr("nvvm.kernel");
+    if (!mdconst::extract<ConstantInt>(V)->isZero())
+      cast<Function>(GV)->addFnAttr("nvvm.kernel");
     return true;
   }
   if (K == "align") {
-    const uint64_t AlignBits = mdconst::extract<ConstantInt>(V)->getZExtValue();
-    const unsigned Idx = (AlignBits >> 16);
-    const Align StackAlign = Align(AlignBits & 0xFFFF);
+    // V is a bitfeild specifying two 16-bit values. The alignment value is
+    // specfied in low 16-bits, The index is specified in the high bits. For the
+    // index, 0 indicates the return value while higher values correspond to
+    // each parameter (idx = param + 1).
+    const uint64_t AlignIdxValuePair =
+        mdconst::extract<ConstantInt>(V)->getZExtValue();
+    const unsigned Idx = (AlignIdxValuePair >> 16);
+    const Align StackAlign = Align(AlignIdxValuePair & 0xFFFF);
     // TODO: Skip adding the stackalign attribute for returns, for now.
     if (!Idx)
       return false;
@@ -5063,7 +5068,9 @@ void llvm::UpgradeNVVMAnnotations(Module &M) {
     assert(MD && "Invalid MDNode for annotation");
     assert((MD->getNumOperands() % 2) == 1 && "Invalid number of operands");
 
-    SmallVector<Metadata *, 8> NewOperands;
+    SmallVector<Metadata *, 8> NewOperands{MD->getOperand(0)};
+    // Each nvvm.annotations metadata entry will be of the following form:
+    //   !{ ptr @gv, !"key1", value1, !"key2", value2, ... }
     // start index = 1, to skip the global variable key
     // increment = 2, to skip the value for each property-value pairs
     for (unsigned j = 1, je = MD->getNumOperands(); j < je; j += 2) {
@@ -5074,10 +5081,8 @@ void llvm::UpgradeNVVMAnnotations(Module &M) {
         NewOperands.append({K, V});
     }
 
-    if (!NewOperands.empty()) {
-      NewOperands.insert(NewOperands.begin(), MD->getOperand(0));
+    if (NewOperands.size() > 1)
       NewNodes.push_back(MDNode::get(M.getContext(), NewOperands));
-    }
   }
 
   NamedMD->clearOperands();

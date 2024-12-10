@@ -10,7 +10,8 @@
 extern "C"
 __device__ void device_function() {}
 
-// CHECK: define{{.*}} void @global_function{{.*}} #[[ATTR0:[0-9]+]]
+// CHECK-LABEL: define{{.*}} void @global_function
+// CHECK-SAME: #[[ATTR0:[0-9]+]]
 extern "C"
 __global__ void global_function() {
   // CHECK: call void @device_function
