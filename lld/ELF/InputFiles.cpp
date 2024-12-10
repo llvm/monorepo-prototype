@@ -1726,11 +1726,19 @@ static void createBitcodeSymbol(Ctx &ctx, Symbol *&sym,
     sym = ctx.symtab->insert(objSym.getName());
   }
 
-  int c = objSym.getComdatIndex();
-  if (objSym.isUndefined() || (c != -1 && !keptComdats[c])) {
+  if (objSym.isUndefined()) {
     Undefined newSym(&f, StringRef(), binding, visibility, type);
     sym->resolve(ctx, newSym);
     sym->referenced = true;
+    return;
+  }
+  int c = objSym.getComdatIndex();
+  if (c != -1 && !keptComdats[c]) {
+    Defined newSym(ctx, &f, StringRef(), binding, visibility, type, 0, 0,
+                   nullptr);
+    sym->ltoCanOmit = objSym.canBeOmittedFromSymbolTable() &&
+                      (!sym->isDefined() || sym->ltoCanOmit);
+    sym->resolve(ctx, newSym);
     return;
   }
 
