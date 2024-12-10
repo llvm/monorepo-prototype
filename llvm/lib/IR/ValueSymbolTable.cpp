@@ -123,6 +123,14 @@ ValueName *ValueSymbolTable::createValueName(StringRef Name, Value *V) {
   }
 
   // Otherwise, there is a naming conflict.  Rename this value.
+  // If we are renaming an instruction, ASan needs to know for it to serialize
+  // properly
+  if (auto *I = dyn_cast<Instruction>(V)) {
+    MDString *trueNameMetadata = MDString::get(V->getContext(), Name);
+    llvm::MDTuple *tuple =
+        llvm::MDTuple::get(V->getContext(), trueNameMetadata);
+    I->setMetadata("OriginalName", tuple);
+  }
   SmallString<256> UniqueName(Name.begin(), Name.end());
   return makeUniqueName(V, UniqueName);
 }
