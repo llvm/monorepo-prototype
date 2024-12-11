@@ -610,6 +610,24 @@ LLVM_YAML_IS_SEQUENCE_VECTOR(llvm::yaml::MachineJumpTable::Entry)
 namespace llvm {
 namespace yaml {
 
+struct SRPEntry {
+  StringValue Point;
+  std::vector<StringValue> Registers;
+
+  bool operator==(const SRPEntry &Other) const {
+    return Point == Other.Point && Registers == Other.Registers;
+  }
+};
+
+using SaveRestorePoints = std::vector<SRPEntry>;
+
+template <> struct MappingTraits<SRPEntry> {
+  static void mapping(IO &YamlIO, SRPEntry &Entry) {
+    YamlIO.mapRequired("point", Entry.Point);
+    YamlIO.mapRequired("registers", Entry.Registers);
+  }
+};
+
 template <> struct MappingTraits<MachineJumpTable> {
   static void mapping(IO &YamlIO, MachineJumpTable &JT) {
     YamlIO.mapRequired("kind", JT.Kind);
@@ -617,6 +635,14 @@ template <> struct MappingTraits<MachineJumpTable> {
                        std::vector<MachineJumpTable::Entry>());
   }
 };
+
+} // namespace yaml
+} // namespace llvm
+
+LLVM_YAML_IS_SEQUENCE_VECTOR(llvm::yaml::SRPEntry)
+
+namespace llvm {
+namespace yaml {
 
 /// Serializable representation of MachineFrameInfo.
 ///
@@ -645,8 +671,8 @@ struct MachineFrameInfo {
   bool HasTailCall = false;
   bool IsCalleeSavedInfoValid = false;
   unsigned LocalFrameSize = 0;
-  StringValue SavePoint;
-  StringValue RestorePoint;
+  SaveRestorePoints SavePoints;
+  SaveRestorePoints RestorePoints;
 
   bool operator==(const MachineFrameInfo &Other) const {
     return IsFrameAddressTaken == Other.IsFrameAddressTaken &&
@@ -667,7 +693,8 @@ struct MachineFrameInfo {
            HasMustTailInVarArgFunc == Other.HasMustTailInVarArgFunc &&
            HasTailCall == Other.HasTailCall &&
            LocalFrameSize == Other.LocalFrameSize &&
-           SavePoint == Other.SavePoint && RestorePoint == Other.RestorePoint &&
+           SavePoints == Other.SavePoints &&
+           RestorePoints == Other.RestorePoints &&
            IsCalleeSavedInfoValid == Other.IsCalleeSavedInfoValid;
   }
 };
@@ -699,10 +726,12 @@ template <> struct MappingTraits<MachineFrameInfo> {
     YamlIO.mapOptional("isCalleeSavedInfoValid", MFI.IsCalleeSavedInfoValid,
                        false);
     YamlIO.mapOptional("localFrameSize", MFI.LocalFrameSize, (unsigned)0);
-    YamlIO.mapOptional("savePoint", MFI.SavePoint,
-                       StringValue()); // Don't print it out when it's empty.
-    YamlIO.mapOptional("restorePoint", MFI.RestorePoint,
-                       StringValue()); // Don't print it out when it's empty.
+    YamlIO.mapOptional(
+        "savePoints", MFI.SavePoints,
+        SaveRestorePoints()); // Don't print it out when it's empty.
+    YamlIO.mapOptional(
+        "restorePoints", MFI.RestorePoints,
+        SaveRestorePoints()); // Don't print it out when it's empty.
   }
 };
 

@@ -10,8 +10,8 @@
 ---
 name:            b
 frameInfo:
-  savePoint:       '%bb.0'
-  restorePoint:    '%bb.1'
+  savePoints:      []
+  restorePoints:   []
 body:             |
   ; CHECK-LABEL: name: b
   ; CHECK: bb.0:
