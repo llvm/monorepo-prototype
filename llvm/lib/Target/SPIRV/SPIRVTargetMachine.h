@@ -43,6 +43,11 @@ public:
   TargetLoweringObjectFile *getObjFileLowering() const override {
     return TLOF.get();
   }
+
+  unsigned getAssumedAddrSpace(const Value *V) const override;
+  bool isNoopAddrSpaceCast(unsigned SrcAS, unsigned DstAS) const override;
+
+  void registerPassBuilderCallbacks(PassBuilder &PB) override;
 };
 } // namespace llvm
 
