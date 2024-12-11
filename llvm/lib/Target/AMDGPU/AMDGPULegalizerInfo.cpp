@@ -282,10 +282,11 @@ static LegalityPredicate elementTypeIsLegal(unsigned TypeIdx) {
 static const LLT S1 = LLT::scalar(1);
 static const LLT S8 = LLT::scalar(8);
 static const LLT S16 = LLT::scalar(16);
+static const LLT F16 = LLT::integer(16);
 static const LLT S32 = LLT::scalar(32);
-static const LLT F32 = LLT::float32();
+static const LLT F32 = LLT::integer(32);
 static const LLT S64 = LLT::scalar(64);
-static const LLT F64 = LLT::float64();
+static const LLT F64 = LLT::integer(64);
 static const LLT S96 = LLT::scalar(96);
 static const LLT S128 = LLT::scalar(128);
 static const LLT S160 = LLT::scalar(160);
@@ -305,7 +306,7 @@ static const LLT V10S16 = LLT::fixed_vector(10, 16);
 static const LLT V12S16 = LLT::fixed_vector(12, 16);
 static const LLT V16S16 = LLT::fixed_vector(16, 16);
 
-static const LLT V2F16 = LLT::fixed_vector(2, LLT::float16());
+static const LLT V2F16 = LLT::fixed_vector(2, LLT::integer(16));
 static const LLT V2BF16 = V2F16; // FIXME
 
 static const LLT V2S32 = LLT::fixed_vector(2, 32);
@@ -3198,10 +3199,10 @@ bool AMDGPULegalizerInfo::legalizeFMad(
 
   // TODO: Always legal with future ftz flag.
   // FIXME: Do we need just output?
-  if (Ty == LLT::float32() &&
+  if (Ty == F32 &&
       MFI->getMode().FP32Denormals == DenormalMode::getPreserveSign())
     return true;
-  if (Ty == LLT::float16() &&
+  if (Ty == F16 &&
       MFI->getMode().FP64FP16Denormals == DenormalMode::getPreserveSign())
     return true;
 
@@ -3753,8 +3754,6 @@ bool AMDGPULegalizerInfo::legalizeFPow(MachineInstr &MI,
   Register Src1 = MI.getOperand(2).getReg();
   unsigned Flags = MI.getFlags();
   LLT Ty = B.getMRI()->getType(Dst);
-  const LLT F16 = LLT::float16();
-  const LLT F32 = LLT::float32();
 
   if (Ty == F32) {
     auto Log = B.buildFLog2(F32, Src0, Flags);
@@ -3797,7 +3796,6 @@ bool AMDGPULegalizerInfo::legalizeFFloor(MachineInstr &MI,
                                          MachineIRBuilder &B) const {
 
   const LLT S1 = LLT::scalar(1);
-  const LLT F64 = LLT::float64();
   Register Dst = MI.getOperand(0).getReg();
   Register OrigSrc = MI.getOperand(1).getReg();
   unsigned Flags = MI.getFlags();

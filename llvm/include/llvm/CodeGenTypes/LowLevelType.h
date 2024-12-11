@@ -139,25 +139,25 @@ public:
   }
 
   // Get a 16-bit brain float value.
-  static constexpr LLT bfloat() { return integer(16); }
+  static constexpr LLT bfloat() { return floatingPoint(16, FPInfo::VARIANT_FLOAT_1); }
 
   /// Get a 16-bit IEEE half value.
-  static constexpr LLT float16() { return integer(16); }
+  static constexpr LLT float16() { return floatingPoint(16, FPInfo::IEEE_FLOAT); }
 
   /// Get a 32-bit IEEE float value.
-  static constexpr LLT float32() { return integer(32); }
+  static constexpr LLT float32() { return floatingPoint(32, FPInfo::IEEE_FLOAT); }
 
   /// Get a 64-bit IEEE double value.
-  static constexpr LLT float64() { return integer(64); }
+  static constexpr LLT float64() { return floatingPoint(64, FPInfo::IEEE_FLOAT); }
 
   /// Get a 80-bit X86 floating point value.
-  static constexpr LLT x86fp80() { return integer(80); }
+  static constexpr LLT x86fp80() { return floatingPoint(80, FPInfo::VARIANT_FLOAT_1); }
 
   /// Get a 128-bit IEEE quad value.
   static constexpr LLT float128() { return floatingPoint(128, FPInfo::IEEE_FLOAT); }
 
   /// Get a 128-bit PowerPC double double value.
-  static constexpr LLT ppcf128() { return integer(128); }
+  static constexpr LLT ppcf128() { return floatingPoint(128, FPInfo::VARIANT_FLOAT_1); }
 
   /// Get a low-level fixed-width vector of some number of elements and element
   /// width.
