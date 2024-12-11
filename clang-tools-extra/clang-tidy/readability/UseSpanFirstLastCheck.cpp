@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "UseSpanFirstLastCheck.h"
+#include "../utils/ASTUtils.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
@@ -16,6 +17,29 @@
 using namespace clang::ast_matchers;
 
 namespace clang::tidy::readability {
+
+bool isSizeCallFromSameObject(const Expr *SizeCallExpr, const Expr *SpanObj,
+                              ASTContext *Context) {
+  // Handle member call to size()
+  if (const auto *MemberCall = dyn_cast<CXXMemberCallExpr>(SizeCallExpr)) {
+    if (const auto *ImplicitObj = MemberCall->getImplicitObjectArgument()) {
+      return utils::areStatementsIdentical(ImplicitObj->IgnoreParenImpCasts(),
+                                           SpanObj->IgnoreParenImpCasts(),
+                                           *Context);
+    }
+  }
+
+  // Handle std::ranges::size call
+  if (const auto *RangesCall = dyn_cast<CallExpr>(SizeCallExpr)) {
+    if (RangesCall->getNumArgs() == 1) {
+      const Expr *Arg = RangesCall->getArg(0)->IgnoreParenImpCasts();
+      return utils::areStatementsIdentical(Arg, SpanObj->IgnoreParenImpCasts(),
+                                           *Context);
+    }
+  }
+
+  return false;
+}
 
 void UseSpanFirstLastCheck::registerMatchers(MatchFinder *Finder) {
   const auto HasSpanType =
@@ -36,9 +60,11 @@ void UseSpanFirstLastCheck::registerMatchers(MatchFinder *Finder) {
   // -> last(n)
   const auto SizeCall = anyOf(
       cxxMemberCallExpr(
-          callee(memberExpr(hasDeclaration(cxxMethodDecl(hasName("size")))))),
-      callExpr(callee(
-          functionDecl(hasAnyName("::std::size", "::std::ranges::size")))));
+          callee(memberExpr(hasDeclaration(cxxMethodDecl(hasName("size"))))))
+          .bind("size_call"),
+      callExpr(callee(functionDecl(
+                   hasAnyName("::std::size", "::std::ranges::size"))))
+          .bind("size_call"));
 
   Finder->addMatcher(
       cxxMemberCallExpr(
@@ -79,6 +105,13 @@ void UseSpanFirstLastCheck::check(const MatchFinder::MatchResult &Result) {
 
   if (const auto *LastCall =
           Result.Nodes.getNodeAs<CXXMemberCallExpr>("last_subspan")) {
+    // Check if the size call is from the same span object
+    const auto *SizeCallExpr = Result.Nodes.getNodeAs<Expr>("size_call");
+    if (!SizeCallExpr ||
+        !isSizeCallFromSameObject(SizeCallExpr, SpanObj, Result.Context)) {
+      return;
+    }
+
     const auto *Count = Result.Nodes.getNodeAs<Expr>("count");
     assert(Count && "Count expression must exist due to AST matcher");
 

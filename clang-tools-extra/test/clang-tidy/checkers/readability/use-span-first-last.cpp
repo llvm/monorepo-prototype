@@ -120,3 +120,30 @@ void test_ranges() {
   // CHECK-MESSAGES: :[[@LINE-1]]:15: warning: prefer 'span::last()' over 'subspan()'
   // CHECK-FIXES: auto sub2 = s.last(n);
 }
+
+void test_different_spans() {
+  int arr1[] = {1, 2, 3, 4, 5};
+  int arr2[] = {6, 7, 8, 9, 10};
+  std::span<int> s1(arr1, 5);
+  std::span<int> s2(arr2, 5);
+
+  // These should NOT trigger warnings as they use size() from a different span
+  auto sub1 = s1.subspan(s2.size() - 2);     // No warning
+  auto sub2 = s2.subspan(s1.size() - 3);     // No warning
+  
+  // Also check with std::ranges::size
+  auto sub3 = s1.subspan(std::ranges::size(s2) - 2);  // No warning
+  auto sub4 = s2.subspan(std::ranges::size(s1) - 3);  // No warning
+
+  // Mixed usage should also not trigger
+  auto sub5 = s1.subspan(s2.size() - s1.size());      // No warning
+  
+  // Verify that correct usage still triggers warnings
+  auto good1 = s1.subspan(s1.size() - 2);
+  // CHECK-MESSAGES: :[[@LINE-1]]:16: warning: prefer 'span::last()' over 'subspan()'
+  // CHECK-FIXES: auto good1 = s1.last(2);
+  
+  auto good2 = s2.subspan(std::ranges::size(s2) - 3);
+  // CHECK-MESSAGES: :[[@LINE-1]]:16: warning: prefer 'span::last()' over 'subspan()'
+  // CHECK-FIXES: auto good2 = s2.last(3);
+}
