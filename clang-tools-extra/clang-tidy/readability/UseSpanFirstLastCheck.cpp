@@ -35,7 +35,8 @@ void UseSpanFirstLastCheck::registerMatchers(MatchFinder *Finder) {
           .bind("first_subspan"),
       this);
 
-  // Match span.subspan(size() - n) or span.subspan(std::ranges::size(span) - n)
+  // Match span.subspan(span.size() - n) or span.subspan(std::ranges::size(span)
+  // - n)
   // -> last(n)
   const auto SizeCall = anyOf(
       cxxMemberCallExpr(
@@ -81,6 +82,7 @@ void UseSpanFirstLastCheck::check(const MatchFinder::MatchResult &Result) {
     diag(FirstCall->getBeginLoc(), "prefer 'span::first()' over 'subspan()'")
         << FixItHint::CreateReplacement(FirstCall->getSourceRange(),
                                         Replacement);
+    return;
   }
 
   if (const auto *LastCall =
