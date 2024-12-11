@@ -496,10 +496,9 @@ static void EmitHLSLSplatCast(CodeGenFunction &CGF, Address DestVal,
                               QualType SrcTy, SourceLocation Loc) {
   // Flatten our destination
   SmallVector<QualType> DestTypes; // Flattened type
-  SmallVector<llvm::Value *, 4> IdxList;
   SmallVector<std::pair<Address, llvm::Value *>, 16> StoreGEPList;
   // ^^ Flattened accesses to DestVal we want to store into
-  CGF.FlattenAccessAndType(DestVal, DestTy, IdxList, StoreGEPList, DestTypes);
+  CGF.FlattenAccessAndType(DestVal, DestTy, StoreGEPList, DestTypes);
 
   if (const VectorType *VT = SrcTy->getAs<VectorType>()) {
     assert(VT->getNumElements() == 1 && "Invalid HLSL splat cast.");
@@ -511,7 +510,15 @@ static void EmitHLSLSplatCast(CodeGenFunction &CGF, Address DestVal,
   for (unsigned i = 0; i < StoreGEPList.size(); i++) {
     llvm::Value *Cast =
         CGF.EmitScalarConversion(SrcVal, SrcTy, DestTypes[i], Loc);
-    CGF.PerformStore(StoreGEPList[i], Cast);
+
+    // store back
+    llvm::Value *Idx = StoreGEPList[i].second;
+    if (Idx) {
+      llvm::Value *V =
+          CGF.Builder.CreateLoad(StoreGEPList[i].first, "load.for.insert");
+      Cast = CGF.Builder.CreateInsertElement(V, Cast, Idx);
+    }
+    CGF.Builder.CreateStore(Cast, StoreGEPList[i].first);
   }
 }
 
@@ -1595,7 +1602,6 @@ static bool castPreservesZero(const CastExpr *CE) {
   case CK_HLSLVectorTruncation:
     // TODO does CK_HLSLAggregateCast preserve zero?
     // TODO is this true for CK_HLSLSplatCast
->>>>>>> a74daceacc38 (Try to handle Cast in all the places it needs to be handled)
     return true;
 
   case CK_BaseToDerivedMemberPointer:
