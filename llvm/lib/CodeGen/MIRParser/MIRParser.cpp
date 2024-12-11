@@ -1067,7 +1067,7 @@ bool MIRParserImpl::initializeSaveRestorePoints(
     if (parseMBBReference(PFS, MBB, MBBSource.Value))
       return true;
 
-    std::vector<Register> Registers{};
+    std::vector<Register> Registers;
     for (auto &RegStr : Entry.Registers) {
       Register Reg;
       if (parseNamedRegisterReference(PFS, Reg, RegStr.Value, Error))
