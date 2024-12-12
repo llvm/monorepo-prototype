@@ -32,8 +32,8 @@ frameInfo:
   hasOpaqueSPAdjustment: false
   hasVAStart:      false
   hasMustTailInVarArgFunc: false
-  savePoint:       ''
-  restorePoint:    ''
+  savePoints:      []
+  restorePoints:   []
 fixedStack:
 
 body:             |

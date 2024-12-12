@@ -61,8 +61,8 @@ frameInfo:
   hasVAStart:      false
   hasMustTailInVarArgFunc: false
   localFrameSize:  0
-  savePoint:       ''
-  restorePoint:    ''
+  savePoints:      []
+  restorePoints:   []
 fixedStack:
 stack:
 constants:
@@ -165,8 +165,8 @@ frameInfo:
   hasVAStart:      false
   hasMustTailInVarArgFunc: false
   localFrameSize:  0
-  savePoint:       ''
-  restorePoint:    ''
+  savePoints:      []
+  restorePoints:   []
 fixedStack:
 stack:
 constants:

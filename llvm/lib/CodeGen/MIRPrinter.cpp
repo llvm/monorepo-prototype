@@ -118,6 +118,8 @@ public:
                const TargetRegisterInfo *TRI);
   void convert(ModuleSlotTracker &MST, yaml::MachineFrameInfo &YamlMFI,
                const MachineFrameInfo &MFI);
+  void convert(ModuleSlotTracker &MST, yaml::SaveRestorePoints &YamlSRP,
+               MachineBasicBlock *SaveRestorePoint);
   void convert(yaml::MachineFunction &MF,
                const MachineConstantPool &ConstantPool);
   void convert(ModuleSlotTracker &MST, yaml::MachineJumpTable &YamlJTI,
@@ -392,14 +394,10 @@ void MIRPrinter::convert(ModuleSlotTracker &MST,
   YamlMFI.HasTailCall = MFI.hasTailCall();
   YamlMFI.IsCalleeSavedInfoValid = MFI.isCalleeSavedInfoValid();
   YamlMFI.LocalFrameSize = MFI.getLocalFrameSize();
-  if (MFI.getSavePoint()) {
-    raw_string_ostream StrOS(YamlMFI.SavePoint.Value);
-    StrOS << printMBBReference(*MFI.getSavePoint());
-  }
-  if (MFI.getRestorePoint()) {
-    raw_string_ostream StrOS(YamlMFI.RestorePoint.Value);
-    StrOS << printMBBReference(*MFI.getRestorePoint());
-  }
+  if (MFI.getSavePoint())
+    convert(MST, YamlMFI.SavePoints, MFI.getSavePoint());
+  if (MFI.getRestorePoint())
+    convert(MST, YamlMFI.RestorePoints, MFI.getRestorePoint());
 }
 
 void MIRPrinter::convertEntryValueObjects(yaml::MachineFunction &YMF,
@@ -616,6 +614,18 @@ void MIRPrinter::convert(yaml::MachineFunction &MF,
 
     MF.Constants.push_back(YamlConstant);
   }
+}
+
+void MIRPrinter::convert(ModuleSlotTracker &MST,
+                         yaml::SaveRestorePoints &YamlSRP,
+                         MachineBasicBlock *SRP) {
+  std::string Str;
+  yaml::SRPEntry Entry;
+  raw_string_ostream StrOS(Str);
+  StrOS << printMBBReference(*SRP);
+  Entry.Point = StrOS.str();
+  Str.clear();
+  YamlSRP.push_back(Entry);
 }
 
 void MIRPrinter::convert(ModuleSlotTracker &MST,
