@@ -19,19 +19,18 @@ define i16 @SQLDriversW(ptr %henv, i16 zeroext  %fDir, ptr %szDrvDesc, i16 signe
 ; CHECK-NEXT:    testb %al, %al
 ; CHECK-NEXT:    je LBB0_1
 ; CHECK-NEXT:  ## %bb.3: ## %bb28
-; CHECK-NEXT:    movzwl {{[0-9]+}}(%esp), %ecx
 ; CHECK-NEXT:    movzwl {{[0-9]+}}(%esp), %ebx
 ; CHECK-NEXT:    movzwl {{[0-9]+}}(%esp), %ebp
 ; CHECK-NEXT:    movl {{[0-9]+}}(%esp), %edi
 ; CHECK-NEXT:    movw $-2, %si
-; CHECK-NEXT:    jne LBB0_6
+; CHECK-NEXT:    jne LBB0_5
 ; CHECK-NEXT:  ## %bb.4: ## %bb37
 ; CHECK-NEXT:    movw $0, 40(%edi)
 ; CHECK-NEXT:    testb %al, %al
-; CHECK-NEXT:    leal (,%ecx,4), %ecx
-; CHECK-NEXT:    leal (,%ebx,4), %edx
+; CHECK-NEXT:    leal (,%ebx,4), %ecx
+; CHECK-NEXT:    leal (,%ebp,4), %edx
 ; CHECK-NEXT:    subl $12, %esp
-; CHECK-NEXT:    movzwl %bp, %eax
+; CHECK-NEXT:    movzwl {{[0-9]+}}(%esp), %eax
 ; CHECK-NEXT:    movswl %cx, %ecx
 ; CHECK-NEXT:    movswl %dx, %edx
 ; CHECK-NEXT:    pushl $87
@@ -49,13 +48,11 @@ define i16 @SQLDriversW(ptr %henv, i16 zeroext  %fDir, ptr %szDrvDesc, i16 signe
 ; CHECK-NEXT:    xorl %eax, %eax
 ; CHECK-NEXT:    testb %al, %al
 ; CHECK-NEXT:    je LBB0_1
-; CHECK-NEXT:  ## %bb.5:
-; CHECK-NEXT:    movzwl {{[0-9]+}}(%esp), %ecx
-; CHECK-NEXT:  LBB0_6: ## %done
+; CHECK-NEXT:  LBB0_5: ## %done
 ; CHECK-NEXT:    xorl %eax, %eax
 ; CHECK-NEXT:    testb %al, %al
-; CHECK-NEXT:    je LBB0_7
-; CHECK-NEXT:  ## %bb.8: ## %bb167
+; CHECK-NEXT:    je LBB0_6
+; CHECK-NEXT:  ## %bb.7: ## %bb167
 ; CHECK-NEXT:    subl $12, %esp
 ; CHECK-NEXT:    movl L_iodbcdm_global_lock$non_lazy_ptr, %eax
 ; CHECK-NEXT:    pushl %eax
@@ -63,12 +60,12 @@ define i16 @SQLDriversW(ptr %henv, i16 zeroext  %fDir, ptr %szDrvDesc, i16 signe
 ; CHECK-NEXT:    addl $16, %esp
 ; CHECK-NEXT:    movl %esi, %eax
 ; CHECK-NEXT:    jmp LBB0_2
-; CHECK-NEXT:  LBB0_7: ## %bb150
+; CHECK-NEXT:  LBB0_6: ## %bb150
 ; CHECK-NEXT:    movswl %si, %eax
 ; CHECK-NEXT:    subl $8, %esp
-; CHECK-NEXT:    movswl %cx, %ecx
-; CHECK-NEXT:    movswl %bx, %edx
-; CHECK-NEXT:    movzwl %bp, %esi
+; CHECK-NEXT:    movswl %bx, %ecx
+; CHECK-NEXT:    movswl %bp, %edx
+; CHECK-NEXT:    movzwl {{[0-9]+}}(%esp), %esi
 ; CHECK-NEXT:    pushl {{[0-9]+}}(%esp)
 ; CHECK-NEXT:    pushl %ecx
 ; CHECK-NEXT:    pushl {{[0-9]+}}(%esp)

@@ -2855,117 +2855,117 @@ define <32 x i64> @lrint_v32i64_v32f16(<32 x half> %x) {
 ; CHECK-NEXT:    bl lrintf
 ; CHECK-NEXT:    nop
 ; CHECK-NEXT:    xxlor f1, v21, v21
-; CHECK-NEXT:    mtvsrd v31, r3
+; CHECK-NEXT:    mtvsrd v20, r3
 ; CHECK-NEXT:    bl lrintf
 ; CHECK-NEXT:    nop
 ; CHECK-NEXT:    mtfprd f0, r3
 ; CHECK-NEXT:    li r3, 160
 ; CHECK-NEXT:    xxlor f1, v22, v22
-; CHECK-NEXT:    xxmrghd vs0, vs0, v31
+; CHECK-NEXT:    xxmrghd vs0, vs0, v20
 ; CHECK-NEXT:    stxvd2x vs0, r1, r3 # 16-byte Folded Spill
 ; CHECK-NEXT:    bl lrintf
 ; CHECK-NEXT:    nop
 ; CHECK-NEXT:    xxlor f1, v23, v23
-; CHECK-NEXT:    mtvsrd v31, r3
+; CHECK-NEXT:    mtvsrd v22, r3
 ; CHECK-NEXT:    bl lrintf
 ; CHECK-NEXT:    nop
 ; CHECK-NEXT:    mtfprd f0, r3
 ; CHECK-NEXT:    li r3, 144
 ; CHECK-NEXT:    xxlor f1, v24, v24
-; CHECK-NEXT:    xxmrghd vs0, vs0, v31
+; CHECK-NEXT:    xxmrghd vs0, vs0, v22
 ; CHECK-NEXT:    stxvd2x vs0, r1, r3 # 16-byte Folded Spill
 ; CHECK-NEXT:    bl lrintf
 ; CHECK-NEXT:    nop
 ; CHECK-NEXT:    xxlor f1, v25, v25
-; CHECK-NEXT:    mtvsrd v31, r3
+; CHECK-NEXT:    mtvsrd v24, r3
 ; CHECK-NEXT:    bl lrintf
 ; CHECK-NEXT:    nop
 ; CHECK-NEXT:    mtfprd f0, r3
 ; CHECK-NEXT:    li r3, 128
 ; CHECK-NEXT:    xxlor f1, v26, v26
-; CHECK-NEXT:    xxmrghd vs0, vs0, v31
+; CHECK-NEXT:    xxmrghd vs0, vs0, v24
 ; CHECK-NEXT:    stxvd2x vs0, r1, r3 # 16-byte Folded Spill
 ; CHECK-NEXT:    bl lrintf
 ; CHECK-NEXT:    nop
 ; CHECK-NEXT:    xxlor f1, v27, v27
-; CHECK-NEXT:    mtvsrd v31, r3
+; CHECK-NEXT:    mtvsrd v26, r3
 ; CHECK-NEXT:    bl lrintf
 ; CHECK-NEXT:    nop
 ; CHECK-NEXT:    mtfprd f0, r3
 ; CHECK-NEXT:    xxlor f1, v28, v28
-; CHECK-NEXT:    xxmrghd v27, vs0, v31
+; CHECK-NEXT:    xxmrghd v27, vs0, v26
 ; CHECK-NEXT:    bl lrintf
 ; CHECK-NEXT:    nop
 ; CHECK-NEXT:    xxlor f1, v29, v29
-; CHECK-NEXT:    mtvsrd v31, r3
+; CHECK-NEXT:    mtvsrd v28, r3
 ; CHECK-NEXT:    bl lrintf
 ; CHECK-NEXT:    nop
 ; CHECK-NEXT:    mtfprd f0, r3
 ; CHECK-NEXT:    xxlor f1, v30, v30
-; CHECK-NEXT:    xxmrghd v29, vs0, v31
+; CHECK-NEXT:    xxmrghd v29, vs0, v28
 ; CHECK-NEXT:    bl lrintf
 ; CHECK-NEXT:    nop
 ; CHECK-NEXT:    fmr f1, f30
-; CHECK-NEXT:    mtvsrd v31, r3
+; CHECK-NEXT:    mtvsrd v30, r3
 ; CHECK-NEXT:    bl lrintf
 ; CHECK-NEXT:    nop
 ; CHECK-NEXT:    fmr f1, f14
 ; CHECK-NEXT:    mtfprd f0, r3
-; CHECK-NEXT:    xxmrghd v31, vs0, v31
+; CHECK-NEXT:    xxmrghd v30, vs0, v30
 ; CHECK-NEXT:    bl lrintf
 ; CHECK-NEXT:    nop
 ; CHECK-NEXT:    fmr f1, f15
-; CHECK-NEXT:    mtvsrd v30, r3
+; CHECK-NEXT:    mtvsrd v28, r3
 ; CHECK-NEXT:    bl lrintf
 ; CHECK-NEXT:    nop
 ; CHECK-NEXT:    fmr f1, f16
 ; CHECK-NEXT:    mtfprd f0, r3
-; CHECK-NEXT:    xxmrghd v30, vs0, v30
+; CHECK-NEXT:    xxmrghd v28, vs0, v28
 ; CHECK-NEXT:    bl lrintf
 ; CHECK-NEXT:    nop
 ; CHECK-NEXT:    fmr f1, f17
-; CHECK-NEXT:    mtvsrd v28, r3
+; CHECK-NEXT:    mtvsrd v26, r3
 ; CHECK-NEXT:    bl lrintf
 ; CHECK-NEXT:    nop
 ; CHECK-NEXT:    fmr f1, f18
 ; CHECK-NEXT:    mtfprd f0, r3
-; CHECK-NEXT:    xxmrghd v28, vs0, v28
+; CHECK-NEXT:    xxmrghd v26, vs0, v26
 ; CHECK-NEXT:    bl lrintf
 ; CHECK-NEXT:    nop
 ; CHECK-NEXT:    fmr f1, f19
-; CHECK-NEXT:    mtvsrd v26, r3
+; CHECK-NEXT:    mtvsrd v24, r3
 ; CHECK-NEXT:    bl lrintf
 ; CHECK-NEXT:    nop
 ; CHECK-NEXT:    fmr f1, f20
 ; CHECK-NEXT:    mtfprd f0, r3
-; CHECK-NEXT:    xxmrghd v26, vs0, v26
+; CHECK-NEXT:    xxmrghd v24, vs0, v24
 ; CHECK-NEXT:    bl lrintf
 ; CHECK-NEXT:    nop
 ; CHECK-NEXT:    fmr f1, f21
-; CHECK-NEXT:    mtvsrd v24, r3
+; CHECK-NEXT:    mtvsrd v22, r3
 ; CHECK-NEXT:    bl lrintf
 ; CHECK-NEXT:    nop
 ; CHECK-NEXT:    fmr f1, f22
 ; CHECK-NEXT:    mtfprd f0, r3
-; CHECK-NEXT:    xxmrghd v24, vs0, v24
+; CHECK-NEXT:    xxmrghd v22, vs0, v22
 ; CHECK-NEXT:    bl lrintf
 ; CHECK-NEXT:    nop
 ; CHECK-NEXT:    fmr f1, f23
-; CHECK-NEXT:    mtvsrd v22, r3
+; CHECK-NEXT:    mtvsrd v20, r3
 ; CHECK-NEXT:    bl lrintf
 ; CHECK-NEXT:    nop
 ; CHECK-NEXT:    fmr f1, f24
 ; CHECK-NEXT:    mtfprd f0, r3
-; CHECK-NEXT:    xxmrghd v22, vs0, v22
+; CHECK-NEXT:    xxmrghd v20, vs0, v20
 ; CHECK-NEXT:    bl lrintf
 ; CHECK-NEXT:    nop
 ; CHECK-NEXT:    fmr f1, f25
-; CHECK-NEXT:    mtvsrd v20, r3
+; CHECK-NEXT:    mtvsrd v31, r3
 ; CHECK-NEXT:    bl lrintf
 ; CHECK-NEXT:    nop
 ; CHECK-NEXT:    fmr f1, f26
 ; CHECK-NEXT:    mtfprd f0, r3
-; CHECK-NEXT:    xxmrghd v20, vs0, v20
+; CHECK-NEXT:    xxmrghd v31, vs0, v31
 ; CHECK-NEXT:    bl lrintf
 ; CHECK-NEXT:    nop
 ; CHECK-NEXT:    fmr f1, f27
@@ -2997,7 +2997,7 @@ define <32 x i64> @lrint_v32i64_v32f16(<32 x half> %x) {
 ; CHECK-NEXT:    xxswapd vs1, v23
 ; CHECK-NEXT:    li r4, 128
 ; CHECK-NEXT:    xxswapd vs2, v21
-; CHECK-NEXT:    xxswapd vs3, v31
+; CHECK-NEXT:    xxswapd vs3, v30
 ; CHECK-NEXT:    xxmrghd v2, vs0, v25
 ; CHECK-NEXT:    xxswapd vs0, v2
 ; CHECK-NEXT:    stxvd2x vs0, r30, r3
@@ -3006,22 +3006,22 @@ define <32 x i64> @lrint_v32i64_v32f16(<32 x half> %x) {
 ; CHECK-NEXT:    li r3, 208
 ; CHECK-NEXT:    stxvd2x vs2, r30, r3
 ; CHECK-NEXT:    li r3, 192
-; CHECK-NEXT:    xxswapd vs0, v20
+; CHECK-NEXT:    xxswapd vs0, v31
 ; CHECK-NEXT:    stxvd2x vs0, r30, r3
 ; CHECK-NEXT:    li r3, 176
-; CHECK-NEXT:    xxswapd vs1, v22
+; CHECK-NEXT:    xxswapd vs1, v20
 ; CHECK-NEXT:    stxvd2x vs1, r30, r3
 ; CHECK-NEXT:    li r3, 160
-; CHECK-NEXT:    xxswapd vs2, v28
-; CHECK-NEXT:    xxswapd vs0, v24
+; CHECK-NEXT:    xxswapd vs2, v26
+; CHECK-NEXT:    xxswapd vs0, v22
 ; CHECK-NEXT:    stxvd2x vs0, r30, r3
 ; CHECK-NEXT:    li r3, 144
-; CHECK-NEXT:    xxswapd vs1, v26
+; CHECK-NEXT:    xxswapd vs1, v24
 ; CHECK-NEXT:    stxvd2x vs1, r30, r3
 ; CHECK-NEXT:    li r3, 128
 ; CHECK-NEXT:    stxvd2x vs2, r30, r3
 ; CHECK-NEXT:    li r3, 112
-; CHECK-NEXT:    xxswapd vs0, v30
+; CHECK-NEXT:    xxswapd vs0, v28
 ; CHECK-NEXT:    stxvd2x vs0, r30, r3
 ; CHECK-NEXT:    li r3, 96
 ; CHECK-NEXT:    stxvd2x vs3, r30, r3

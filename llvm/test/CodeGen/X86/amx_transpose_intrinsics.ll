@@ -130,7 +130,7 @@ define void @test_amx3(i8* %pointer, i8* %base, i64 %stride) #0 {
 define void @test_amx_spill(i8* %pointer, i8* %base, i64 %stride) #0 {
 ; CHECK-LABEL: test_amx_spill:
 ; CHECK:       # %bb.0:
-; CHECK-NEXT:    subq $6088, %rsp # imm = 0x17C8
+; CHECK-NEXT:    subq $8136, %rsp # imm = 0x1FC8
 ; CHECK-NEXT:    vxorps %xmm0, %xmm0, %xmm0
 ; CHECK-NEXT:    vmovups %zmm0, -{{[0-9]+}}(%rsp)
 ; CHECK-NEXT:    movb $1, -{{[0-9]+}}(%rsp)
@@ -148,17 +148,27 @@ define void @test_amx_spill(i8* %pointer, i8* %base, i64 %stride) #0 {
 ; CHECK-NEXT:    movw $8, %ax
 ; CHECK-NEXT:    tileloadd (%rsi,%rdx), %tmm0
 ; CHECK-NEXT:    t2rpntlvwz0 (%rsi,%rdx), %tmm4
-; CHECK-NEXT:    t2rpntlvwz0t1 (%rsi,%rdx), %tmm6
 ; CHECK-NEXT:    movabsq $64, %rcx
-; CHECK-NEXT:    tilestored %tmm6, 4032(%rsp,%rcx) # 1024-byte Folded Spill
-; CHECK-NEXT:    tilestored %tmm7, 5056(%rsp,%rcx) # 1024-byte Folded Spill
-; CHECK-NEXT:    t2rpntlvwz1 (%rsi,%rdx), %tmm6
-; CHECK-NEXT:    tilestored %tmm6, 1984(%rsp,%rcx) # 1024-byte Folded Spill
-; CHECK-NEXT:    tilestored %tmm7, 3008(%rsp,%rcx) # 1024-byte Folded Spill
-; CHECK-NEXT:    t2rpntlvwz1t1 (%rsi,%rdx), %tmm6
-; CHECK-NEXT:    tilestored %tmm6, -64(%rsp,%rcx) # 1024-byte Folded Spill
-; CHECK-NEXT:    tilestored %tmm7, 960(%rsp,%rcx) # 1024-byte Folded Spill
+; CHECK-NEXT:    tilestored %tmm4, -64(%rsp,%rcx) # 1024-byte Folded Spill
+; CHECK-NEXT:    tilestored %tmm5, 960(%rsp,%rcx) # 1024-byte Folded Spill
+; CHECK-NEXT:    t2rpntlvwz0t1 (%rsi,%rdx), %tmm4
+; CHECK-NEXT:    tilestored %tmm4, 6080(%rsp,%rcx) # 1024-byte Folded Spill
+; CHECK-NEXT:    tilestored %tmm5, 7104(%rsp,%rcx) # 1024-byte Folded Spill
+; CHECK-NEXT:    t2rpntlvwz1 (%rsi,%rdx), %tmm4
+; CHECK-NEXT:    tilestored %tmm4, 4032(%rsp,%rcx) # 1024-byte Folded Spill
+; CHECK-NEXT:    tilestored %tmm5, 5056(%rsp,%rcx) # 1024-byte Folded Spill
+; CHECK-NEXT:    t2rpntlvwz1t1 (%rsi,%rdx), %tmm4
+; CHECK-NEXT:    tilestored %tmm4, 1984(%rsp,%rcx) # 1024-byte Folded Spill
+; CHECK-NEXT:    tilestored %tmm5, 3008(%rsp,%rcx) # 1024-byte Folded Spill
 ; CHECK-NEXT:    t2rpntlvwz0 (%rsi,%rdx), %tmm6
+; CHECK-NEXT:    tileloadd -64(%rsp,%rcx), %tmm4 # 1024-byte Folded Reload
+; CHECK-NEXT:    tileloadd 960(%rsp,%rcx), %tmm5 # 1024-byte Folded Reload
+; CHECK-NEXT:    tilestored %tmm4, (%rsi,%rdx)
+; CHECK-NEXT:    tileloadd -64(%rsp,%rcx), %tmm4 # 1024-byte Folded Reload
+; CHECK-NEXT:    tileloadd 960(%rsp,%rcx), %tmm5 # 1024-byte Folded Reload
+; CHECK-NEXT:    tilestored %tmm5, (%rsi,%rdx)
+; CHECK-NEXT:    tileloadd 6080(%rsp,%rcx), %tmm4 # 1024-byte Folded Reload
+; CHECK-NEXT:    tileloadd 7104(%rsp,%rcx), %tmm5 # 1024-byte Folded Reload
 ; CHECK-NEXT:    tilestored %tmm4, (%rsi,%rdx)
 ; CHECK-NEXT:    tilestored %tmm5, (%rsi,%rdx)
 ; CHECK-NEXT:    tileloadd 4032(%rsp,%rcx), %tmm4 # 1024-byte Folded Reload
@@ -169,13 +179,9 @@ define void @test_amx_spill(i8* %pointer, i8* %base, i64 %stride) #0 {
 ; CHECK-NEXT:    tileloadd 3008(%rsp,%rcx), %tmm5 # 1024-byte Folded Reload
 ; CHECK-NEXT:    tilestored %tmm4, (%rsi,%rdx)
 ; CHECK-NEXT:    tilestored %tmm5, (%rsi,%rdx)
-; CHECK-NEXT:    tileloadd -64(%rsp,%rcx), %tmm4 # 1024-byte Folded Reload
-; CHECK-NEXT:    tileloadd 960(%rsp,%rcx), %tmm5 # 1024-byte Folded Reload
-; CHECK-NEXT:    tilestored %tmm4, (%rsi,%rdx)
-; CHECK-NEXT:    tilestored %tmm5, (%rsi,%rdx)
 ; CHECK-NEXT:    tilestored %tmm6, (%rsi,%rdx)
 ; CHECK-NEXT:    tilestored %tmm7, (%rsi,%rdx)
-; CHECK-NEXT:    addq $6088, %rsp # imm = 0x17C8
+; CHECK-NEXT:    addq $8136, %rsp # imm = 0x1FC8
 ; CHECK-NEXT:    tilerelease
 ; CHECK-NEXT:    vzeroupper
 ; CHECK-NEXT:    retq

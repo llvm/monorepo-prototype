@@ -27,7 +27,6 @@ define void @widget(i32 %arg, i32 %arg1, ptr %arg2, ptr %arg3, ptr %arg4, i32 %a
 ; CHECK-NEXT:    .cfi_offset w26, -80
 ; CHECK-NEXT:    .cfi_offset w27, -88
 ; CHECK-NEXT:    .cfi_offset w28, -96
-; CHECK-NEXT:    mov w19, w6
 ; CHECK-NEXT:    mov w20, w5
 ; CHECK-NEXT:    mov x21, x4
 ; CHECK-NEXT:    mov x22, x3
@@ -40,8 +39,8 @@ define void @widget(i32 %arg, i32 %arg1, ptr %arg2, ptr %arg3, ptr %arg4, i32 %a
 ; CHECK-NEXT:  Lloh1:
 ; CHECK-NEXT:    add x27, x27, LJTI0_0@PAGEOFF
 ; CHECK-NEXT:    mov w28, #1 ; =0x1
-; CHECK-NEXT:    ; implicit-def: $w8
-; CHECK-NEXT:    str x8, [sp, #40] ; 8-byte Folded Spill
+; CHECK-NEXT:    str w6, [sp, #44] ; 4-byte Folded Spill
+; CHECK-NEXT:    ; implicit-def: $w19
 ; CHECK-NEXT:    b LBB0_2
 ; CHECK-NEXT:  LBB0_1: ; %bb10
 ; CHECK-NEXT:    ; in Loop: Header=BB0_2 Depth=1
@@ -73,27 +72,25 @@ define void @widget(i32 %arg, i32 %arg1, ptr %arg2, ptr %arg3, ptr %arg4, i32 %a
 ; CHECK-NEXT:    b LBB0_9
 ; CHECK-NEXT:  LBB0_6: ; %bb13
 ; CHECK-NEXT:    ; in Loop: Header=BB0_2 Depth=1
-; CHECK-NEXT:    mov w8, #1 ; =0x1
-; CHECK-NEXT:    str x8, [sp, #40] ; 8-byte Folded Spill
-; CHECK-NEXT:    tbz w19, #0, LBB0_2
+; CHECK-NEXT:    ldr w8, [sp, #44] ; 4-byte Folded Reload
+; CHECK-NEXT:    mov w19, #1 ; =0x1
+; CHECK-NEXT:    tbz w8, #0, LBB0_2
 ; CHECK-NEXT:  ; %bb.7: ; %bb14
 ; CHECK-NEXT:    ; in Loop: Header=BB0_2 Depth=1
 ; CHECK-NEXT:    mov x0, xzr
 ; CHECK-NEXT:    mov x1, xzr
-; CHECK-NEXT:    mov w8, #1 ; =0x1
 ; CHECK-NEXT:    stp xzr, xzr, [sp]
-; CHECK-NEXT:    stp x8, xzr, [sp, #16]
+; CHECK-NEXT:    stp x19, xzr, [sp, #16]
 ; CHECK-NEXT:    bl _fprintf
 ; CHECK-NEXT:    b LBB0_2
 ; CHECK-NEXT:  LBB0_8: ; %bb12
 ; CHECK-NEXT:    ; =>This Inner Loop Header: Depth=1
 ; CHECK-NEXT:    b LBB0_8
 ; CHECK-NEXT:  LBB0_9: ; %bb16
-; CHECK-NEXT:    ldr x8, [sp, #40] ; 8-byte Folded Reload
 ; CHECK-NEXT:    mov x0, xzr
 ; CHECK-NEXT:    mov x1, xzr
-; CHECK-NEXT:    ; kill: def $w8 killed $w8 killed $x8 def $x8
-; CHECK-NEXT:    str x8, [sp]
+; CHECK-NEXT:    ; kill: def $w19 killed $w19 killed $x19 def $x19
+; CHECK-NEXT:    str x19, [sp]
 ; CHECK-NEXT:    bl _fprintf
 ; CHECK-NEXT:    brk #0x1
 ; CHECK-NEXT:    .loh AdrpAdd Lloh0, Lloh1

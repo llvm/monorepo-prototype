@@ -97,15 +97,15 @@ define void @optspeed(i32 %arg, i32 %arg1, ptr %arg2, ptr %arg3, ptr %arg4, i32 
 ; CHECK-NEXT:    .cfi_offset w22, -32
 ; CHECK-NEXT:    .cfi_offset w23, -40
 ; CHECK-NEXT:    .cfi_offset w30, -48
-; CHECK-NEXT:    mov w22, w5
+; CHECK-NEXT:    mov w23, w5
 ; CHECK-NEXT:    mov x21, x4
 ; CHECK-NEXT:    mov x20, x3
-; CHECK-NEXT:    mov x23, x2
+; CHECK-NEXT:    mov x22, x2
 ; CHECK-NEXT:    mov w19, w1
 ; CHECK-NEXT:    b .LBB1_2
 ; CHECK-NEXT:  .LBB1_1: // %bb10
 ; CHECK-NEXT:    // in Loop: Header=BB1_2 Depth=1
-; CHECK-NEXT:    mov w0, w22
+; CHECK-NEXT:    mov w0, w23
 ; CHECK-NEXT:    mov x1, x20
 ; CHECK-NEXT:    str wzr, [x21]
 ; CHECK-NEXT:    bl foo
@@ -122,7 +122,7 @@ define void @optspeed(i32 %arg, i32 %arg1, ptr %arg2, ptr %arg3, ptr %arg4, i32 
 ; CHECK-NEXT:    b.ne .LBB1_2
 ; CHECK-NEXT:  // %bb.5: // %bb9
 ; CHECK-NEXT:    // in Loop: Header=BB1_2 Depth=1
-; CHECK-NEXT:    str wzr, [x23]
+; CHECK-NEXT:    str wzr, [x22]
 ; CHECK-NEXT:    b .LBB1_2
 ; CHECK-NEXT:  .LBB1_6: // %bb8
 ; CHECK-NEXT:    // in Loop: Header=BB1_2 Depth=1

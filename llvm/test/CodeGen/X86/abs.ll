@@ -440,26 +440,25 @@ define <8 x i16> @test_v8i16(<8 x i16> %a) nounwind {
 ; X86-NEXT:    movl %eax, %ebx
 ; X86-NEXT:    negw %bx
 ; X86-NEXT:    cmovsw %ax, %bx
-; X86-NEXT:    movzwl {{[0-9]+}}(%esp), %ecx
-; X86-NEXT:    movl %ecx, %eax
-; X86-NEXT:    negw %ax
-; X86-NEXT:    cmovsw %cx, %ax
-; X86-NEXT:    movzwl {{[0-9]+}}(%esp), %edx
-; X86-NEXT:    movl %edx, %ecx
+; X86-NEXT:    movzwl {{[0-9]+}}(%esp), %eax
+; X86-NEXT:    movl %eax, %edx
+; X86-NEXT:    negw %dx
+; X86-NEXT:    cmovsw %ax, %dx
+; X86-NEXT:    movzwl {{[0-9]+}}(%esp), %eax
+; X86-NEXT:    movl %eax, %ecx
 ; X86-NEXT:    negw %cx
-; X86-NEXT:    cmovsw %dx, %cx
-; X86-NEXT:    movl {{[0-9]+}}(%esp), %edx
-; X86-NEXT:    movw %cx, 14(%edx)
-; X86-NEXT:    movw %ax, 12(%edx)
-; X86-NEXT:    movw %bx, 10(%edx)
-; X86-NEXT:    movw %bp, 8(%edx)
-; X86-NEXT:    movw %di, 6(%edx)
-; X86-NEXT:    movw %si, 4(%edx)
-; X86-NEXT:    movzwl (%esp), %eax # 2-byte Folded Reload
-; X86-NEXT:    movw %ax, 2(%edx)
-; X86-NEXT:    movzwl {{[-0-9]+}}(%e{{[sb]}}p), %eax # 2-byte Folded Reload
-; X86-NEXT:    movw %ax, (%edx)
-; X86-NEXT:    movl %edx, %eax
+; X86-NEXT:    cmovsw %ax, %cx
+; X86-NEXT:    movl {{[0-9]+}}(%esp), %eax
+; X86-NEXT:    movw %cx, 14(%eax)
+; X86-NEXT:    movw %dx, 12(%eax)
+; X86-NEXT:    movw %bx, 10(%eax)
+; X86-NEXT:    movw %bp, 8(%eax)
+; X86-NEXT:    movw %di, 6(%eax)
+; X86-NEXT:    movw %si, 4(%eax)
+; X86-NEXT:    movzwl (%esp), %ecx # 2-byte Folded Reload
+; X86-NEXT:    movw %cx, 2(%eax)
+; X86-NEXT:    movzwl {{[-0-9]+}}(%e{{[sb]}}p), %ecx # 2-byte Folded Reload
+; X86-NEXT:    movw %cx, (%eax)
 ; X86-NEXT:    addl $4, %esp
 ; X86-NEXT:    popl %esi
 ; X86-NEXT:    popl %edi

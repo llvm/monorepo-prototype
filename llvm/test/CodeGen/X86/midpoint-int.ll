@@ -359,21 +359,21 @@ define i64 @scalar_i64_unsigned_reg_reg(i64 %a1, i64 %a2) nounwind {
 ; X86-NEXT:    pushl %ebx
 ; X86-NEXT:    pushl %edi
 ; X86-NEXT:    pushl %esi
-; X86-NEXT:    movl {{[0-9]+}}(%esp), %ebp
-; X86-NEXT:    movl {{[0-9]+}}(%esp), %esi
 ; X86-NEXT:    movl {{[0-9]+}}(%esp), %eax
+; X86-NEXT:    movl {{[0-9]+}}(%esp), %ebp
 ; X86-NEXT:    movl {{[0-9]+}}(%esp), %ecx
 ; X86-NEXT:    xorl %edx, %edx
-; X86-NEXT:    cmpl %eax, %ebp
-; X86-NEXT:    sbbl %ecx, %esi
+; X86-NEXT:    cmpl %ecx, %eax
+; X86-NEXT:    movl %ebp, %esi
+; X86-NEXT:    sbbl {{[0-9]+}}(%esp), %esi
 ; X86-NEXT:    movl $0, %ebx
 ; X86-NEXT:    sbbl %ebx, %ebx
 ; X86-NEXT:    movl %ebx, %edi
 ; X86-NEXT:    orl $1, %edi
-; X86-NEXT:    movl %eax, %esi
-; X86-NEXT:    subl %ebp, %esi
-; X86-NEXT:    movl %ecx, %eax
-; X86-NEXT:    sbbl {{[0-9]+}}(%esp), %eax
+; X86-NEXT:    movl %ecx, %esi
+; X86-NEXT:    subl %eax, %esi
+; X86-NEXT:    movl {{[0-9]+}}(%esp), %eax
+; X86-NEXT:    sbbl %ebp, %eax
 ; X86-NEXT:    sbbl %edx, %edx
 ; X86-NEXT:    xorl %edx, %eax
 ; X86-NEXT:    xorl %edx, %esi
@@ -387,8 +387,8 @@ define i64 @scalar_i64_unsigned_reg_reg(i64 %a1, i64 %a2) nounwind {
 ; X86-NEXT:    shrl %ebp
 ; X86-NEXT:    imull %edi, %ebp
 ; X86-NEXT:    addl %ebp, %edx
-; X86-NEXT:    addl {{[0-9]+}}(%esp), %eax
-; X86-NEXT:    adcl %ecx, %edx
+; X86-NEXT:    addl %ecx, %eax
+; X86-NEXT:    adcl {{[0-9]+}}(%esp), %edx
 ; X86-NEXT:    popl %esi
 ; X86-NEXT:    popl %edi
 ; X86-NEXT:    popl %ebx

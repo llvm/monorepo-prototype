@@ -733,24 +733,25 @@ define i64 @select_cmp_cmov_i64(i64 %a, i64 %b) nounwind {
 ;
 ; GISEL-X86-LABEL: select_cmp_cmov_i64:
 ; GISEL-X86:       ## %bb.0:
-; GISEL-X86-NEXT:    pushl %ebp
 ; GISEL-X86-NEXT:    pushl %ebx
 ; GISEL-X86-NEXT:    pushl %edi
 ; GISEL-X86-NEXT:    pushl %esi
+; GISEL-X86-NEXT:    pushl %eax
 ; GISEL-X86-NEXT:    movl {{[0-9]+}}(%esp), %esi
-; GISEL-X86-NEXT:    movl {{[0-9]+}}(%esp), %ebp
+; GISEL-X86-NEXT:    movl {{[0-9]+}}(%esp), %ecx
 ; GISEL-X86-NEXT:    movl {{[0-9]+}}(%esp), %eax
 ; GISEL-X86-NEXT:    movl {{[0-9]+}}(%esp), %edx
-; GISEL-X86-NEXT:    xorl %ecx, %ecx
-; GISEL-X86-NEXT:    cmpl %edx, %ebp
-; GISEL-X86-NEXT:    setb %bl
-; GISEL-X86-NEXT:    sete %cl
+; GISEL-X86-NEXT:    xorl %ebx, %ebx
+; GISEL-X86-NEXT:    cmpl %edx, %ecx
+; GISEL-X86-NEXT:    setb {{[-0-9]+}}(%e{{[sb]}}p) ## 1-byte Folded Spill
+; GISEL-X86-NEXT:    sete %bl
 ; GISEL-X86-NEXT:    cmpl %eax, %esi
-; GISEL-X86-NEXT:    setb %bh
-; GISEL-X86-NEXT:    testl %ecx, %ecx
+; GISEL-X86-NEXT:    setb {{[-0-9]+}}(%e{{[sb]}}p) ## 1-byte Folded Spill
+; GISEL-X86-NEXT:    testl %ebx, %ebx
+; GISEL-X86-NEXT:    movzbl {{[-0-9]+}}(%e{{[sb]}}p), %ebx ## 1-byte Folded Reload
 ; GISEL-X86-NEXT:    je LBB6_2
 ; GISEL-X86-NEXT:  ## %bb.1:
-; GISEL-X86-NEXT:    movb %bh, %bl
+; GISEL-X86-NEXT:    movzbl {{[-0-9]+}}(%e{{[sb]}}p), %ebx ## 1-byte Folded Reload
 ; GISEL-X86-NEXT:  LBB6_2:
 ; GISEL-X86-NEXT:    movzbl %bl, %edi
 ; GISEL-X86-NEXT:    andl $1, %edi
@@ -761,12 +762,12 @@ define i64 @select_cmp_cmov_i64(i64 %a, i64 %b) nounwind {
 ; GISEL-X86-NEXT:    testl %edi, %edi
 ; GISEL-X86-NEXT:    je LBB6_6
 ; GISEL-X86-NEXT:  ## %bb.5:
-; GISEL-X86-NEXT:    movl %ebp, %edx
+; GISEL-X86-NEXT:    movl %ecx, %edx
 ; GISEL-X86-NEXT:  LBB6_6:
+; GISEL-X86-NEXT:    addl $4, %esp
 ; GISEL-X86-NEXT:    popl %esi
 ; GISEL-X86-NEXT:    popl %edi
 ; GISEL-X86-NEXT:    popl %ebx
-; GISEL-X86-NEXT:    popl %ebp
 ; GISEL-X86-NEXT:    retl
 ;
 ; GISEL-X86-CMOV-LABEL: select_cmp_cmov_i64:
