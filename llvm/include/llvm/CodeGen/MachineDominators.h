@@ -185,6 +185,11 @@ public:
     return Base::findNearestCommonDominator(A, B);
   }
 
+  /// Returns the nearest common dominator of the given blocks.
+  /// If that tree node is a virtual root, a nullptr will be returned.
+  MachineBasicBlock *
+  findNearestCommonDominator(ArrayRef<MachineBasicBlock *> Blocks) const;
+
   MachineDomTreeNode *operator[](MachineBasicBlock *BB) const {
     applySplitCriticalEdges();
     return Base::getNode(BB);
