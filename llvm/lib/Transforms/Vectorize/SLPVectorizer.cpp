@@ -344,6 +344,8 @@ static unsigned getShufflevectorNumGroups(ArrayRef<Value *> VL) {
   unsigned SVNumElements =
       cast<FixedVectorType>(SV->getOperand(0)->getType())->getNumElements();
   unsigned ShuffleMaskSize = SV->getShuffleMask().size();
+  if (SVNumElements % ShuffleMaskSize != 0)
+    return 0;
   unsigned GroupSize = SVNumElements / ShuffleMaskSize;
   if (GroupSize == 0 || (VL.size() % GroupSize) != 0)
     return 0;
@@ -514,7 +516,7 @@ static bool isCommutative(Instruction *I) {
                 BO->uses(),
                 [](const Use &U) {
                   // Commutative, if icmp eq/ne sub, 0
-                  ICmpInst::Predicate Pred;
+                  CmpPredicate Pred;
                   if (match(U.getUser(),
                             m_ICmp(Pred, m_Specific(U.get()), m_Zero())) &&
                       (Pred == ICmpInst::ICMP_EQ || Pred == ICmpInst::ICMP_NE))
@@ -2019,6 +2021,9 @@ public:
 
     /// A vector of operand vectors.
     SmallVector<OperandDataVec, 4> OpsVec;
+    /// When VL[0] is IntrinsicInst, ArgSize is CallBase::arg_size. When VL[0]
+    /// is not IntrinsicInst, ArgSize is User::getNumOperands.
+    unsigned ArgSize = 0;
 
     const TargetLibraryInfo &TLI;
     const DataLayout &DL;
@@ -2402,14 +2407,15 @@ public:
     }
 
     /// Go through the instructions in VL and append their operands.
-    void appendOperandsOfVL(ArrayRef<Value *> VL) {
+    void appendOperandsOfVL(ArrayRef<Value *> VL, Instruction *VL0) {
       assert(!VL.empty() && "Bad VL");
       assert((empty() || VL.size() == getNumLanes()) &&
              "Expected same number of lanes");
+      // IntrinsicInst::isCommutative returns true if swapping the first "two"
+      // arguments to the intrinsic produces the same result.
       constexpr unsigned IntrinsicNumOperands = 2;
-      auto *VL0 = cast<Instruction>(*find_if(VL, IsaPred<Instruction>));
-      unsigned NumOperands = isa<IntrinsicInst>(VL0) ? IntrinsicNumOperands
-                                                     : VL0->getNumOperands();
+      unsigned NumOperands = VL0->getNumOperands();
+      ArgSize = isa<IntrinsicInst>(VL0) ? IntrinsicNumOperands : NumOperands;
       OpsVec.resize(NumOperands);
       unsigned NumLanes = VL.size();
       for (unsigned OpIdx = 0; OpIdx != NumOperands; ++OpIdx) {
@@ -2442,7 +2448,7 @@ public:
     }
 
     /// \returns the number of operands.
-    unsigned getNumOperands() const { return OpsVec.size(); }
+    unsigned getNumOperands() const { return ArgSize; }
 
     /// \returns the number of lanes.
     unsigned getNumLanes() const { return OpsVec[0].size(); }
@@ -2543,13 +2549,11 @@ public:
 
   public:
     /// Initialize with all the operands of the instruction vector \p RootVL.
-    VLOperands(ArrayRef<Value *> RootVL, const BoUpSLP &R)
+    VLOperands(ArrayRef<Value *> RootVL, Instruction *VL0, const BoUpSLP &R)
         : TLI(*R.TLI), DL(*R.DL), SE(*R.SE), R(R),
-          L(R.LI->getLoopFor(
-              (cast<Instruction>(*find_if(RootVL, IsaPred<Instruction>))
-                   ->getParent()))) {
+          L(R.LI->getLoopFor((VL0->getParent()))) {
       // Append all the operands of RootVL.
-      appendOperandsOfVL(RootVL);
+      appendOperandsOfVL(RootVL, VL0);
     }
 
     /// \Returns a value vector with the operands across all lanes for the
@@ -2623,7 +2627,8 @@ public:
         ArrayRef<OperandData> Op0 = OpsVec.front();
         for (const OperandData &Data : Op0)
           UniqueValues.insert(Data.V);
-        for (ArrayRef<OperandData> Op : drop_begin(OpsVec, 1)) {
+        for (ArrayRef<OperandData> Op :
+             ArrayRef(OpsVec).slice(1, getNumOperands() - 1)) {
           if (any_of(Op, [&UniqueValues](const OperandData &Data) {
                 return !UniqueValues.contains(Data.V);
               }))
@@ -3144,13 +3149,6 @@ private:
                            SmallVector<SmallVector<std::pair<LoadInst *, int>>>,
                            8> &GatheredLoads);
 
-  /// Reorder commutative or alt operands to get better probability of
-  /// generating vectorized code.
-  static void reorderInputsAccordingToOpcode(ArrayRef<Value *> VL,
-                                             SmallVectorImpl<Value *> &Left,
-                                             SmallVectorImpl<Value *> &Right,
-                                             const BoUpSLP &R);
-
   /// Helper for `findExternalStoreUsersReorderIndices()`. It iterates over the
   /// users of \p TE and collects the stores. It returns the map from the store
   /// pointers to the collected stores.
@@ -3345,27 +3343,13 @@ private:
       copy(OpVL, Operands[OpIdx].begin());
     }
 
-    /// Set the operands of this bundle in their original order.
-    void setOperandsInOrder() {
-      assert(Operands.empty() && "Already initialized?");
-      auto *I0 = cast<Instruction>(*find_if(Scalars, IsaPred<Instruction>));
-      Operands.resize(I0->getNumOperands());
-      unsigned NumLanes = Scalars.size();
-      for (unsigned OpIdx = 0, NumOperands = I0->getNumOperands();
-           OpIdx != NumOperands; ++OpIdx) {
-        Operands[OpIdx].resize(NumLanes);
-        for (unsigned Lane = 0; Lane != NumLanes; ++Lane) {
-          if (isa<PoisonValue>(Scalars[Lane])) {
-            Operands[OpIdx][Lane] =
-                PoisonValue::get(I0->getOperand(OpIdx)->getType());
-            continue;
-          }
-          auto *I = cast<Instruction>(Scalars[Lane]);
-          assert(I->getNumOperands() == NumOperands &&
-                 "Expected same number of operands");
-          Operands[OpIdx][Lane] = I->getOperand(OpIdx);
-        }
-      }
+    /// Set this bundle's operand from Scalars.
+    void setOperand(const BoUpSLP &R, bool RequireReorder = false) {
+      VLOperands Ops(Scalars, MainOp, R);
+      if (RequireReorder)
+        Ops.reorder();
+      for (unsigned I : seq<unsigned>(MainOp->getNumOperands()))
+        setOperand(I, Ops.getVL(I));
     }
 
     /// Reorders operands of the node to the given mask \p Mask.
@@ -4798,8 +4782,10 @@ static Align computeCommonAlignment(ArrayRef<Value *> VL) {
 
 /// Check if \p Order represents reverse order.
 static bool isReverseOrder(ArrayRef<unsigned> Order) {
+  assert(!Order.empty() &&
+         "Order is empty. Please check it before using isReverseOrder.");
   unsigned Sz = Order.size();
-  return !Order.empty() && all_of(enumerate(Order), [&](const auto &Pair) {
+  return all_of(enumerate(Order), [&](const auto &Pair) {
     return Pair.value() == Sz || Sz - Pair.index() - 1 == Pair.value();
   });
 }
@@ -8471,7 +8457,7 @@ void BoUpSLP::buildTree_rec(ArrayRef<Value *> VL, unsigned Depth,
                                    {}, CurrentOrder);
       LLVM_DEBUG(dbgs() << "SLP: added inserts bundle.\n");
 
-      TE->setOperandsInOrder();
+      TE->setOperand(*this);
       buildTree_rec(TE->getOperand(1), Depth + 1, {TE, 1});
       return;
     }
@@ -8492,27 +8478,26 @@ void BoUpSLP::buildTree_rec(ArrayRef<Value *> VL, unsigned Depth,
           LLVM_DEBUG(dbgs() << "SLP: added a vector of loads.\n");
         else
           LLVM_DEBUG(dbgs() << "SLP: added a vector of jumbled loads.\n");
-        TE->setOperandsInOrder();
         break;
       case TreeEntry::StridedVectorize:
         // Vectorizing non-consecutive loads with `llvm.masked.gather`.
         TE = newTreeEntry(VL, TreeEntry::StridedVectorize, Bundle, S,
                           UserTreeIdx, ReuseShuffleIndices, CurrentOrder);
-        TE->setOperandsInOrder();
         LLVM_DEBUG(dbgs() << "SLP: added a vector of strided loads.\n");
         break;
       case TreeEntry::ScatterVectorize:
         // Vectorizing non-consecutive loads with `llvm.masked.gather`.
         TE = newTreeEntry(VL, TreeEntry::ScatterVectorize, Bundle, S,
                           UserTreeIdx, ReuseShuffleIndices);
-        TE->setOperandsInOrder();
-        buildTree_rec(PointerOps, Depth + 1, {TE, 0});
         LLVM_DEBUG(dbgs() << "SLP: added a vector of non-consecutive loads.\n");
         break;
       case TreeEntry::CombinedVectorize:
       case TreeEntry::NeedToGather:
         llvm_unreachable("Unexpected loads state.");
       }
+      TE->setOperand(*this);
+      if (State == TreeEntry::ScatterVectorize)
+        buildTree_rec(PointerOps, Depth + 1, {TE, 0});
       return;
     }
     case Instruction::ZExt:
@@ -8550,8 +8535,8 @@ void BoUpSLP::buildTree_rec(ArrayRef<Value *> VL, unsigned Depth,
                                    ReuseShuffleIndices);
       LLVM_DEBUG(dbgs() << "SLP: added a vector of casts.\n");
 
-      TE->setOperandsInOrder();
-      for (unsigned I : seq<unsigned>(0, VL0->getNumOperands()))
+      TE->setOperand(*this);
+      for (unsigned I : seq<unsigned>(VL0->getNumOperands()))
         buildTree_rec(TE->getOperand(I), Depth + 1, {TE, I});
       if (ShuffleOrOp == Instruction::Trunc) {
         ExtraBitWidthNodes.insert(getOperandEntry(TE, 0)->Idx);
@@ -8578,12 +8563,15 @@ void BoUpSLP::buildTree_rec(ArrayRef<Value *> VL, unsigned Depth,
       LLVM_DEBUG(dbgs() << "SLP: added a vector of compares.\n");
 
       ValueList Left, Right;
+      VLOperands Ops(VL, VL0, *this);
       if (cast<CmpInst>(VL0)->isCommutative()) {
         // Commutative predicate - collect + sort operands of the instructions
         // so that each side is more likely to have the same opcode.
         assert(P0 == CmpInst::getSwappedPredicate(P0) &&
                "Commutative Predicate mismatch");
-        reorderInputsAccordingToOpcode(VL, Left, Right, *this);
+        Ops.reorder();
+        Left = Ops.getVL(0);
+        Right = Ops.getVL(1);
       } else {
         // Collect operands - commute if it uses the swapped predicate.
         for (Value *V : VL) {
@@ -8644,20 +8632,8 @@ void BoUpSLP::buildTree_rec(ArrayRef<Value *> VL, unsigned Depth,
                                    ReuseShuffleIndices);
       LLVM_DEBUG(dbgs() << "SLP: added a vector of un/bin op.\n");
 
-      // Sort operands of the instructions so that each side is more likely to
-      // have the same opcode.
-      if (isa<BinaryOperator>(VL0) && isCommutative(VL0)) {
-        ValueList Left, Right;
-        reorderInputsAccordingToOpcode(VL, Left, Right, *this);
-        TE->setOperand(0, Left);
-        TE->setOperand(1, Right);
-        buildTree_rec(Left, Depth + 1, {TE, 0});
-        buildTree_rec(Right, Depth + 1, {TE, 1});
-        return;
-      }
-
-      TE->setOperandsInOrder();
-      for (unsigned I : seq<unsigned>(0, VL0->getNumOperands()))
+      TE->setOperand(*this, isa<BinaryOperator>(VL0) && isCommutative(VL0));
+      for (unsigned I : seq<unsigned>(VL0->getNumOperands()))
         buildTree_rec(TE->getOperand(I), Depth + 1, {TE, I});
       return;
     }
@@ -8722,7 +8698,7 @@ void BoUpSLP::buildTree_rec(ArrayRef<Value *> VL, unsigned Depth,
         fixupOrderingIndices(CurrentOrder);
       TreeEntry *TE = newTreeEntry(VL, Bundle /*vectorized*/, S, UserTreeIdx,
                                    ReuseShuffleIndices, CurrentOrder);
-      TE->setOperandsInOrder();
+      TE->setOperand(*this);
       buildTree_rec(TE->getOperand(0), Depth + 1, {TE, 0});
       if (Consecutive)
         LLVM_DEBUG(dbgs() << "SLP: added a vector of stores.\n");
@@ -8738,46 +8714,13 @@ void BoUpSLP::buildTree_rec(ArrayRef<Value *> VL, unsigned Depth,
 
       TreeEntry *TE = newTreeEntry(VL, Bundle /*vectorized*/, S, UserTreeIdx,
                                    ReuseShuffleIndices);
-      // Sort operands of the instructions so that each side is more likely to
-      // have the same opcode.
-      if (isCommutative(VL0)) {
-        ValueList Left, Right;
-        reorderInputsAccordingToOpcode(VL, Left, Right, *this);
-        TE->setOperand(0, Left);
-        TE->setOperand(1, Right);
-        SmallVector<ValueList> Operands;
-        for (unsigned I : seq<unsigned>(2, CI->arg_size())) {
-          Operands.emplace_back();
-          if (isVectorIntrinsicWithScalarOpAtArg(ID, I))
-            continue;
-          for (Value *V : VL) {
-            auto *CI2 = cast<CallInst>(V);
-            Operands.back().push_back(CI2->getArgOperand(I));
-          }
-          TE->setOperand(I, Operands.back());
-        }
-        buildTree_rec(Left, Depth + 1, {TE, 0});
-        buildTree_rec(Right, Depth + 1, {TE, 1});
-        for (unsigned I : seq<unsigned>(2, CI->arg_size())) {
-          if (Operands[I - 2].empty())
-            continue;
-          buildTree_rec(Operands[I - 2], Depth + 1, {TE, I});
-        }
-        return;
-      }
-      TE->setOperandsInOrder();
-      for (unsigned I : seq<unsigned>(0, CI->arg_size())) {
+      TE->setOperand(*this, isCommutative(VL0));
+      for (unsigned I : seq<unsigned>(CI->arg_size())) {
         // For scalar operands no need to create an entry since no need to
         // vectorize it.
         if (isVectorIntrinsicWithScalarOpAtArg(ID, I))
           continue;
-        ValueList Operands;
-        // Prepare the operand vector.
-        for (Value *V : VL) {
-          auto *CI2 = cast<CallInst>(V);
-          Operands.push_back(CI2->getArgOperand(I));
-        }
-        buildTree_rec(Operands, Depth + 1, {TE, I});
+        buildTree_rec(TE->getOperand(I), Depth + 1, {TE, I});
       }
       return;
     }
@@ -8788,43 +8731,37 @@ void BoUpSLP::buildTree_rec(ArrayRef<Value *> VL, unsigned Depth,
 
       // Reorder operands if reordering would enable vectorization.
       auto *CI = dyn_cast<CmpInst>(VL0);
-      if (isa<BinaryOperator>(VL0) || CI) {
+      if (CI && any_of(VL, [](Value *V) {
+            return !isa<PoisonValue>(V) && !cast<CmpInst>(V)->isCommutative();
+          })) {
+        auto *MainCI = cast<CmpInst>(S.getMainOp());
+        auto *AltCI = cast<CmpInst>(S.getAltOp());
+        CmpInst::Predicate MainP = MainCI->getPredicate();
+        CmpInst::Predicate AltP = AltCI->getPredicate();
+        assert(MainP != AltP &&
+               "Expected different main/alternate predicates.");
         ValueList Left, Right;
-        if (!CI || all_of(VL, [](Value *V) {
-              return isa<PoisonValue>(V) || cast<CmpInst>(V)->isCommutative();
-            })) {
-          reorderInputsAccordingToOpcode(VL, Left, Right, *this);
-        } else {
-          auto *MainCI = cast<CmpInst>(S.getMainOp());
-          auto *AltCI = cast<CmpInst>(S.getAltOp());
-          CmpInst::Predicate MainP = MainCI->getPredicate();
-          CmpInst::Predicate AltP = AltCI->getPredicate();
-          assert(MainP != AltP &&
-                 "Expected different main/alternate predicates.");
-          // Collect operands - commute if it uses the swapped predicate or
-          // alternate operation.
-          for (Value *V : VL) {
-            if (isa<PoisonValue>(V)) {
-              Left.push_back(
-                  PoisonValue::get(MainCI->getOperand(0)->getType()));
-              Right.push_back(
-                  PoisonValue::get(MainCI->getOperand(1)->getType()));
-              continue;
-            }
-            auto *Cmp = cast<CmpInst>(V);
-            Value *LHS = Cmp->getOperand(0);
-            Value *RHS = Cmp->getOperand(1);
-
-            if (isAlternateInstruction(Cmp, MainCI, AltCI, *TLI)) {
-              if (AltP == CmpInst::getSwappedPredicate(Cmp->getPredicate()))
-                std::swap(LHS, RHS);
-            } else {
-              if (MainP == CmpInst::getSwappedPredicate(Cmp->getPredicate()))
-                std::swap(LHS, RHS);
-            }
-            Left.push_back(LHS);
-            Right.push_back(RHS);
+        // Collect operands - commute if it uses the swapped predicate or
+        // alternate operation.
+        for (Value *V : VL) {
+          if (isa<PoisonValue>(V)) {
+            Left.push_back(PoisonValue::get(MainCI->getOperand(0)->getType()));
+            Right.push_back(PoisonValue::get(MainCI->getOperand(1)->getType()));
+            continue;
           }
+          auto *Cmp = cast<CmpInst>(V);
+          Value *LHS = Cmp->getOperand(0);
+          Value *RHS = Cmp->getOperand(1);
+
+          if (isAlternateInstruction(Cmp, MainCI, AltCI, *TLI)) {
+            if (AltP == CmpInst::getSwappedPredicate(Cmp->getPredicate()))
+              std::swap(LHS, RHS);
+          } else {
+            if (MainP == CmpInst::getSwappedPredicate(Cmp->getPredicate()))
+              std::swap(LHS, RHS);
+          }
+          Left.push_back(LHS);
+          Right.push_back(RHS);
         }
         TE->setOperand(0, Left);
         TE->setOperand(1, Right);
@@ -8833,8 +8770,8 @@ void BoUpSLP::buildTree_rec(ArrayRef<Value *> VL, unsigned Depth,
         return;
       }
 
-      TE->setOperandsInOrder();
-      for (unsigned I : seq<unsigned>(0, VL0->getNumOperands()))
+      TE->setOperand(*this, isa<BinaryOperator>(VL0) || CI);
+      for (unsigned I : seq<unsigned>(VL0->getNumOperands()))
         buildTree_rec(TE->getOperand(I), Depth + 1, {TE, I});
       return;
     }
@@ -9904,7 +9841,7 @@ void BoUpSLP::transformNodes() {
       Align CommonAlignment = computeCommonAlignment<LoadInst>(E.Scalars);
       // Check if profitable to represent consecutive load + reverse as strided
       // load with stride -1.
-      if (isReverseOrder(E.ReorderIndices) &&
+      if (!E.ReorderIndices.empty() && isReverseOrder(E.ReorderIndices) &&
           TTI->isLegalStridedLoadStore(VecTy, CommonAlignment)) {
         SmallVector<int> Mask;
         inversePermutation(E.ReorderIndices, Mask);
@@ -9931,7 +9868,7 @@ void BoUpSLP::transformNodes() {
       Align CommonAlignment = computeCommonAlignment<StoreInst>(E.Scalars);
       // Check if profitable to represent consecutive load + reverse as strided
       // load with stride -1.
-      if (isReverseOrder(E.ReorderIndices) &&
+      if (!E.ReorderIndices.empty() && isReverseOrder(E.ReorderIndices) &&
           TTI->isLegalStridedLoadStore(VecTy, CommonAlignment)) {
         SmallVector<int> Mask;
         inversePermutation(E.ReorderIndices, Mask);
@@ -10285,9 +10222,9 @@ class BoUpSLP::ShuffleCostEstimator : public BaseShuffleAnalysis {
       // sub-Mask into the CommonMask to estimate it later and avoid double cost
       // estimation.
       if ((InVectors.size() == 2 &&
-           InVectors.front().get<const TreeEntry *>() == &E1 &&
-           InVectors.back().get<const TreeEntry *>() == E2) ||
-          (!E2 && InVectors.front().get<const TreeEntry *>() == &E1)) {
+           cast<const TreeEntry *>(InVectors.front()) == &E1 &&
+           cast<const TreeEntry *>(InVectors.back()) == E2) ||
+          (!E2 && cast<const TreeEntry *>(InVectors.front()) == &E1)) {
         unsigned Limit = getNumElems(Mask.size(), SliceSize, Part);
         assert(all_of(ArrayRef(CommonMask).slice(Part * SliceSize, Limit),
                       [](int Idx) { return Idx == PoisonMaskElem; }) &&
@@ -10313,7 +10250,7 @@ class BoUpSLP::ShuffleCostEstimator : public BaseShuffleAnalysis {
         VF = std::max(VF,
                       cast<FixedVectorType>(V1->getType())->getNumElements());
       } else {
-        const auto *E = InVectors.front().get<const TreeEntry *>();
+        const auto *E = cast<const TreeEntry *>(InVectors.front());
         VF = std::max(VF, E->getVectorFactor());
       }
       for (unsigned Idx = 0, Sz = CommonMask.size(); Idx < Sz; ++Idx)
@@ -10329,7 +10266,7 @@ class BoUpSLP::ShuffleCostEstimator : public BaseShuffleAnalysis {
         VF = std::max(VF,
                       getNumElements(V1->getType()));
       } else {
-        const auto *E = P.get<const TreeEntry *>();
+        const auto *E = cast<const TreeEntry *>(P);
         VF = std::max(VF, E->getVectorFactor());
       }
       for (unsigned Idx = 0, Sz = CommonMask.size(); Idx < Sz; ++Idx)
@@ -10435,9 +10372,9 @@ class BoUpSLP::ShuffleCostEstimator : public BaseShuffleAnalysis {
     };
     if (!V1 && !V2 && !P2.isNull()) {
       // Shuffle 2 entry nodes.
-      const TreeEntry *E = P1.get<const TreeEntry *>();
+      const TreeEntry *E = cast<const TreeEntry *>(P1);
       unsigned VF = E->getVectorFactor();
-      const TreeEntry *E2 = P2.get<const TreeEntry *>();
+      const TreeEntry *E2 = cast<const TreeEntry *>(P2);
       CommonVF = std::max(VF, E2->getVectorFactor());
       assert(all_of(Mask,
                     [=](int Idx) {
@@ -10469,7 +10406,7 @@ class BoUpSLP::ShuffleCostEstimator : public BaseShuffleAnalysis {
       V2 = getAllOnesValue(*R.DL, getWidenedType(ScalarTy, CommonVF));
     } else if (!V1 && P2.isNull()) {
       // Shuffle single entry node.
-      const TreeEntry *E = P1.get<const TreeEntry *>();
+      const TreeEntry *E = cast<const TreeEntry *>(P1);
       unsigned VF = E->getVectorFactor();
       CommonVF = VF;
       assert(
@@ -10518,7 +10455,7 @@ class BoUpSLP::ShuffleCostEstimator : public BaseShuffleAnalysis {
     } else if (V1 && !V2) {
       // Shuffle vector and tree node.
       unsigned VF = getVF(V1);
-      const TreeEntry *E2 = P2.get<const TreeEntry *>();
+      const TreeEntry *E2 = cast<const TreeEntry *>(P2);
       CommonVF = std::max(VF, E2->getVectorFactor());
       assert(all_of(Mask,
                     [=](int Idx) {
@@ -10544,7 +10481,7 @@ class BoUpSLP::ShuffleCostEstimator : public BaseShuffleAnalysis {
     } else if (!V1 && V2) {
       // Shuffle vector and tree node.
       unsigned VF = getVF(V2);
-      const TreeEntry *E1 = P1.get<const TreeEntry *>();
+      const TreeEntry *E1 = cast<const TreeEntry *>(P1);
       CommonVF = std::max(VF, E1->getVectorFactor());
       assert(all_of(Mask,
                     [=](int Idx) {
@@ -10782,8 +10719,8 @@ public:
                     if (P.value() == PoisonMaskElem)
                       return Mask[P.index()] == PoisonMaskElem;
                     auto *EI = cast<ExtractElementInst>(
-                        InVectors.front().get<const TreeEntry *>()->getOrdered(
-                            P.index()));
+                        cast<const TreeEntry *>(InVectors.front())
+                            ->getOrdered(P.index()));
                     return EI->getVectorOperand() == V1 ||
                            EI->getVectorOperand() == V2;
                   }) &&
@@ -10801,7 +10738,7 @@ public:
     if (ForExtracts) {
       // No need to add vectors here, already handled them in adjustExtracts.
       assert(
-          InVectors.size() == 1 && InVectors.front().is<const TreeEntry *>() &&
+          InVectors.size() == 1 && isa<const TreeEntry *>(InVectors.front()) &&
           !CommonMask.empty() &&
           all_of(enumerate(CommonMask),
                  [&](auto P) {
@@ -10831,7 +10768,7 @@ public:
       VF = std::max(VF, InTE->getVectorFactor());
     } else {
       VF = std::max(
-          VF, cast<FixedVectorType>(InVectors.front().get<Value *>()->getType())
+          VF, cast<FixedVectorType>(cast<Value *>(InVectors.front())->getType())
                   ->getNumElements());
     }
     InVectors.push_back(V1);
@@ -10901,7 +10838,7 @@ public:
           CommonMask[Idx] = Idx;
       assert(VF > 0 &&
              "Expected vector length for the final value before action.");
-      Value *V = Vec.get<Value *>();
+      Value *V = cast<Value *>(Vec);
       Action(V, CommonMask);
       InVectors.front() = V;
     }
@@ -11057,7 +10994,6 @@ BoUpSLP::getEntryCost(const TreeEntry *E, ArrayRef<Value *> VectorizedVals,
   unsigned EntryVF = E->getVectorFactor();
   auto *FinalVecTy = getWidenedType(ScalarTy, EntryVF);
 
-  bool NeedToShuffleReuses = !E->ReuseShuffleIndices.empty();
   if (E->isGather()) {
     if (allConstant(VL))
       return 0;
@@ -11070,9 +11006,8 @@ BoUpSLP::getEntryCost(const TreeEntry *E, ArrayRef<Value *> VectorizedVals,
   }
   InstructionCost CommonCost = 0;
   SmallVector<int> Mask;
-  bool IsReverseOrder = isReverseOrder(E->ReorderIndices);
-  if (!E->ReorderIndices.empty() &&
-      (E->State != TreeEntry::StridedVectorize || !IsReverseOrder)) {
+  if (!E->ReorderIndices.empty() && (E->State != TreeEntry::StridedVectorize ||
+                                     !isReverseOrder(E->ReorderIndices))) {
     SmallVector<int> NewMask;
     if (E->getOpcode() == Instruction::Store) {
       // For stores the order is actually a mask.
@@ -11083,7 +11018,7 @@ BoUpSLP::getEntryCost(const TreeEntry *E, ArrayRef<Value *> VectorizedVals,
     }
     ::addMask(Mask, NewMask);
   }
-  if (NeedToShuffleReuses)
+  if (!E->ReuseShuffleIndices.empty())
     ::addMask(Mask, E->ReuseShuffleIndices);
   if (!Mask.empty() && !ShuffleVectorInst::isIdentityMask(Mask, Mask.size()))
     CommonCost =
@@ -11471,7 +11406,7 @@ BoUpSLP::getEntryCost(const TreeEntry *E, ArrayRef<Value *> VectorizedVals,
   case Instruction::FCmp:
   case Instruction::ICmp:
   case Instruction::Select: {
-    CmpInst::Predicate VecPred, SwappedVecPred;
+    CmpPredicate VecPred, SwappedVecPred;
     auto MatchCmp = m_Cmp(VecPred, m_Value(), m_Value());
     if (match(VL0, m_Select(MatchCmp, m_Value(), m_Value())) ||
         match(VL0, MatchCmp))
@@ -11485,13 +11420,15 @@ BoUpSLP::getEntryCost(const TreeEntry *E, ArrayRef<Value *> VectorizedVals,
         return InstructionCost(TTI::TCC_Free);
 
       auto *VI = cast<Instruction>(UniqueValues[Idx]);
-      CmpInst::Predicate CurrentPred = ScalarTy->isFloatingPointTy()
-                                           ? CmpInst::BAD_FCMP_PREDICATE
-                                           : CmpInst::BAD_ICMP_PREDICATE;
+      CmpPredicate CurrentPred = ScalarTy->isFloatingPointTy()
+                                     ? CmpInst::BAD_FCMP_PREDICATE
+                                     : CmpInst::BAD_ICMP_PREDICATE;
       auto MatchCmp = m_Cmp(CurrentPred, m_Value(), m_Value());
+      // FIXME: Use CmpPredicate::getMatching here.
       if ((!match(VI, m_Select(MatchCmp, m_Value(), m_Value())) &&
            !match(VI, MatchCmp)) ||
-          (CurrentPred != VecPred && CurrentPred != SwappedVecPred))
+          (CurrentPred != static_cast<CmpInst::Predicate>(VecPred) &&
+           CurrentPred != static_cast<CmpInst::Predicate>(SwappedVecPred)))
         VecPred = SwappedVecPred = ScalarTy->isFloatingPointTy()
                                        ? CmpInst::BAD_FCMP_PREDICATE
                                        : CmpInst::BAD_ICMP_PREDICATE;
@@ -13222,9 +13159,9 @@ BoUpSLP::isGatherShuffledSingleRegisterEntry(
         copy(CommonMask, Mask.begin());
       }
       // Clear undef scalars.
-      for (int I = 0, Sz = VL.size(); I < Sz; ++I)
+      for (unsigned I : seq<unsigned>(VL.size()))
         if (isa<PoisonValue>(VL[I]))
-          Mask[I] = PoisonMaskElem;
+          Mask[Part * VL.size() + I] = PoisonMaskElem;
       return TargetTransformInfo::SK_PermuteSingleSrc;
     }
     // No perfect match, just shuffle, so choose the first tree node from the
@@ -13537,21 +13474,6 @@ InstructionCost BoUpSLP::getGatherCost(ArrayRef<Value *> VL, bool ForPoisonSrc,
     Cost += ::getShuffleCost(*TTI, TargetTransformInfo::SK_PermuteSingleSrc,
                              VecTy, ShuffleMask);
   return Cost;
-}
-
-// Perform operand reordering on the instructions in VL and return the reordered
-// operands in Left and Right.
-void BoUpSLP::reorderInputsAccordingToOpcode(ArrayRef<Value *> VL,
-                                             SmallVectorImpl<Value *> &Left,
-                                             SmallVectorImpl<Value *> &Right,
-                                             const BoUpSLP &R) {
-  if (VL.empty())
-    return;
-  VLOperands Ops(VL, R);
-  // Reorder the operands in place.
-  Ops.reorder();
-  Left = Ops.getVL(0);
-  Right = Ops.getVL(1);
 }
 
 Instruction &BoUpSLP::getLastInstructionInBundle(const TreeEntry *E) {
@@ -15146,7 +15068,8 @@ Value *BoUpSLP::vectorizeTree(TreeEntry *E, bool PostponedPHIs) {
     return Vec;
   }
 
-  bool IsReverseOrder = isReverseOrder(E->ReorderIndices);
+  bool IsReverseOrder =
+      !E->ReorderIndices.empty() && isReverseOrder(E->ReorderIndices);
   auto FinalShuffle = [&](Value *V, const TreeEntry *E) {
     ShuffleInstructionBuilder ShuffleBuilder(ScalarTy, Builder, *this);
     if (E->getOpcode() == Instruction::Store &&
@@ -19399,7 +19322,7 @@ public:
       // %3 = extractelement <2 x i32> %a, i32 0
       // %4 = extractelement <2 x i32> %a, i32 1
       // %select = select i1 %cond, i32 %3, i32 %4
-      CmpInst::Predicate Pred;
+      CmpPredicate Pred;
       Instruction *L1;
       Instruction *L2;
 
@@ -20533,6 +20456,8 @@ private:
     case RecurKind::FMulAdd:
     case RecurKind::IAnyOf:
     case RecurKind::FAnyOf:
+    case RecurKind::IFindLastIV:
+    case RecurKind::FFindLastIV:
     case RecurKind::None:
       llvm_unreachable("Unexpected reduction kind for repeated scalar.");
     }
@@ -20630,6 +20555,8 @@ private:
     case RecurKind::FMulAdd:
     case RecurKind::IAnyOf:
     case RecurKind::FAnyOf:
+    case RecurKind::IFindLastIV:
+    case RecurKind::FFindLastIV:
     case RecurKind::None:
       llvm_unreachable("Unexpected reduction kind for reused scalars.");
     }

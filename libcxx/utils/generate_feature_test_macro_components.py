@@ -2241,8 +2241,8 @@ class FeatureTestMacros:
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCPP_VERSION
-#define _LIBCPP_VERSION
+#ifndef _LIBCPP_VERSIONH
+#define _LIBCPP_VERSIONH
 
 #include <__config>
 
@@ -2252,7 +2252,7 @@ class FeatureTestMacros:
 
 {feature_test_macros}
 
-#endif // _LIBCPP_VERSION
+#endif // _LIBCPP_VERSIONH
 """
         return template.format(
             feature_test_macros=generate_version_header_implementation(

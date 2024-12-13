@@ -411,6 +411,7 @@ void TextNodeDumper::Visit(const OpenACCClause *C) {
     case OpenACCClauseKind::If:
     case OpenACCClauseKind::Independent:
     case OpenACCClauseKind::DevicePtr:
+    case OpenACCClauseKind::Finalize:
     case OpenACCClauseKind::FirstPrivate:
     case OpenACCClauseKind::NoCreate:
     case OpenACCClauseKind::NumGangs:
@@ -2933,6 +2934,25 @@ void TextNodeDumper::VisitOpenACCLoopConstruct(const OpenACCLoopConstruct *S) {
 
 void TextNodeDumper::VisitOpenACCCombinedConstruct(
     const OpenACCCombinedConstruct *S) {
+  OS << " " << S->getDirectiveKind();
+}
+
+void TextNodeDumper::VisitOpenACCDataConstruct(const OpenACCDataConstruct *S) {
+  OS << " " << S->getDirectiveKind();
+}
+
+void TextNodeDumper::VisitOpenACCEnterDataConstruct(
+    const OpenACCEnterDataConstruct *S) {
+  OS << " " << S->getDirectiveKind();
+}
+
+void TextNodeDumper::VisitOpenACCExitDataConstruct(
+    const OpenACCExitDataConstruct *S) {
+  OS << " " << S->getDirectiveKind();
+}
+
+void TextNodeDumper::VisitOpenACCHostDataConstruct(
+    const OpenACCHostDataConstruct *S) {
   OS << " " << S->getDirectiveKind();
 }
 

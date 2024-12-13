@@ -221,6 +221,10 @@ Changes to the RISC-V Backend
   extension.
 * Adds experimental assembler support for the Qualcomm uC 'Xqcia` (Arithmetic)
   extension.
+* Adds experimental assembler support for the Qualcomm uC 'Xqcics` (Conditonal Select)
+  extension.
+* Adds experimental assembler support for the Qualcomm uC 'Xqcilsm` (Load Store Multiple)
+  extension.
 
 Changes to the WebAssembly Backend
 ----------------------------------
