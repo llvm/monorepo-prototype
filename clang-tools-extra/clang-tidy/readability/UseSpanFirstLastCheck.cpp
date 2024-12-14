@@ -68,39 +68,30 @@ void UseSpanFirstLastCheck::check(const MatchFinder::MatchResult &Result) {
       CharSourceRange::getTokenRange(SpanObj->getSourceRange()),
       *Result.SourceManager, Result.Context->getLangOpts());
 
-  if (const auto *FirstCall =
-          Result.Nodes.getNodeAs<CXXMemberCallExpr>("first_subspan")) {
-    const auto *Count = Result.Nodes.getNodeAs<Expr>("count");
-    assert(Count && "Count expression must exist due to AST matcher");
+  const auto *SubSpan =
+      Result.Nodes.getNodeAs<CXXMemberCallExpr>("first_subspan");
+  bool IsFirst = true;
+  if (!SubSpan) {
+    SubSpan = Result.Nodes.getNodeAs<CXXMemberCallExpr>("last_subspan");
+    IsFirst = false;
+  }
 
-    StringRef CountText = Lexer::getSourceText(
-        CharSourceRange::getTokenRange(Count->getSourceRange()),
-        *Result.SourceManager, Result.Context->getLangOpts());
-
-    std::string Replacement =
-        (Twine(SpanText) + ".first(" + CountText + ")").str();
-
-    diag(FirstCall->getBeginLoc(), "prefer 'span::first()' over 'subspan()'")
-        << FixItHint::CreateReplacement(FirstCall->getSourceRange(),
-                                        Replacement);
+  if (!SubSpan)
     return;
-  }
 
-  if (const auto *LastCall =
-          Result.Nodes.getNodeAs<CXXMemberCallExpr>("last_subspan")) {
-    const auto *Count = Result.Nodes.getNodeAs<Expr>("count");
-    assert(Count && "Count expression must exist due to AST matcher");
+  const auto *Count = Result.Nodes.getNodeAs<Expr>("count");
+  assert(Count && "Count expression must exist due to AST matcher");
 
-    StringRef CountText = Lexer::getSourceText(
-        CharSourceRange::getTokenRange(Count->getSourceRange()),
-        *Result.SourceManager, Result.Context->getLangOpts());
+  StringRef CountText = Lexer::getSourceText(
+      CharSourceRange::getTokenRange(Count->getSourceRange()),
+      *Result.SourceManager, Result.Context->getLangOpts());
 
-    std::string Replacement =
-        (Twine(SpanText) + ".last(" + CountText.str() + ")").str();
+  const StringRef FirstOrLast = IsFirst ? "first" : "last";
+  std::string Replacement =
+      (Twine(SpanText) + "." + FirstOrLast + "(" + CountText + ")").str();
 
-    diag(LastCall->getBeginLoc(), "prefer 'span::last()' over 'subspan()'")
-        << FixItHint::CreateReplacement(LastCall->getSourceRange(),
-                                        Replacement);
-  }
+  diag(SubSpan->getBeginLoc(), "prefer 'span::%0()' over 'subspan()'")
+      << FirstOrLast
+      << FixItHint::CreateReplacement(SubSpan->getSourceRange(), Replacement);
 }
 } // namespace clang::tidy::readability
