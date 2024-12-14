@@ -28,10 +28,11 @@ void UseSpanFirstLastCheck::registerMatchers(MatchFinder *Finder) {
   // Match span.subspan(0, n) -> first(n)
   Finder->addMatcher(
       cxxMemberCallExpr(
+          argumentCountIs(2),
           callee(memberExpr(hasDeclaration(cxxMethodDecl(hasName("subspan"))))),
           on(expr(HasSpanType).bind("span_object")),
           hasArgument(0, integerLiteral(equals(0))),
-          hasArgument(1, expr().bind("count")), argumentCountIs(2))
+          hasArgument(1, expr().bind("count")))
           .bind("first_subspan"),
       this);
 
@@ -49,11 +50,11 @@ void UseSpanFirstLastCheck::registerMatchers(MatchFinder *Finder) {
 
   Finder->addMatcher(
       cxxMemberCallExpr(
+          argumentCountIs(1),
           callee(memberExpr(hasDeclaration(cxxMethodDecl(hasName("subspan"))))),
           on(expr(HasSpanType).bind("span_object")),
           hasArgument(0, binaryOperator(hasOperatorName("-"), hasLHS(SizeCall),
-                                        hasRHS(expr().bind("count")))),
-          argumentCountIs(1))
+                                        hasRHS(expr().bind("count")))))
           .bind("last_subspan"),
       this);
 }
@@ -94,7 +95,8 @@ void UseSpanFirstLastCheck::check(const MatchFinder::MatchResult &Result) {
         CharSourceRange::getTokenRange(Count->getSourceRange()),
         *Result.SourceManager, Result.Context->getLangOpts());
 
-    std::string Replacement = SpanText.str() + ".last(" + CountText.str() + ")";
+    std::string Replacement =
+        (Twine(SpanText) + ".last(" + CountText.str() + ")").str();
 
     diag(LastCall->getBeginLoc(), "prefer 'span::last()' over 'subspan()'")
         << FixItHint::CreateReplacement(LastCall->getSourceRange(),
