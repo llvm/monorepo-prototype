@@ -159,7 +159,10 @@ public:
   // memcpy as per section 3 of the SPIR spec.
   bool useFP16ConversionIntrinsics() const override { return false; }
 
-  ArrayRef<Builtin::Info> getTargetBuiltins() const override { return {}; }
+  std::pair<const llvm::StringTable *, ArrayRef<Builtin::Info>>
+  getTargetBuiltinStorage() const override {
+    return {nullptr, {}};
+  }
 
   std::string_view getClobbers() const override { return ""; }
 
@@ -313,7 +316,10 @@ public:
     resetDataLayout("e-i64:64-v16:16-v24:32-v32:32-v48:64-v96:128-v192:256-"
                     "v256:256-v512:512-v1024:1024-n8:16:32:64-G1");
   }
-  ArrayRef<Builtin::Info> getTargetBuiltins() const override;
+
+  std::pair<const llvm::StringTable *, ArrayRef<Builtin::Info>>
+  getTargetBuiltinStorage() const override;
+
   void getTargetDefines(const LangOptions &Opts,
                         MacroBuilder &Builder) const override;
 };
@@ -408,7 +414,8 @@ public:
 
   std::string convertConstraint(const char *&Constraint) const override;
 
-  ArrayRef<Builtin::Info> getTargetBuiltins() const override;
+  std::pair<const llvm::StringTable *, ArrayRef<Builtin::Info>>
+  getTargetBuiltinStorage() const override;
 
   void getTargetDefines(const LangOptions &Opts,
                         MacroBuilder &Builder) const override;

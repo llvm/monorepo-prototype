@@ -58,7 +58,8 @@ public:
   bool handleTargetFeatures(std::vector<std::string> &Features,
                             DiagnosticsEngine &Diags) override;
 
-  ArrayRef<Builtin::Info> getTargetBuiltins() const override;
+  std::pair<const llvm::StringTable *, ArrayRef<Builtin::Info>>
+  getTargetBuiltinStorage() const override;
 
   std::string_view getClobbers() const override { return ""; }
 

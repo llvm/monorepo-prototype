@@ -23,23 +23,37 @@
 namespace clang {
 namespace targets {
 
-static constexpr Builtin::Info BuiltinInfoX86[] = {
-#define BUILTIN(ID, TYPE, ATTRS)                                               \
-  {#ID, TYPE, ATTRS, nullptr, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
-#define TARGET_BUILTIN(ID, TYPE, ATTRS, FEATURE)                               \
-  {#ID, TYPE, ATTRS, FEATURE, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
-#define TARGET_HEADER_BUILTIN(ID, TYPE, ATTRS, HEADER, LANGS, FEATURE)         \
-  {#ID, TYPE, ATTRS, FEATURE, HeaderDesc::HEADER, LANGS},
+// The x86-32 builtins are a subset and prefix of the x86-64 builtins.
+static constexpr int NumX86Builtins =
+    X86::LastX86CommonBuiltin - Builtin::FirstTSBuiltin + 1;
+static constexpr int NumX86_64Builtins =
+    X86::LastTSBuiltin - Builtin::FirstTSBuiltin;
+static_assert(NumX86Builtins < NumX86_64Builtins);
+
+static constexpr llvm::StringTable BuiltinStrings =
+    CLANG_BUILTIN_STR_TABLE_START
+#define BUILTIN CLANG_BUILTIN_STR_TABLE
+#define TARGET_BUILTIN CLANG_TARGET_BUILTIN_STR_TABLE
+#define TARGET_HEADER_BUILTIN CLANG_TARGET_HEADER_BUILTIN_STR_TABLE
 #include "clang/Basic/BuiltinsX86.inc"
 
-#define BUILTIN(ID, TYPE, ATTRS)                                               \
-  {#ID, TYPE, ATTRS, nullptr, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
-#define TARGET_BUILTIN(ID, TYPE, ATTRS, FEATURE)                               \
-  {#ID, TYPE, ATTRS, FEATURE, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
-#define TARGET_HEADER_BUILTIN(ID, TYPE, ATTRS, HEADER, LANGS, FEATURE)         \
-  {#ID, TYPE, ATTRS, FEATURE, HeaderDesc::HEADER, LANGS},
+#define BUILTIN CLANG_BUILTIN_STR_TABLE
+#define TARGET_BUILTIN CLANG_TARGET_BUILTIN_STR_TABLE
+#define TARGET_HEADER_BUILTIN CLANG_TARGET_HEADER_BUILTIN_STR_TABLE
 #include "clang/Basic/BuiltinsX86_64.inc"
-};
+    ;
+
+static constexpr auto BuiltinInfos = Builtin::MakeInfos<NumX86_64Builtins>({
+#define BUILTIN CLANG_BUILTIN_ENTRY
+#define TARGET_BUILTIN CLANG_TARGET_BUILTIN_ENTRY
+#define TARGET_HEADER_BUILTIN CLANG_TARGET_HEADER_BUILTIN_ENTRY
+#include "clang/Basic/BuiltinsX86.inc"
+
+#define BUILTIN CLANG_BUILTIN_ENTRY
+#define TARGET_BUILTIN CLANG_TARGET_BUILTIN_ENTRY
+#define TARGET_HEADER_BUILTIN CLANG_TARGET_HEADER_BUILTIN_ENTRY
+#include "clang/Basic/BuiltinsX86_64.inc"
+});
 
 static const char *const GCCRegNames[] = {
     "ax",    "dx",    "cx",    "bx",    "si",      "di",    "bp",    "sp",
@@ -1856,12 +1870,14 @@ ArrayRef<TargetInfo::AddlRegName> X86TargetInfo::getGCCAddlRegNames() const {
   return llvm::ArrayRef(AddlRegNames);
 }
 
-ArrayRef<Builtin::Info> X86_32TargetInfo::getTargetBuiltins() const {
-  return llvm::ArrayRef(BuiltinInfoX86, clang::X86::LastX86CommonBuiltin -
-                                            Builtin::FirstTSBuiltin + 1);
+std::pair<const llvm::StringTable *, ArrayRef<Builtin::Info>>
+X86_32TargetInfo::getTargetBuiltinStorage() const {
+  // Only use the relevant prefix of the infos, the string table base is common.
+  return {&BuiltinStrings,
+          llvm::ArrayRef(BuiltinInfos).take_front(NumX86Builtins)};
 }
 
-ArrayRef<Builtin::Info> X86_64TargetInfo::getTargetBuiltins() const {
-  return llvm::ArrayRef(BuiltinInfoX86,
-                        X86::LastTSBuiltin - Builtin::FirstTSBuiltin);
+std::pair<const llvm::StringTable *, ArrayRef<Builtin::Info>>
+X86_64TargetInfo::getTargetBuiltinStorage() const {
+  return {&BuiltinStrings, BuiltinInfos};
 }

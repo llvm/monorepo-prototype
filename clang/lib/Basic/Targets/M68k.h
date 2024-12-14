@@ -44,7 +44,8 @@ public:
 
   void getTargetDefines(const LangOptions &Opts,
                         MacroBuilder &Builder) const override;
-  ArrayRef<Builtin::Info> getTargetBuiltins() const override;
+  std::pair<const llvm::StringTable *, ArrayRef<Builtin::Info>>
+  getTargetBuiltinStorage() const override;
   bool hasFeature(StringRef Feature) const override;
   ArrayRef<const char *> getGCCRegNames() const override;
   ArrayRef<TargetInfo::GCCRegAlias> getGCCRegAliases() const override;
