@@ -95,9 +95,8 @@ public:
 
   bool hasFeature(StringRef Feature) const override { return Feature == "tce"; }
 
-  std::pair<const llvm::StringTable *, ArrayRef<Builtin::Info>>
-  getTargetBuiltinStorage() const override {
-    return {nullptr, {}};
+  llvm::SmallVector<Builtin::InfosShard> getTargetBuiltins() const override {
+    return {};
   }
 
   std::string_view getClobbers() const override { return ""; }

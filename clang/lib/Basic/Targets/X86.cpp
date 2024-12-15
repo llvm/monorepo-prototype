@@ -27,33 +27,40 @@ namespace targets {
 static constexpr int NumX86Builtins =
     X86::LastX86CommonBuiltin - Builtin::FirstTSBuiltin + 1;
 static constexpr int NumX86_64Builtins =
-    X86::LastTSBuiltin - Builtin::FirstTSBuiltin;
-static_assert(NumX86Builtins < NumX86_64Builtins);
+    X86::LastTSBuiltin - X86::FirstX86_64Builtin;
+static constexpr int NumBuiltins = X86::LastTSBuiltin - Builtin::FirstTSBuiltin;
+static_assert(NumBuiltins == (NumX86Builtins + NumX86_64Builtins));
 
-static constexpr llvm::StringTable BuiltinStrings =
+static constexpr llvm::StringTable BuiltinX86Strings =
     CLANG_BUILTIN_STR_TABLE_START
 #define BUILTIN CLANG_BUILTIN_STR_TABLE
 #define TARGET_BUILTIN CLANG_TARGET_BUILTIN_STR_TABLE
 #define TARGET_HEADER_BUILTIN CLANG_TARGET_HEADER_BUILTIN_STR_TABLE
 #include "clang/Basic/BuiltinsX86.inc"
+    ;
 
+static constexpr llvm::StringTable BuiltinX86_64Strings =
+    CLANG_BUILTIN_STR_TABLE_START
 #define BUILTIN CLANG_BUILTIN_STR_TABLE
 #define TARGET_BUILTIN CLANG_TARGET_BUILTIN_STR_TABLE
 #define TARGET_HEADER_BUILTIN CLANG_TARGET_HEADER_BUILTIN_STR_TABLE
 #include "clang/Basic/BuiltinsX86_64.inc"
     ;
 
-static constexpr auto BuiltinInfos = Builtin::MakeInfos<NumX86_64Builtins>({
+static constexpr auto BuiltinX86Infos = Builtin::MakeInfos<NumX86Builtins>({
 #define BUILTIN CLANG_BUILTIN_ENTRY
 #define TARGET_BUILTIN CLANG_TARGET_BUILTIN_ENTRY
 #define TARGET_HEADER_BUILTIN CLANG_TARGET_HEADER_BUILTIN_ENTRY
 #include "clang/Basic/BuiltinsX86.inc"
+});
 
+static constexpr auto BuiltinX86_64Infos =
+    Builtin::MakeInfos<NumX86_64Builtins>({
 #define BUILTIN CLANG_BUILTIN_ENTRY
 #define TARGET_BUILTIN CLANG_TARGET_BUILTIN_ENTRY
 #define TARGET_HEADER_BUILTIN CLANG_TARGET_HEADER_BUILTIN_ENTRY
 #include "clang/Basic/BuiltinsX86_64.inc"
-});
+    });
 
 static const char *const GCCRegNames[] = {
     "ax",    "dx",    "cx",    "bx",    "si",      "di",    "bp",    "sp",
@@ -1870,14 +1877,15 @@ ArrayRef<TargetInfo::AddlRegName> X86TargetInfo::getGCCAddlRegNames() const {
   return llvm::ArrayRef(AddlRegNames);
 }
 
-std::pair<const llvm::StringTable *, ArrayRef<Builtin::Info>>
-X86_32TargetInfo::getTargetBuiltinStorage() const {
-  // Only use the relevant prefix of the infos, the string table base is common.
-  return {&BuiltinStrings,
-          llvm::ArrayRef(BuiltinInfos).take_front(NumX86Builtins)};
+llvm::SmallVector<Builtin::InfosShard>
+X86_32TargetInfo::getTargetBuiltins() const {
+  return {{&BuiltinX86Strings, BuiltinX86Infos}};
 }
 
-std::pair<const llvm::StringTable *, ArrayRef<Builtin::Info>>
-X86_64TargetInfo::getTargetBuiltinStorage() const {
-  return {&BuiltinStrings, BuiltinInfos};
+llvm::SmallVector<Builtin::InfosShard>
+X86_64TargetInfo::getTargetBuiltins() const {
+  return {
+      {&BuiltinX86Strings, BuiltinX86Infos},
+      {&BuiltinX86_64Strings, BuiltinX86_64Infos},
+  };
 }

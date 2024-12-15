@@ -34,9 +34,9 @@ static constexpr auto BuiltinInfos = Builtin::MakeInfos<NumBuiltins>({
 #include "clang/Basic/BuiltinsSPIRV.inc"
 });
 
-std::pair<const llvm::StringTable *, ArrayRef<Builtin::Info>>
-SPIRVTargetInfo::getTargetBuiltinStorage() const {
-  return {&BuiltinStrings, BuiltinInfos};
+llvm::SmallVector<Builtin::InfosShard>
+SPIRVTargetInfo::getTargetBuiltins() const {
+  return {{&BuiltinStrings, BuiltinInfos}};
 }
 
 void SPIRTargetInfo::getTargetDefines(const LangOptions &Opts,
@@ -102,9 +102,9 @@ SPIRV64AMDGCNTargetInfo::convertConstraint(const char *&Constraint) const {
   return AMDGPUTI.convertConstraint(Constraint);
 }
 
-std::pair<const llvm::StringTable *, ArrayRef<Builtin::Info>>
-SPIRV64AMDGCNTargetInfo::getTargetBuiltinStorage() const {
-  return AMDGPUTI.getTargetBuiltinStorage();
+llvm::SmallVector<Builtin::InfosShard>
+SPIRV64AMDGCNTargetInfo::getTargetBuiltins() const {
+  return AMDGPUTI.getTargetBuiltins();
 }
 
 void SPIRV64AMDGCNTargetInfo::getTargetDefines(const LangOptions &Opts,

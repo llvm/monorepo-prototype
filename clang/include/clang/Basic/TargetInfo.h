@@ -1021,8 +1021,7 @@ public:
   /// Return information about target-specific builtins for the current primary
   /// target, and info about which builtins are non-portable across the current
   /// set of primary and secondary targets.
-  virtual std::pair<const llvm::StringTable *, ArrayRef<Builtin::Info>>
-  getTargetBuiltinStorage() const = 0;
+  virtual llvm::SmallVector<Builtin::InfosShard> getTargetBuiltins() const = 0;
 
   /// Returns target-specific min and max values VScale_Range.
   virtual std::optional<std::pair<unsigned, unsigned>>

@@ -508,8 +508,7 @@ public:
       MaxAtomicInlineWidth = 64;
   }
 
-  std::pair<const llvm::StringTable *, ArrayRef<Builtin::Info>>
-  getTargetBuiltinStorage() const override;
+  llvm::SmallVector<Builtin::InfosShard> getTargetBuiltins() const override;
 
   bool hasBitIntType() const override { return true; }
   size_t getMaxBitIntWidth() const override {
@@ -821,8 +820,7 @@ public:
       MaxAtomicInlineWidth = 128;
   }
 
-  std::pair<const llvm::StringTable *, ArrayRef<Builtin::Info>>
-  getTargetBuiltinStorage() const override;
+  llvm::SmallVector<Builtin::InfosShard> getTargetBuiltins() const override;
 
   bool hasBitIntType() const override { return true; }
   size_t getMaxBitIntWidth() const override {

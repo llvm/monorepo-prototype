@@ -72,9 +72,8 @@ public:
     return Feature == "directx";
   }
 
-  std::pair<const llvm::StringTable *, ArrayRef<Builtin::Info>>
-  getTargetBuiltinStorage() const override {
-    return {nullptr, {}};
+  llvm::SmallVector<Builtin::InfosShard> getTargetBuiltins() const override {
+    return {};
   }
 
   std::string_view getClobbers() const override { return ""; }

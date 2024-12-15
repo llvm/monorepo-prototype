@@ -47,7 +47,6 @@ void VETargetInfo::getTargetDefines(const LangOptions &Opts,
   Builder.defineMacro("__GCC_HAVE_SYNC_COMPARE_AND_SWAP_8");
 }
 
-std::pair<const llvm::StringTable *, ArrayRef<Builtin::Info>>
-VETargetInfo::getTargetBuiltinStorage() const {
-  return {&BuiltinStrings, BuiltinInfos};
+llvm::SmallVector<Builtin::InfosShard> VETargetInfo::getTargetBuiltins() const {
+  return {{&BuiltinStrings, BuiltinInfos}};
 }

@@ -1100,9 +1100,9 @@ static constexpr auto BuiltinInfos = Builtin::MakeInfos<NumBuiltins>({
 #include "clang/Basic/BuiltinsARM.def"
 });
 
-std::pair<const llvm::StringTable *, ArrayRef<Builtin::Info>>
-ARMTargetInfo::getTargetBuiltinStorage() const {
-  return {&BuiltinStrings, BuiltinInfos};
+llvm::SmallVector<Builtin::InfosShard>
+ARMTargetInfo::getTargetBuiltins() const {
+  return {{&BuiltinStrings, BuiltinInfos}};
 }
 
 bool ARMTargetInfo::isCLZForZeroUndef() const { return false; }

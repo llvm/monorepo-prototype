@@ -274,9 +274,9 @@ void AMDGPUTargetInfo::adjust(DiagnosticsEngine &Diags, LangOptions &Opts) {
                      !isAMDGCN(getTriple()));
 }
 
-std::pair<const llvm::StringTable *, ArrayRef<Builtin::Info>>
-AMDGPUTargetInfo::getTargetBuiltinStorage() const {
-  return {&BuiltinStrings, BuiltinInfos};
+llvm::SmallVector<Builtin::InfosShard>
+AMDGPUTargetInfo::getTargetBuiltins() const {
+  return {{&BuiltinStrings, BuiltinInfos}};
 }
 
 void AMDGPUTargetInfo::getTargetDefines(const LangOptions &Opts,

@@ -299,7 +299,7 @@ void NVPTXTargetInfo::getTargetDefines(const LangOptions &Opts,
   }
 }
 
-std::pair<const llvm::StringTable *, ArrayRef<Builtin::Info>>
-NVPTXTargetInfo::getTargetBuiltinStorage() const {
-  return {&BuiltinStrings, BuiltinInfos};
+llvm::SmallVector<Builtin::InfosShard>
+NVPTXTargetInfo::getTargetBuiltins() const {
+  return {{&BuiltinStrings, BuiltinInfos}};
 }

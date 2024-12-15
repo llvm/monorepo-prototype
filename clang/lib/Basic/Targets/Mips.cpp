@@ -230,9 +230,9 @@ bool MipsTargetInfo::hasFeature(StringRef Feature) const {
       .Default(false);
 }
 
-std::pair<const llvm::StringTable *, ArrayRef<Builtin::Info>>
-MipsTargetInfo::getTargetBuiltinStorage() const {
-  return {&BuiltinStrings, BuiltinInfos};
+llvm::SmallVector<Builtin::InfosShard>
+MipsTargetInfo::getTargetBuiltins() const {
+  return {{&BuiltinStrings, BuiltinInfos}};
 }
 
 unsigned MipsTargetInfo::getUnwindWordWidth() const {

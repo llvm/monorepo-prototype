@@ -178,7 +178,7 @@ void SystemZTargetInfo::getTargetDefines(const LangOptions &Opts,
     Builder.defineMacro("__VEC__", "10304");
 }
 
-std::pair<const llvm::StringTable *, ArrayRef<Builtin::Info>>
-SystemZTargetInfo::getTargetBuiltinStorage() const {
-  return {&BuiltinStrings, BuiltinInfos};
+llvm::SmallVector<Builtin::InfosShard>
+SystemZTargetInfo::getTargetBuiltins() const {
+  return {{&BuiltinStrings, BuiltinInfos}};
 }

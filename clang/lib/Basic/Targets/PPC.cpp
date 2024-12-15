@@ -934,9 +934,9 @@ void PPCTargetInfo::adjust(DiagnosticsEngine &Diags, LangOptions &Opts) {
     MaxAtomicInlineWidth = 128;
 }
 
-std::pair<const llvm::StringTable *, ArrayRef<Builtin::Info>>
-PPCTargetInfo::getTargetBuiltinStorage() const {
-  return {&BuiltinStrings, BuiltinInfos};
+llvm::SmallVector<Builtin::InfosShard>
+PPCTargetInfo::getTargetBuiltins() const {
+  return {{&BuiltinStrings, BuiltinInfos}};
 }
 
 bool PPCTargetInfo::validateCpuSupports(StringRef FeatureStr) const {

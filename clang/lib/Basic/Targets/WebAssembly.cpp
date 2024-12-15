@@ -367,9 +367,9 @@ bool WebAssemblyTargetInfo::handleTargetFeatures(
   return true;
 }
 
-std::pair<const llvm::StringTable *, ArrayRef<Builtin::Info>>
-WebAssemblyTargetInfo::getTargetBuiltinStorage() const {
-  return {&BuiltinStrings, BuiltinInfos};
+llvm::SmallVector<Builtin::InfosShard>
+WebAssemblyTargetInfo::getTargetBuiltins() const {
+  return {{&BuiltinStrings, BuiltinInfos}};
 }
 
 void WebAssemblyTargetInfo::adjust(DiagnosticsEngine &Diags,

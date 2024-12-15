@@ -89,9 +89,9 @@ void BPFTargetInfo::fillValidCPUList(SmallVectorImpl<StringRef> &Values) const {
   Values.append(std::begin(ValidCPUNames), std::end(ValidCPUNames));
 }
 
-std::pair<const llvm::StringTable *, ArrayRef<Builtin::Info>>
-BPFTargetInfo::getTargetBuiltinStorage() const {
-  return {&BuiltinStrings, BuiltinInfos};
+llvm::SmallVector<Builtin::InfosShard>
+BPFTargetInfo::getTargetBuiltins() const {
+  return {{&BuiltinStrings, BuiltinInfos}};
 }
 
 bool BPFTargetInfo::handleTargetFeatures(std::vector<std::string> &Features,

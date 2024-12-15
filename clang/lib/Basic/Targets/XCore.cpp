@@ -39,7 +39,7 @@ void XCoreTargetInfo::getTargetDefines(const LangOptions &Opts,
   Builder.defineMacro("__XS1B__");
 }
 
-std::pair<const llvm::StringTable *, ArrayRef<Builtin::Info>>
-XCoreTargetInfo::getTargetBuiltinStorage() const {
-  return {&BuiltinStrings, BuiltinInfos};
+llvm::SmallVector<Builtin::InfosShard>
+XCoreTargetInfo::getTargetBuiltins() const {
+  return {{&BuiltinStrings, BuiltinInfos}};
 }

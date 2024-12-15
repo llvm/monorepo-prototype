@@ -278,7 +278,7 @@ void HexagonTargetInfo::fillValidCPUList(
     Values.push_back(Suffix.Name);
 }
 
-std::pair<const llvm::StringTable *, ArrayRef<Builtin::Info>>
-HexagonTargetInfo::getTargetBuiltinStorage() const {
-  return {&BuiltinStrings, BuiltinInfos};
+llvm::SmallVector<Builtin::InfosShard>
+HexagonTargetInfo::getTargetBuiltins() const {
+  return {{&BuiltinStrings, BuiltinInfos}};
 }

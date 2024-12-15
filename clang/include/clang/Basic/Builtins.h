@@ -70,7 +70,7 @@ enum ID {
   FirstTSBuiltin
 };
 
-// The info used to represent each builtin.
+/// The info used to represent each builtin.
 struct Info {
   // Rather than store pointers to the string literals describing these four
   // aspects of builtins, we store offsets into a common string table.
@@ -87,13 +87,13 @@ struct Info {
   LanguageID Langs = ALL_LANGUAGES;
 };
 
-// A constexpr function to construct an infos array from X-macros.
-//
-// The input array uses the same data structure, but the offsets are actually
-// _lengths_ when input. This is all we can compute from the X-macro approach to
-// builtins. This function will convert these lengths into actual offsets to a
-// string table built up through sequentially appending strings with the given
-// lengths.
+/// A constexpr function to construct an infos array from X-macros.
+///
+/// The input array uses the same data structure, but the offsets are actually
+/// _lengths_ when input. This is all we can compute from the X-macro approach
+/// to builtins. This function will convert these lengths into actual offsets to
+/// a string table built up through sequentially appending strings with the
+/// given lengths.
 template <size_t N>
 static constexpr std::array<Info, N> MakeInfos(std::array<Info, N> Infos) {
   // Translate lengths to offsets. We start past the initial empty string at
@@ -113,6 +113,16 @@ static constexpr std::array<Info, N> MakeInfos(std::array<Info, N> Infos) {
   }
   return Infos;
 }
+
+/// A shard of a target's builtins string table and info.
+///
+/// Target builtins are sharded across multiple tables due to different
+/// structures, origins, and also to improve the overall scaling by avoiding a
+/// single table across all builtins.
+struct InfosShard {
+  const llvm::StringTable *Strings;
+  llvm::ArrayRef<Info> Infos;
+};
 
 // A detail macro used below to emit a string literal that, after string literal
 // concatenation, ends up triggering the `-Woverlength-strings` warning. While
@@ -205,14 +215,16 @@ static constexpr std::array<Info, N> MakeInfos(std::array<Info, N> Infos) {
 /// AuxTSRecords. Their IDs are shifted up by TSRecords.size() and need to
 /// be translated back with getAuxBuiltinID() before use.
 class Context {
-  const llvm::StringTable *TSStrTable = nullptr;
-  const llvm::StringTable *AuxTSStrTable = nullptr;
+  llvm::SmallVector<InfosShard> BuiltinShards;
 
-  llvm::ArrayRef<Info> TSInfos;
-  llvm::ArrayRef<Info> AuxTSInfos;
+  llvm::SmallVector<InfosShard> TargetShards;
+  llvm::SmallVector<InfosShard> AuxTargetShards;
+
+  unsigned NumTargetBuiltins = 0;
+  unsigned NumAuxTargetBuiltins = 0;
 
 public:
-  Context() = default;
+  Context();
 
   /// Perform target-specific initialization
   /// \param AuxTarget Target info to incorporate builtins from. May be nullptr.
@@ -387,12 +399,12 @@ public:
 
   /// Return true if builtin ID belongs to AuxTarget.
   bool isAuxBuiltinID(unsigned ID) const {
-    return ID >= (Builtin::FirstTSBuiltin + TSInfos.size());
+    return ID >= (Builtin::FirstTSBuiltin + NumTargetBuiltins);
   }
 
   /// Return real builtin ID (i.e. ID it would have during compilation
   /// for AuxTarget).
-  unsigned getAuxBuiltinID(unsigned ID) const { return ID - TSInfos.size(); }
+  unsigned getAuxBuiltinID(unsigned ID) const { return ID - NumTargetBuiltins; }
 
   /// Returns true if this is a libc/libm function without the '__builtin_'
   /// prefix.
@@ -413,12 +425,10 @@ public:
   }
 
 private:
-  std::pair<const llvm::StringTable &, const Info &>
-  getStrTableAndInfo(unsigned ID) const;
+  std::pair<const InfosShard &, const Info &>
+  getShardAndInfo(unsigned ID) const;
 
-  const Info &getInfo(unsigned ID) const {
-    return getStrTableAndInfo(ID).second;
-  }
+  const Info &getInfo(unsigned ID) const { return getShardAndInfo(ID).second; }
 
   /// Helper function for isPrintfLike and isScanfLike.
   bool isLike(unsigned ID, unsigned &FormatIdx, bool &HasVAListArg,

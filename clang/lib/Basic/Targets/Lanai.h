@@ -78,9 +78,8 @@ public:
     return TargetInfo::VoidPtrBuiltinVaList;
   }
 
-  std::pair<const llvm::StringTable *, ArrayRef<Builtin::Info>>
-  getTargetBuiltinStorage() const override {
-    return {nullptr, {}};
+  llvm::SmallVector<Builtin::InfosShard> getTargetBuiltins() const override {
+    return {};
   }
 
   bool validateAsmConstraint(const char *&Name,
