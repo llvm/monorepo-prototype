@@ -520,6 +520,10 @@ enum NodeType : unsigned {
   STP,
   STILP,
   STNP,
+
+  // Compare-and-branch
+  CBRR,
+  CBRI,
 };
 
 } // end namespace AArch64ISD
