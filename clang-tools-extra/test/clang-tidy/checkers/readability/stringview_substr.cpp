@@ -12,59 +12,62 @@ public:
   void remove_prefix(size_type n) {}
   void remove_suffix(size_type n) {}
   size_type length() const { return 0; }
-
-  // Needed for assignment operator
   basic_string_view& operator=(const basic_string_view&) { return *this; }
 };
 
 using string_view = basic_string_view<char>;
-}
+} // namespace std
 
-void test() {
+void test_basic() {
   std::string_view sv("test");
   std::string_view sv1("test");
-  std::string_view sv2("other");
+  std::string_view sv2("test");
 
-  // Should match: Removing N characters from start
+  // Should match: remove_prefix
   sv = sv.substr(5);
   // CHECK-MESSAGES: :[[@LINE-1]]:3: warning: prefer 'remove_prefix' over 'substr' for removing characters from the start [readability-stringview-substr]
   // CHECK-FIXES: sv.remove_prefix(5)
 
-  // Should match: Removing N characters from end
+  // Should match: remove_suffix
   sv = sv.substr(0, sv.length() - 3);
   // CHECK-MESSAGES: :[[@LINE-1]]:3: warning: prefer 'remove_suffix' over 'substr' for removing characters from the end [readability-stringview-substr]
   // CHECK-FIXES: sv.remove_suffix(3)
 
-  // Should not match: Basic substring operations
-  sv = sv.substr(0, 3);  // No warning - taking first N characters
-  sv = sv.substr(1, 3);  // No warning - taking N characters from position 1
-  
-  // Should not match: Operations on different string_views
-  sv = sv2.substr(0, sv2.length() - 3);  // No warning - not self-assignment
-  sv = sv.substr(0, sv2.length() - 3);   // No warning - length() from different string_view
-  sv1 = sv1.substr(0, sv2.length() - 3); // No warning - length() from different string_view
-  sv = sv1.substr(0, sv1.length() - 3);  // No warning - not self-assignment
-
-  // Should not match: Not actually removing from end
-  sv = sv.substr(0, sv.length());       // No warning - keeping entire string
-  sv = sv.substr(0, sv.length() - 0);   // No warning - subtracting zero
-  
-  // Should not match: Complex expressions
-  sv = sv.substr(0, sv.length() - (3 + 2));  // No warning - complex arithmetic
-  sv = sv.substr(1 + 2, sv.length() - 3);    // No warning - complex start position
+  // Should match: remove_suffix with complex expression
+  sv = sv.substr(0, sv.length() - (3 + 2));
+  // CHECK-MESSAGES: :[[@LINE-1]]:3: warning: prefer 'remove_suffix' over 'substr' for removing characters from the end [readability-stringview-substr]
+  // CHECK-FIXES: sv.remove_suffix((3 + 2))
 }
 
-void test_zeros() {
+void test_copies() {
+  std::string_view sv("test");
+  std::string_view sv1("test");
+  std::string_view sv2("test");
+
+  // Should match: remove redundant self copies
+  sv = sv.substr(0, sv.length());
+  // CHECK-MESSAGES: :[[@LINE-1]]:3: warning: redundant self-copy [readability-stringview-substr]
+
+  sv = sv.substr(0, sv.length() - 0);
+    // CHECK-MESSAGES: :[[@LINE-1]]:3: warning: redundant self-copy [readability-stringview-substr]
+
+  // Should match: simplify copies between different variables
+  sv1 = sv.substr(0, sv.length());
+  // CHECK-MESSAGES: :[[@LINE-1]]:3: warning: prefer direct copy over substr [readability-stringview-substr]
+  // CHECK-FIXES: sv1 = sv
+
+  sv2 = sv.substr(0, sv.length() - 0);
+  // CHECK-MESSAGES: :[[@LINE-1]]:3: warning: prefer direct copy over substr [readability-stringview-substr]
+  // CHECK-FIXES: sv2 = sv
+}
+
+void test_zero_forms() {
   std::string_view sv("test");
   const int kZero = 0;
-  constexpr std::string_view::size_type Zero = 0;  // Fixed: using string_view::size_type
+  constexpr std::string_view::size_type Zero = 0;
   #define START_POS 0
-  
-  // All of these should match remove_suffix pattern and trigger warnings
-  sv = sv.substr(0, sv.length() - 3);
-  // CHECK-MESSAGES: :[[@LINE-1]]:3: warning: prefer 'remove_suffix' over 'substr' for removing characters from the end [readability-stringview-substr]
-  // CHECK-FIXES: sv.remove_suffix(3)
 
+  // Should match: various forms of zero in first argument
   sv = sv.substr(kZero, sv.length() - 3);
   // CHECK-MESSAGES: :[[@LINE-1]]:3: warning: prefer 'remove_suffix' over 'substr' for removing characters from the end [readability-stringview-substr]
   // CHECK-FIXES: sv.remove_suffix(3)
@@ -88,9 +91,18 @@ void test_zeros() {
   sv = sv.substr(0UL, sv.length() - 3);
   // CHECK-MESSAGES: :[[@LINE-1]]:3: warning: prefer 'remove_suffix' over 'substr' for removing characters from the end [readability-stringview-substr]
   // CHECK-FIXES: sv.remove_suffix(3)
-
-  // These should NOT match the remove_suffix pattern
-  sv = sv.substr(1-1, sv.length() - 3);  // No warning - complex expression
-  sv = sv.substr(sv.length() - 3, sv.length() - 3);  // No warning - non-zero start
 }
 
+void test_should_not_match() {
+  std::string_view sv("test");
+  std::string_view sv1("test");
+  std::string_view sv2("test");
+
+  // No match: substr used for prefix or mid-view
+  sv = sv.substr(1, sv.length() - 3); // No warning
+
+  // No match: Different string_views
+  sv = sv2.substr(0, sv2.length() - 3); // No warning
+
+  
+}

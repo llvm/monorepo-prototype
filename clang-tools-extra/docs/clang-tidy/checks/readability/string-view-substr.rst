@@ -13,4 +13,6 @@ Expression                                   Replacement
 ===========================================  =======================
 ``sv = sv.substr(n)``                        ``sv.remove_prefix(n)``
 ``sv = sv.substr(0, sv.length()-n)``         ``sv.remove_suffix(n)``
+``sv = sv.substr(0, sv.length())``           _Redundant self-copy_
+``sv1 = sv.substr(0, sv.length())``          ``sv1 = sv``
 ===========================================  =======================

@@ -45,13 +45,11 @@ void StringViewSubstrCheck::check(const MatchFinder::MatchResult &Result) {
     return;
   }
 
-  // Get the DeclRefExpr for the target and source to compare variables
+  // Get the DeclRefExpr for the target and source
   const auto *TargetDRE = dyn_cast<DeclRefExpr>(Target->IgnoreParenImpCasts());
   const auto *SourceDRE = dyn_cast<DeclRefExpr>(Source->IgnoreParenImpCasts());
 
-  // Only handle self-assignment cases
-  if (!TargetDRE || !SourceDRE ||
-      TargetDRE->getDecl() != SourceDRE->getDecl()) {
+  if (!TargetDRE || !SourceDRE) {
     return;
   }
 
@@ -59,89 +57,143 @@ void StringViewSubstrCheck::check(const MatchFinder::MatchResult &Result) {
   const Expr *LengthArg =
       SubstrCall->getNumArgs() > 1 ? SubstrCall->getArg(1) : nullptr;
 
-  // Get source text of first argument
   std::string StartText =
       Lexer::getSourceText(
           CharSourceRange::getTokenRange(StartArg->getSourceRange()),
           *Result.SourceManager, Result.Context->getLangOpts())
           .str();
 
-  // Case 1: Check for remove_prefix pattern - only when the second arg is
-  // missing (uses npos)
+  const bool IsSameVar = (TargetDRE->getDecl() == SourceDRE->getDecl());
+
+  // Case 1: Check for remove_prefix pattern
   if (!LengthArg || isa<CXXDefaultArgExpr>(LengthArg)) {
-    std::string Replacement = TargetDRE->getNameInfo().getAsString() +
-                              ".remove_prefix(" + StartText + ")";
-    diag(Assignment->getBeginLoc(), "prefer 'remove_prefix' over 'substr' for "
-                                    "removing characters from the start")
-        << FixItHint::CreateReplacement(Assignment->getSourceRange(),
-                                        Replacement);
+    if (IsSameVar) {
+      std::string Replacement = TargetDRE->getNameInfo().getAsString() +
+                                ".remove_prefix(" + StartText + ")";
+      diag(Assignment->getBeginLoc(), "prefer 'remove_prefix' over 'substr' "
+                                      "for removing characters from the start")
+          << FixItHint::CreateReplacement(Assignment->getSourceRange(),
+                                          Replacement);
+    }
     return;
   }
 
-  // Case 2: Check for remove_suffix pattern
-  const Expr *Start = StartArg->IgnoreParenImpCasts();
+  // Check if StartArg resolves to 0
   bool IsZero = false;
 
-  if (const auto *IL = dyn_cast<IntegerLiteral>(Start)) {
+  // Handle cases where StartArg is an integer literal
+  if (const auto *IL =
+          dyn_cast<IntegerLiteral>(StartArg->IgnoreParenImpCasts())) {
     IsZero = IL->getValue() == 0;
-  } else if (const auto *DRE = dyn_cast<DeclRefExpr>(Start)) {
-    // Check constants
-    if (const auto *VD = dyn_cast<VarDecl>(DRE->getDecl())) {
-      if (VD->hasInit()) {
-        if (const auto *Init = dyn_cast<IntegerLiteral>(
-                VD->getInit()->IgnoreParenImpCasts())) {
-          IsZero = Init->getValue() == 0;
-        }
-      }
-    }
   }
 
+  // Optional: Handle cases where StartArg evaluates to zero
+  if (!IsZero) {
+    // Add logic for other constant evaluation (e.g., constexpr evaluation)
+    const auto &EvalResult = StartArg->EvaluateKnownConstInt(*Result.Context);
+    IsZero = !EvalResult.isNegative() && EvalResult == 0;
+  }
+
+  // If StartArg resolves to 0, handle the case
   if (IsZero) {
+    bool isFullCopy = false;
+
+    // Check for length() or length() - expr pattern
     if (const auto *BinOp = dyn_cast<BinaryOperator>(LengthArg)) {
       if (BinOp->getOpcode() == BO_Sub) {
         const Expr *LHS = BinOp->getLHS();
         const Expr *RHS = BinOp->getRHS();
 
-        // Check if LHS is a length() call on the same string_view
+        // Check for length() call
         if (const auto *LengthCall = dyn_cast<CXXMemberCallExpr>(LHS)) {
           if (const auto *LengthMethod =
                   dyn_cast<CXXMethodDecl>(LengthCall->getDirectCallee())) {
             if (LengthMethod->getName() == "length") {
-              // Verify the length() call is on the same string_view
               const Expr *LengthObject =
                   LengthCall->getImplicitObjectArgument();
               const auto *LengthDRE =
                   dyn_cast<DeclRefExpr>(LengthObject->IgnoreParenImpCasts());
 
-              if (!LengthDRE || LengthDRE->getDecl() != TargetDRE->getDecl()) {
+              if (!LengthDRE || LengthDRE->getDecl() != SourceDRE->getDecl()) {
                 return;
               }
 
-              // Must be a simple non-zero integer literal
-              const auto *IL =
-                  dyn_cast<IntegerLiteral>(RHS->IgnoreParenImpCasts());
-              if (!IL || IL->getValue() == 0) {
-                return;
+              // Check if RHS is 0 or evaluates to 0
+              bool IsZero = false;
+              if (const auto *IL =
+                      dyn_cast<IntegerLiteral>(RHS->IgnoreParenImpCasts())) {
+                IsZero = IL->getValue() == 0;
               }
 
-              std::string RHSText =
-                  Lexer::getSourceText(
-                      CharSourceRange::getTokenRange(RHS->getSourceRange()),
-                      *Result.SourceManager, Result.Context->getLangOpts())
-                      .str();
+              if (IsZero) {
+                isFullCopy = true;
+              } else if (IsSameVar) {
+                // remove_suffix case (only for self-assignment)
+                std::string RHSText =
+                    Lexer::getSourceText(
+                        CharSourceRange::getTokenRange(RHS->getSourceRange()),
+                        *Result.SourceManager, Result.Context->getLangOpts())
+                        .str();
 
-              std::string Replacement = TargetDRE->getNameInfo().getAsString() +
-                                        ".remove_suffix(" + RHSText + ")";
-              diag(Assignment->getBeginLoc(),
-                   "prefer 'remove_suffix' over 'substr' for removing "
-                   "characters from the end")
-                  << FixItHint::CreateReplacement(Assignment->getSourceRange(),
-                                                  Replacement);
-              return;
+                std::string Replacement =
+                    TargetDRE->getNameInfo().getAsString() + ".remove_suffix(" +
+                    RHSText + ")";
+                diag(Assignment->getBeginLoc(),
+                     "prefer 'remove_suffix' over 'substr' for removing "
+                     "characters from the end")
+                    << FixItHint::CreateReplacement(
+                           Assignment->getSourceRange(), Replacement);
+                return;
+              }
             }
           }
         }
       }
+    } else if (const auto *LengthCall =
+                   dyn_cast<CXXMemberCallExpr>(LengthArg)) {
+      // Handle direct length() call
+      if (const auto *LengthMethod =
+              dyn_cast<CXXMethodDecl>(LengthCall->getDirectCallee())) {
+        if (LengthMethod->getName() == "length") {
+          const Expr *LengthObject = LengthCall->getImplicitObjectArgument();
+          const auto *LengthDRE =
+              dyn_cast<DeclRefExpr>(LengthObject->IgnoreParenImpCasts());
+
+          if (LengthDRE && LengthDRE->getDecl() == SourceDRE->getDecl()) {
+            isFullCopy = true;
+          }
+        }
+      }
+    }
+    if (isFullCopy) {
+      if (IsSameVar) {
+        // Remove redundant self-copy, including the semicolon
+        SourceLocation EndLoc = Assignment->getEndLoc();
+        while (EndLoc.isValid()) {
+          const char *endPtr = Result.SourceManager->getCharacterData(EndLoc);
+          if (*endPtr == ';')
+            break;
+          EndLoc = Lexer::getLocForEndOfToken(EndLoc, 0, *Result.SourceManager,
+                                              Result.Context->getLangOpts());
+        }
+        if (EndLoc.isValid()) {
+          diag(Assignment->getBeginLoc(), "redundant self-copy")
+              << FixItHint::CreateRemoval(CharSourceRange::getCharRange(
+                     Assignment->getBeginLoc(),
+                     EndLoc.getLocWithOffset(
+                         1))); // +1 to include the semicolon.
+        }
+      } else {
+        // Simplify copy between different variables
+        std::string Replacement = TargetDRE->getNameInfo().getAsString() +
+                                  " = " +
+                                  SourceDRE->getNameInfo().getAsString();
+        diag(Assignment->getBeginLoc(), "prefer direct copy over substr")
+            << FixItHint::CreateReplacement(Assignment->getSourceRange(),
+                                            Replacement);
+      }
+
+      return;
     }
   }
 }
