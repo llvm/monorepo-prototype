@@ -269,6 +269,7 @@ static lldb::offset_t GetOpcodeDataSize(const DataExtractor &data,
 
   // All opcodes that have a single ULEB (signed or unsigned) argument
   case DW_OP_addrx:           // 0xa1 1 ULEB128 index
+  case DW_OP_constx:          // 0xa2 1 ULEB128 index
   case DW_OP_constu:          // 0x10 1 ULEB128 constant
   case DW_OP_consts:          // 0x11 1 SLEB128 constant
   case DW_OP_plus_uconst:     // 0x23 1 ULEB128 addend
@@ -307,6 +308,8 @@ static lldb::offset_t GetOpcodeDataSize(const DataExtractor &data,
   case DW_OP_regx:            // 0x90 1 ULEB128 register
   case DW_OP_fbreg:           // 0x91 1 SLEB128 offset
   case DW_OP_piece:           // 0x93 1 ULEB128 size of piece addressed
+  case DW_OP_convert:         // 0xa8 1 ULEB128 offset
+  case DW_OP_reinterpret:     // 0xa9 1 ULEB128 offset
   case DW_OP_GNU_addr_index:  // 0xfb 1 ULEB128 index
   case DW_OP_GNU_const_index: // 0xfc 1 ULEB128 index
     data.Skip_LEB128(&offset);
