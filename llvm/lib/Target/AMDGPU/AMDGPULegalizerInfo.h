@@ -77,6 +77,9 @@ public:
   bool legalizeLoad(LegalizerHelper &Helper, MachineInstr &MI) const;
   bool legalizeStore(LegalizerHelper &Helper, MachineInstr &MI) const;
 
+  bool legalizeFPExt(MachineInstr &MI, MachineRegisterInfo &MRI, MachineIRBuilder &B) const;
+  bool legalizeFPTrunc(MachineInstr &MI, MachineRegisterInfo &MRI, MachineIRBuilder &B) const;
+
   bool legalizeFMad(MachineInstr &MI, MachineRegisterInfo &MRI,
                     MachineIRBuilder &B) const;
 

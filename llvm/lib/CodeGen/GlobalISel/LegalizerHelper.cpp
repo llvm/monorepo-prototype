@@ -2012,6 +2012,15 @@ Register LegalizerHelper::coerceToScalar(Register Val) {
 void LegalizerHelper::widenScalarSrc(MachineInstr &MI, LLT WideTy,
                                      unsigned OpIdx, unsigned ExtOpcode) {
   MachineOperand &MO = MI.getOperand(OpIdx);
+  LLT SrcTy = MRI.getType(MO.getReg());
+
+  if (SrcTy.isFloat() && ExtOpcode != TargetOpcode::G_FPEXT) {
+    auto Cast = MIRBuilder.buildBitcast(SrcTy.dropType(), MO);
+    auto ExtB = MIRBuilder.buildInstr(ExtOpcode, {WideTy}, {Cast});
+    MO.setReg(ExtB.getReg(0));
+    return;
+  }
+
   auto ExtB = MIRBuilder.buildInstr(ExtOpcode, {WideTy}, {MO});
   MO.setReg(ExtB.getReg(0));
 }
@@ -2026,8 +2035,18 @@ void LegalizerHelper::narrowScalarSrc(MachineInstr &MI, LLT NarrowTy,
 void LegalizerHelper::widenScalarDst(MachineInstr &MI, LLT WideTy,
                                      unsigned OpIdx, unsigned TruncOpcode) {
   MachineOperand &MO = MI.getOperand(OpIdx);
+  LLT DstTy = MRI.getType(MO.getReg());
   Register DstExt = MRI.createGenericVirtualRegister(WideTy);
+
   MIRBuilder.setInsertPt(MIRBuilder.getMBB(), ++MIRBuilder.getInsertPt());
+
+  if (DstTy.isFloat() && TruncOpcode != TargetOpcode::G_FPTRUNC) {
+    auto Trunc = MIRBuilder.buildInstr(TruncOpcode, {DstTy.dropType()}, {DstExt});
+    MIRBuilder.buildBitcast(MO, Trunc);
+    MO.setReg(DstExt);
+    return;
+  }
+
   MIRBuilder.buildInstr(TruncOpcode, {MO}, {DstExt});
   MO.setReg(DstExt);
 }
