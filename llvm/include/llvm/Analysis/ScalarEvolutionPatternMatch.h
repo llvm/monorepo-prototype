@@ -13,6 +13,7 @@
 #ifndef LLVM_ANALYSIS_SCALAREVOLUTIONPATTERNMATCH_H
 #define LLVM_ANALYSIS_SCALAREVOLUTIONPATTERNMATCH_H
 
+#include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 
 namespace llvm {
@@ -21,6 +22,10 @@ namespace SCEVPatternMatch {
 template <typename Val, typename Pattern>
 bool match(const SCEV *S, const Pattern &P) {
   return P.match(S);
+}
+
+template <typename Pattern> bool match(SCEVUse U, const Pattern &P) {
+  return match(U.getPointer(), P);
 }
 
 template <typename Predicate> struct cst_pred_ty : public Predicate {

@@ -563,6 +563,7 @@ bool PPCLoopInstrFormPrep::rewriteLoadStoresForCommoningChains(
     const SCEV *BaseSCEV =
         ChainIdx ? SE->getAddExpr(Bucket.BaseSCEV,
                                   Bucket.Elements[BaseElemIdx].Offset)
+                       .getPointer()
                  : Bucket.BaseSCEV;
     const SCEVAddRecExpr *BasePtrSCEV = cast<SCEVAddRecExpr>(BaseSCEV);
 
@@ -596,6 +597,7 @@ bool PPCLoopInstrFormPrep::rewriteLoadStoresForCommoningChains(
       const SCEV *OffsetSCEV =
           BaseElemIdx ? SE->getMinusSCEV(Bucket.Elements[Idx].Offset,
                                          Bucket.Elements[BaseElemIdx].Offset)
+                            .getPointer()
                       : Bucket.Elements[Idx].Offset;
 
       // Make sure offset is able to expand. Only need to check one time as the
