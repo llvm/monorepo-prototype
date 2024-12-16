@@ -136,6 +136,13 @@ New checks
   Gives warnings for tagged unions, where the number of tags is
   different from the number of data members inside the union.
 
+- New :doc:`readability-string-view-substr 
+  <clang-tidy/checks/readability/string-view-substr>` check.
+
+  Finds ``std::string_view::substr()`` calls that can be replaced with clearer 
+  alternatives using ``remove_prefix()`` or ``remove_suffix()``. This makes the 
+  intent clearer and is more efficient as it modifies the string_view in place.
+
 - New :doc:`portability-template-virtual-member-function
   <clang-tidy/checks/portability/template-virtual-member-function>` check.
 
