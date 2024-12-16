@@ -86,6 +86,8 @@ bool VPRecipeBase::mayWriteToMemory() const {
   case VPBranchOnMaskSC:
   case VPScalarIVStepsSC:
   case VPPredInstPHISC:
+  case VPSplatSC:
+  case VPStepVectorSC:
     return false;
   case VPBlendSC:
   case VPReductionEVLSC:
@@ -132,6 +134,8 @@ bool VPRecipeBase::mayReadFromMemory() const {
   case VPScalarIVStepsSC:
   case VPWidenStoreEVLSC:
   case VPWidenStoreSC:
+  case VPSplatSC:
+  case VPStepVectorSC:
     return false;
   case VPBlendSC:
   case VPReductionEVLSC:
@@ -163,6 +167,8 @@ bool VPRecipeBase::mayHaveSideEffects() const {
   case VPPredInstPHISC:
   case VPScalarCastSC:
   case VPReverseVectorPointerSC:
+  case VPSplatSC:
+  case VPStepVectorSC:
     return false;
   case VPInstructionSC:
     return mayWriteToMemory();
