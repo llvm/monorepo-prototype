@@ -53,3 +53,44 @@ void test() {
   sv = sv.substr(0, sv.length() - (3 + 2));  // No warning - complex arithmetic
   sv = sv.substr(1 + 2, sv.length() - 3);    // No warning - complex start position
 }
+
+void test_zeros() {
+  std::string_view sv("test");
+  const int kZero = 0;
+  constexpr std::string_view::size_type Zero = 0;  // Fixed: using string_view::size_type
+  #define START_POS 0
+  
+  // All of these should match remove_suffix pattern and trigger warnings
+  sv = sv.substr(0, sv.length() - 3);
+  // CHECK-MESSAGES: :[[@LINE-1]]:3: warning: prefer 'remove_suffix' over 'substr' for removing characters from the end [readability-stringview-substr]
+  // CHECK-FIXES: sv.remove_suffix(3)
+
+  sv = sv.substr(kZero, sv.length() - 3);
+  // CHECK-MESSAGES: :[[@LINE-1]]:3: warning: prefer 'remove_suffix' over 'substr' for removing characters from the end [readability-stringview-substr]
+  // CHECK-FIXES: sv.remove_suffix(3)
+
+  sv = sv.substr(Zero, sv.length() - 3);
+  // CHECK-MESSAGES: :[[@LINE-1]]:3: warning: prefer 'remove_suffix' over 'substr' for removing characters from the end [readability-stringview-substr]
+  // CHECK-FIXES: sv.remove_suffix(3)
+
+  sv = sv.substr(START_POS, sv.length() - 3);
+  // CHECK-MESSAGES: :[[@LINE-1]]:3: warning: prefer 'remove_suffix' over 'substr' for removing characters from the end [readability-stringview-substr]
+  // CHECK-FIXES: sv.remove_suffix(3)
+
+  sv = sv.substr((0), sv.length() - 3);
+  // CHECK-MESSAGES: :[[@LINE-1]]:3: warning: prefer 'remove_suffix' over 'substr' for removing characters from the end [readability-stringview-substr]
+  // CHECK-FIXES: sv.remove_suffix(3)
+
+  sv = sv.substr(0u, sv.length() - 3);
+  // CHECK-MESSAGES: :[[@LINE-1]]:3: warning: prefer 'remove_suffix' over 'substr' for removing characters from the end [readability-stringview-substr]
+  // CHECK-FIXES: sv.remove_suffix(3)
+
+  sv = sv.substr(0UL, sv.length() - 3);
+  // CHECK-MESSAGES: :[[@LINE-1]]:3: warning: prefer 'remove_suffix' over 'substr' for removing characters from the end [readability-stringview-substr]
+  // CHECK-FIXES: sv.remove_suffix(3)
+
+  // These should NOT match the remove_suffix pattern
+  sv = sv.substr(1-1, sv.length() - 3);  // No warning - complex expression
+  sv = sv.substr(sv.length() - 3, sv.length() - 3);  // No warning - non-zero start
+}
+

@@ -79,7 +79,24 @@ void StringViewSubstrCheck::check(const MatchFinder::MatchResult &Result) {
   }
 
   // Case 2: Check for remove_suffix pattern
-  if (StartText == "0") {
+  const Expr *Start = StartArg->IgnoreParenImpCasts();
+  bool IsZero = false;
+
+  if (const auto *IL = dyn_cast<IntegerLiteral>(Start)) {
+    IsZero = IL->getValue() == 0;
+  } else if (const auto *DRE = dyn_cast<DeclRefExpr>(Start)) {
+    // Check constants
+    if (const auto *VD = dyn_cast<VarDecl>(DRE->getDecl())) {
+      if (VD->hasInit()) {
+        if (const auto *Init = dyn_cast<IntegerLiteral>(
+                VD->getInit()->IgnoreParenImpCasts())) {
+          IsZero = Init->getValue() == 0;
+        }
+      }
+    }
+  }
+
+  if (IsZero) {
     if (const auto *BinOp = dyn_cast<BinaryOperator>(LengthArg)) {
       if (BinOp->getOpcode() == BO_Sub) {
         const Expr *LHS = BinOp->getLHS();
