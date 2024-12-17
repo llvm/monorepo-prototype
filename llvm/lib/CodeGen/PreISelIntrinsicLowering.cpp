@@ -457,8 +457,14 @@ bool PreISelIntrinsicLowering::lowerIntrinsics(Module &M) const {
     case Intrinsic::exp:
     case Intrinsic::exp2:
       Changed |= forEachCall(F, [&](CallInst *CI) {
-        // TODO: Check legality and check if scalable
-        if (!CI->getArgOperand(0)->getType()->isVectorTy())
+        unsigned Op = ISD::exp;
+        if (F.getIntrinsicID() == Intrinsic::exp2)
+          Op = ISD::exp2;
+        Type *Ty = CI->getArgOperand(0)->getType();
+        if (!Ty->isVectorTy() || !Ty->isScalableTy())
+          return false;
+        const TargetLowering *TL = TM->getSubtargetImpl(F)->getTargetLowering();
+        if (!TL->isOperationExpand(Op, EVT::getEVT(Ty)))
           return false;
         return lowerUnaryVectorIntrinsicAsLoop(M, CI);
       });

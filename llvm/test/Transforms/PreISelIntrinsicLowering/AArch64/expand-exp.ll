@@ -11,15 +11,15 @@ define <vscale x 4 x float> @scalable_vec_exp(<vscale x 4 x float> %input) {
 ; CHECK-NEXT:    br label %[[BB3:.*]]
 ; CHECK:       [[BB3]]:
 ; CHECK-NEXT:    [[TMP4:%.*]] = phi i64 [ 0, [[TMP0:%.*]] ], [ [[TMP9:%.*]], %[[BB3]] ]
-; CHECK-NEXT:    [[TMP5:%.*]] = phi <vscale x 4 x float> [ [[INPUT]], [[TMP0]] ], [ [[NEW_VEC:%.*]], %[[BB3]] ]
+; CHECK-NEXT:    [[TMP5:%.*]] = phi <vscale x 4 x float> [ [[INPUT]], [[TMP0]] ], [ [[TMP8:%.*]], %[[BB3]] ]
 ; CHECK-NEXT:    [[TMP6:%.*]] = extractelement <vscale x 4 x float> [[TMP5]], i64 [[TMP4]]
 ; CHECK-NEXT:    [[TMP7:%.*]] = call float @llvm.exp.f32(float [[TMP6]])
-; CHECK-NEXT:    [[NEW_VEC]] = insertelement <vscale x 4 x float> [[TMP5]], float [[TMP7]], i64 [[TMP4]]
+; CHECK-NEXT:    [[TMP8]] = insertelement <vscale x 4 x float> [[TMP5]], float [[TMP7]], i64 [[TMP4]]
 ; CHECK-NEXT:    [[TMP9]] = add i64 [[TMP4]], 1
 ; CHECK-NEXT:    [[TMP10:%.*]] = icmp eq i64 [[TMP9]], [[TMP2]]
 ; CHECK-NEXT:    br i1 [[TMP10]], label %[[BB11:.*]], label %[[BB3]]
 ; CHECK:       [[BB11]]:
-; CHECK-NEXT:    ret <vscale x 4 x float> [[NEW_VEC]]
+; CHECK-NEXT:    ret <vscale x 4 x float> [[TMP8]]
 ;
   %output = call <vscale x 4 x float> @llvm.exp.nxv4f32(<vscale x 4 x float> %input)
   ret <vscale x 4 x float> %output
@@ -28,18 +28,8 @@ define <vscale x 4 x float> @scalable_vec_exp(<vscale x 4 x float> %input) {
 define <4 x float> @fixed_vec_exp(<4 x float> %input) {
 ; CHECK-LABEL: define <4 x float> @fixed_vec_exp(
 ; CHECK-SAME: <4 x float> [[INPUT:%.*]]) {
-; CHECK-NEXT:    br label %[[BB1:.*]]
-; CHECK:       [[BB1]]:
-; CHECK-NEXT:    [[TMP2:%.*]] = phi i64 [ 0, [[TMP0:%.*]] ], [ [[TMP7:%.*]], %[[BB1]] ]
-; CHECK-NEXT:    [[TMP3:%.*]] = phi <4 x float> [ [[INPUT]], [[TMP0]] ], [ [[TMP6:%.*]], %[[BB1]] ]
-; CHECK-NEXT:    [[TMP4:%.*]] = extractelement <4 x float> [[TMP3]], i64 [[TMP2]]
-; CHECK-NEXT:    [[TMP5:%.*]] = call float @llvm.exp.f32(float [[TMP4]])
-; CHECK-NEXT:    [[TMP6]] = insertelement <4 x float> [[TMP3]], float [[TMP5]], i64 [[TMP2]]
-; CHECK-NEXT:    [[TMP7]] = add i64 [[TMP2]], 1
-; CHECK-NEXT:    [[TMP8:%.*]] = icmp eq i64 [[TMP7]], 4
-; CHECK-NEXT:    br i1 [[TMP8]], label %[[BB9:.*]], label %[[BB1]]
-; CHECK:       [[BB9]]:
-; CHECK-NEXT:    ret <4 x float> [[TMP6]]
+; CHECK-NEXT:    [[OUTPUT:%.*]] = call <4 x float> @llvm.exp.v4f32(<4 x float> [[INPUT]])
+; CHECK-NEXT:    ret <4 x float> [[OUTPUT]]
 ;
   %output = call <4 x float> @llvm.exp.v4f32(<4 x float> %input)
   ret <4 x float> %output
