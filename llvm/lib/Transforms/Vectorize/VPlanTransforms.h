@@ -59,8 +59,9 @@ struct VPlanTransforms {
                                  unsigned BestUF,
                                  PredicatedScalarEvolution &PSE);
 
-  /// Optimize \p Plan based on \p TC and \p BestVF.
-  static void optimizeForTCAndVF(VPlan &Plan, unsigned TC, ElementCount BestVF);
+  /// Optimize \p Plan based on \p TC, \p BestVF and \p BestUF.
+  static void optimizeForTCAndVFAndUF(VPlan &Plan, unsigned TC,
+                                      ElementCount BestVF, unsigned BestUF);
 
   /// Apply VPlan-to-VPlan optimizations to \p Plan, including induction recipe
   /// optimizations, dead recipe removal, replicate region optimizations and

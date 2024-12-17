@@ -7658,7 +7658,7 @@ DenseMap<const SCEV *, Value *> LoopVectorizationPlanner::executePlan(
   VPlanTransforms::optimizeForVFAndUF(BestVPlan, BestVF, BestUF, PSE);
 
   auto TC = PSE.getSE()->getSmallConstantTripCount(OrigLoop);
-  VPlanTransforms::optimizeForTCAndVF(BestVPlan, TC, BestVF);
+  VPlanTransforms::optimizeForTCAndVFAndUF(BestVPlan, TC, BestVF, BestUF);
 
   LLVM_DEBUG(dbgs() << "Executing best plan with VF=" << BestVF
                     << ", UF=" << BestUF << '\n');

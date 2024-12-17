@@ -661,14 +661,16 @@ static void recursivelyDeleteDeadRecipes(VPValue *V) {
   }
 }
 
-void VPlanTransforms::optimizeForTCAndVF(VPlan &Plan, unsigned TC,
-                                         ElementCount BestVF) {
+void VPlanTransforms::optimizeForTCAndVFAndUF(VPlan &Plan, unsigned TC,
+                                              ElementCount BestVF,
+                                              unsigned BestUF) {
   assert(Plan.hasVF(BestVF) && "BestVF is not available in Plan");
+  assert(Plan.hasUF(BestUF) && "BestUF is not available in Plan");
   if (!TC || !BestVF.isFixed())
     return;
 
-  // Calculate the widest type required for known TC and VF.
-  uint64_t Width = BestVF.getKnownMinValue();
+  // Calculate the widest type required for known TC, VF and UF.
+  uint64_t Width = BestVF.getKnownMinValue() * BestUF;
   uint64_t MaxVal = alignTo(TC, Width) - 1;
   unsigned MaxActiveBits = Log2_64_Ceil(MaxVal);
   unsigned NewBitWidth = std::max<unsigned>(PowerOf2Ceil(MaxActiveBits), 8);
@@ -711,8 +713,10 @@ void VPlanTransforms::optimizeForTCAndVF(VPlan &Plan, unsigned TC,
     MadeChange = true;
   }
 
-  if (MadeChange)
+  if (MadeChange) {
     Plan.setVF(BestVF);
+    Plan.setUF(BestUF);
+  }
 }
 
 void VPlanTransforms::optimizeForVFAndUF(VPlan &Plan, ElementCount BestVF,
