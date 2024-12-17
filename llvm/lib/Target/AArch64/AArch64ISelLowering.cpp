@@ -2072,6 +2072,23 @@ bool AArch64TargetLowering::shouldExpandVectorMatch(EVT VT,
   return true;
 }
 
+bool AArch64TargetLowering::shouldExpandVectorExtractLastActive(
+    const IntrinsicInst *I) const {
+  // 'clastb' requires SVE support.
+  if (!Subtarget->hasSVE())
+    return true;
+
+  // Check if the input data vector is a legal supported type.
+  EVT VT = EVT::getEVT(I->getArgOperand(0)->getType());
+  EVT ScalarVT = VT.getScalarType();
+
+  if (ScalarVT != MVT::i8 && ScalarVT != MVT::i16 && ScalarVT != MVT::i32 &&
+      ScalarVT != MVT::i64 && ScalarVT != MVT::f32 && ScalarVT != MVT::f64)
+    return true;
+
+  return VT.getStoreSizeInBits().getKnownMinValue() != 128;
+}
+
 void AArch64TargetLowering::addTypeForFixedLengthSVE(MVT VT) {
   assert(VT.isFixedLengthVector() && "Expected fixed length vector type!");
 
@@ -6417,6 +6434,22 @@ SDValue AArch64TargetLowering::LowerINTRINSIC_WO_CHAIN(SDValue Op,
   }
   case Intrinsic::experimental_vector_match: {
     return LowerVectorMatch(Op, DAG);
+  }
+  case Intrinsic::experimental_vector_extract_last_active: {
+    SDValue Data = Op.getOperand(1);
+    SDValue Mask = Op.getOperand(2);
+    SDValue PassThru = Op.getOperand(3);
+    EVT VT = Op.getValueType();
+    EVT DataVT = Data.getValueType();
+
+    if (DataVT.isFixedLengthVector()) {
+      EVT ContainerVT = getContainerForFixedLengthVector(DAG, DataVT);
+      EVT MaskVT = ContainerVT.changeElementType(MVT::i1);
+      Data = convertToScalableVector(DAG, ContainerVT, Data);
+      Mask = convertToScalableVector(DAG, MaskVT, Mask);
+    }
+
+    return DAG.getNode(AArch64ISD::CLASTB_N, dl, VT, Mask, PassThru, Data);
   }
   }
 }
@@ -27306,6 +27339,18 @@ void AArch64TargetLowering::ReplaceNodeResults(
       SDLoc DL(N);
       auto V = DAG.getNode(ISD::INTRINSIC_WO_CHAIN, DL, NewVT, N->ops());
       Results.push_back(DAG.getNode(ISD::TRUNCATE, DL, VT, V));
+      return;
+    }
+    case Intrinsic::experimental_vector_extract_last_active: {
+      assert((VT == MVT::i8 || VT == MVT::i16) &&
+             "custom lowering for unexpected type");
+      SDLoc DL(N);
+      auto PassThru =
+          DAG.getNode(ISD::ANY_EXTEND, DL, MVT::i32, N->getOperand(3));
+      auto Extract =
+          DAG.getNode(ISD::INTRINSIC_WO_CHAIN, DL, MVT::i32, N->getOperand(0),
+                      N->getOperand(1), N->getOperand(2), PassThru);
+      Results.push_back(DAG.getNode(ISD::TRUNCATE, DL, VT, Extract));
       return;
     }
     }

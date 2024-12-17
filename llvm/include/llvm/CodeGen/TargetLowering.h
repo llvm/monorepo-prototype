@@ -490,6 +490,11 @@ public:
     return true;
   }
 
+  virtual bool
+  shouldExpandVectorExtractLastActive(const IntrinsicInst *I) const {
+    return true;
+  }
+
   // Return true if op(vecreduce(x), vecreduce(y)) should be reassociated to
   // vecreduce(op(x, y)) for the reduction opcode RedOpc.
   virtual bool shouldReassociateReduction(unsigned RedOpc, EVT VT) const {

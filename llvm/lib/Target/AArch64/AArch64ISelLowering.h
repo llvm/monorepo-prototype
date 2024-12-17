@@ -987,6 +987,9 @@ public:
 
   bool shouldExpandVectorMatch(EVT VT, unsigned SearchSize) const override;
 
+  bool
+  shouldExpandVectorExtractLastActive(const IntrinsicInst *) const override;
+
   /// If a change in streaming mode is required on entry to/return from a
   /// function call it emits and returns the corresponding SMSTART or SMSTOP
   /// node. \p Condition should be one of the enum values from
