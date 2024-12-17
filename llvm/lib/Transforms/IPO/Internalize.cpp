@@ -232,6 +232,8 @@ bool InternalizePass::internalizeModule(Module &M) {
     AlwaysPreserved.insert("__ssp_canary_word");
   else
     AlwaysPreserved.insert("__stack_chk_guard");
+  // For GPU host callbacks.
+  AlwaysPreserved.insert("__llvm_rpc_server");
 
   // Mark all functions not in the api as internal.
   IsWasm = Triple(M.getTargetTriple()).isOSBinFormatWasm();

@@ -113,10 +113,8 @@ void *indirectCallLookup(void *HstPtr) {
 }
 
 /// The openmp client instance used to communicate with the server.
-/// FIXME: This is marked as 'retain' so that it is not removed via
-/// `-mlink-builtin-bitcode`
-[[gnu::visibility("protected"), gnu::weak,
-  gnu::retain]] rpc::Client Client asm("__llvm_rpc_client");
+[[gnu::visibility("protected"),
+  gnu::weak]] rpc::Client Client asm("__llvm_rpc_client");
 
 } // namespace impl
 } // namespace ompx
