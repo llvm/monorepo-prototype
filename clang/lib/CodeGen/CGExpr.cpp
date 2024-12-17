@@ -137,6 +137,14 @@ llvm::AllocaInst *CodeGenFunction::CreateTempAlloca(llvm::Type *Ty,
     Alloca =
         new llvm::AllocaInst(Ty, CGM.getDataLayout().getAllocaAddrSpace(),
                              ArraySize, Name, AllocaInsertPt->getIterator());
+  if (Alloca->getName() != Name.str() &&
+      SanOpts.Mask & SanitizerKind::Address) {
+
+    llvm::LLVMContext &ctx = Alloca->getContext();
+    llvm::MDString *trueNameMetadata = llvm::MDString::get(ctx, Name.str());
+    llvm::MDTuple *tuple = llvm::MDTuple::get(ctx, trueNameMetadata);
+    Alloca->setMetadata(llvm::LLVMContext::MD_unaltered_name, tuple);
+  }
   if (Allocas) {
     Allocas->Add(Alloca);
   }

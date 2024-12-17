@@ -3430,18 +3430,15 @@ void FunctionStackPoisoner::processStaticAllocas() {
   SmallVector<ASanStackVariableDescription, 16> SVD;
   SVD.reserve(AllocaVec.size());
   for (AllocaInst *AI : AllocaVec) {
-    const char* Name = AI->getName().data();
-    if (AI->hasMetadata("OriginalName")) {
-      MDTuple *tuple = dyn_cast<MDTuple>(AI->getMetadata("OriginalName"));
+    const char *Name = AI->getName().data();
+    if (AI->hasMetadata(LLVMContext::MD_unaltered_name)) {
+      MDTuple *tuple =
+          dyn_cast<MDTuple>(AI->getMetadata(LLVMContext::MD_unaltered_name));
       Name = dyn_cast<MDString>(tuple->getOperand(0))->getString().data();
     }
-    ASanStackVariableDescription D = {Name,
-                                      ASan.getAllocaSizeInBytes(*AI),
-                                      0,
-                                      AI->getAlign().value(),
-                                      AI,
-                                      0,
-                                      0};
+    ASanStackVariableDescription D = {
+        Name, ASan.getAllocaSizeInBytes(*AI), 0, AI->getAlign().value(), AI, 0,
+        0};
     SVD.push_back(D);
   }
 
