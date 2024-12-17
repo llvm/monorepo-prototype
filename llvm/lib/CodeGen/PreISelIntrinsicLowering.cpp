@@ -455,6 +455,7 @@ bool PreISelIntrinsicLowering::lowerIntrinsics(Module &M) const {
       Changed |= lowerObjCCall(F, "objc_sync_exit");
       break;
     case Intrinsic::exp:
+    case Intrinsic::exp2:
       Changed |= forEachCall(F, [&](CallInst *CI) {
         // TODO: Check legality and check if scalable
         if (!CI->getArgOperand(0)->getType()->isVectorTy())
