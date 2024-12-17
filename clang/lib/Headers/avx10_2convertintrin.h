@@ -106,13 +106,13 @@ _mm_mask_cvtx2ps_ph(__m128h __W, __mmask8 __U, __m128 __A, __m128 __B) {
 /// \code{.operation]
 /// FOR i := 0 to 7
 /// 	IF mask[i]
-/// 		dst.fp16[i] := 0
-/// 	ELSE
 /// 		IF i < 4
 /// 			dst.fp16[i] := convert_fp32_to_fp16(__B.fp32[i])
 /// 		ELSE
 /// 			dst.fp16[i] := convert_fp32_to_fp16(__A.fp32[i - 4])
 /// 		FI
+/// 	ELSE
+/// 		dst.fp16[i] := 0
 /// 	FI
 /// ENDFOR
 /// \endcode
@@ -130,8 +130,8 @@ _mm_mask_cvtx2ps_ph(__m128h __W, __mmask8 __U, __m128 __A, __m128 __B) {
 /// \returns
 ///    A 128-bit vector of [8 x fp16]. Lower 4 elements correspond to the
 ///    (converted) elements from \a __B; higher order elements correspond to the
-///    (converted) elements from \a __A. If corresponding mask bit is set, then
-///    zero is taken instead.
+///    (converted) elements from \a __A. If corresponding mask bit is not set,
+///    then zero is taken instead.
 static __inline__ __m128h __DEFAULT_FN_ATTRS128
 _mm_maskz_cvtx2ps_ph(__mmask8 __U, __m128 __A, __m128 __B) {
   return (__m128h)__builtin_ia32_vcvt2ps2phx128_mask(
@@ -222,13 +222,13 @@ _mm256_mask_cvtx2ps_ph(__m256h __W, __mmask16 __U, __m256 __A, __m256 __B) {
 /// \code{.operation]
 /// FOR i := 0 to 15 
 /// 	IF mask[i]
-/// 		dst.fp16[i] := 0
-/// 	ELSE
 /// 		IF i < 8
 /// 			dst.fp16[i] := convert_fp32_to_fp16(__B.fp32[i])
 /// 		ELSE
 /// 			dst.fp16[i] := convert_fp32_to_fp16(__A.fp32[i - 8])
 /// 		FI
+/// 	ELSE
+/// 		dst.fp16[i] := 0
 /// 	FI
 /// ENDFOR
 /// \endcode
@@ -238,7 +238,7 @@ _mm256_mask_cvtx2ps_ph(__m256h __W, __mmask16 __U, __m256 __A, __m256 __B) {
 /// This intrinsic corresponds to the \c VCVT2PS2PHX instruction.
 ///
 /// \param __U
-///    A 8-bit merging mask.
+///    A 8-bit zeroing mask.
 /// \param __A
 ///    A 256-bit vector of [8 x float].
 /// \param __B
@@ -246,8 +246,8 @@ _mm256_mask_cvtx2ps_ph(__m256h __W, __mmask16 __U, __m256 __A, __m256 __B) {
 /// \returns
 ///    A 256-bit vector of [16 x fp16]. Lower 4 elements correspond to the
 ///    (converted) elements from \a __B; higher order elements correspond to the
-///    (converted) elements from \a __A. If corresponding mask bit is set, then
-///    zero is taken instead.
+///    (converted) elements from \a __A. If corresponding mask bit is not set,
+///    then zero is taken instead.
 static __inline__ __m256h __DEFAULT_FN_ATTRS256
 _mm256_maskz_cvtx2ps_ph(__mmask16 __U, __m256 __A, __m256 __B) {
   return (__m256h)__builtin_ia32_vcvt2ps2phx256_mask(
@@ -279,7 +279,7 @@ _mm256_maskz_cvtx2ps_ph(__mmask16 __U, __m256 __A, __m256 __B) {
 ///    A 256-bit vector of [8 x float].
 /// \param __R
 ///    Rounding mode. Valid inputs are: _MM_FROUND_CUR_DIRECTION or
-///    result bitwise or of _MM_FROUND_NO_EXC with at most one of the following:
+///    result of bitwise or of _MM_FROUND_NO_EXC with at most one of the following:
 ///    _MM_FROUND_TO_NEAREST_INT, _MM_FROUND_TO_NEG_INF, _MM_FROUND_TO_POS_INF,
 ///    _MM_FROUND_TO_ZERO.
 /// \returns
@@ -325,7 +325,7 @@ _mm256_maskz_cvtx2ps_ph(__mmask16 __U, __m256 __A, __m256 __B) {
 ///    A 256-bit vector of [8 x float].
 /// \param __R
 ///    Rounding mode. Valid inputs are: _MM_FROUND_CUR_DIRECTION or
-///    result bitwise or of _MM_FROUND_NO_EXC with at most one of the following:
+///    result of bitwise or of _MM_FROUND_NO_EXC with at most one of the following:
 ///    _MM_FROUND_TO_NEAREST_INT, _MM_FROUND_TO_NEG_INF, _MM_FROUND_TO_POS_INF,
 ///    _MM_FROUND_TO_ZERO.
 /// \returns
@@ -345,13 +345,13 @@ _mm256_maskz_cvtx2ps_ph(__mmask16 __U, __m256 __A, __m256 __B) {
 /// \code{.operation]
 /// FOR i := 0 to 15 
 /// 	IF mask[i]
-/// 		dst.fp16[i] := 0
-/// 	ELSE
 /// 		IF i < 8
 /// 			dst.fp16[i] := convert_fp32_to_fp16(__B.fp32[i])
 /// 		ELSE
 /// 			dst.fp16[i] := convert_fp32_to_fp16(__A.fp32[i - 8])
 /// 		FI
+/// 	ELSE
+/// 		dst.fp16[i] := 0
 /// 	FI
 /// ENDFOR
 /// \endcode
@@ -361,21 +361,21 @@ _mm256_maskz_cvtx2ps_ph(__mmask16 __U, __m256 __A, __m256 __B) {
 /// This intrinsic corresponds to the \c VCVT2PS2PHX instruction.
 ///
 /// \param __U
-///    A 8-bit merging mask.
+///    A 8-bit zeroing mask.
 /// \param __A
 ///    A 256-bit vector of [8 x float].
 /// \param __B
 ///    A 256-bit vector of [8 x float].
 /// \param __R
 ///    Rounding mode. Valid inputs are: _MM_FROUND_CUR_DIRECTION or
-///    result bitwise or of _MM_FROUND_NO_EXC with at most one of the following:
+///    result of bitwise or of _MM_FROUND_NO_EXC with at most one of the following:
 ///    _MM_FROUND_TO_NEAREST_INT, _MM_FROUND_TO_NEG_INF, _MM_FROUND_TO_POS_INF,
 ///    _MM_FROUND_TO_ZERO.
 /// \returns
 ///    A 256-bit vector of [16 x fp16]. Lower 4 elements correspond to the
 ///    (converted) elements from \a __B; higher order elements correspond to the
-///    (converted) elements from \a __A. If corresponding mask bit is set, then
-///    zero is taken instead.
+///    (converted) elements from \a __A. If corresponding mask bit is not set,
+///    then zero is taken instead.
 #define _mm256_maskz_cvtx_round2ps_ph(U, A, B, R)                              \
   ((__m256h)__builtin_ia32_vcvt2ps2phx256_mask(                                \
       (__v8sf)(A), (__v8sf)(B), (__v16hf)(_mm256_setzero_ph()),                \
@@ -537,18 +537,114 @@ _mm256_maskz_cvtbiassph_phf8(__mmask16 __U, __m256i __A, __m256h __B) {
       (__mmask16)__U);
 }
 
+/// Convert two 128-bit vectors, \a __A and \a __B, containing packed
+/// FP16 floating-point elements to a 128-bit vector
+/// containing E5M2 FP8 elements.
+///
+/// \code{.operation]
+/// FOR i := 0 to 16 
+/// 	IF i < 8
+/// 		dst.fp8[i] := convert_fp16_to_fp8(__B.fp16[i])
+/// 	ELSE
+/// 		dst.fp8[i] := convert_fp16_to_fp8(__A.fp16[i - 8])
+/// 	FI
+/// ENDFOR
+/// \endcode
+///
+/// \headerfile <immintrin.h>
+///
+/// This intrinsic corresponds to the \c VCVTNE2PH2BF8 instruction.
+///
+/// \param __A
+///    A 128-bit vector of [8 x fp16].
+/// \param __B
+///    A 128-bit vector of [8 x fp16].
+/// \returns
+///    A 128-bit vector of [16 x fp8]. Lower 8 elements correspond to the
+///    (converted) elements from \a __B; higher order elements correspond to the
+///    (converted) elements from \a __A.
 static __inline__ __m128i __DEFAULT_FN_ATTRS128 _mm_cvtne2ph_pbf8(__m128h __A,
                                                                   __m128h __B) {
   return (__m128i)__builtin_ia32_vcvtne2ph2bf8_128((__v8hf)(__A),
                                                    (__v8hf)(__B));
 }
 
+/// Convert two 128-bit vectors, \a __A and \a __B, containing packed FP16
+/// floating-point elements to a 128-bit vector containing E5M2 FP8 elements.
+/// Merging mask \a __U is used to determine if given element should be taken
+/// from \a __W instead.
+///
+/// \code{.operation]
+/// FOR i := 0 to 16 
+/// 	IF __U[i]
+/// 		dst.fp8[i] := __W[i]
+/// 	ELSE
+/// 		IF i < 8
+/// 			dst.fp8[i] := convert_fp16_to_fp8(__B.fp16[i])
+/// 		ELSE
+/// 			dst.fp8[i] := convert_fp16_to_fp8(__A.fp16[i - 8])
+/// 		FI
+/// 	FI
+/// ENDFOR
+/// \endcode
+///
+/// \headerfile <immintrin.h>
+///
+/// This intrinsic corresponds to the \c VCVTNE2PH2BF8 instruction.
+///
+/// \param __W
+///    A 128-bit vector of [16 x fp8].
+/// \param __U
+///    A 16-bit merging mask.
+/// \param __A
+///    A 128-bit vector of [8 x fp16].
+/// \param __B
+///    A 128-bit vector of [8 x fp16].
+/// \returns
+///    A 128-bit vector of [16 x fp8]. Lower 8 elements correspond to the
+///    (converted) elements from \a __B; higher order elements correspond to the
+///    (converted) elements from \a __A. If corresponding mask bit is set, then
+///    element from \a __W is taken instead.
 static __inline__ __m128i __DEFAULT_FN_ATTRS128
 _mm_mask_cvtne2ph_pbf8(__m128i __W, __mmask16 __U, __m128h __A, __m128h __B) {
   return (__m128i)__builtin_ia32_selectb_128(
       (__mmask16)__U, (__v16qi)_mm_cvtne2ph_pbf8(__A, __B), (__v16qi)__W);
 }
 
+/// Convert two 128-bit vectors, \a __A and \a __B, containing packed FP16
+/// floating-point elements to a 128-bit vector containing E5M2 FP8 elements.
+/// Zeroing mask \a __U is used to determine if given element should be zeroed
+/// instead.
+///
+/// \code{.operation]
+/// FOR i := 0 to 16 
+/// 	IF __U[i]
+/// 		IF i < 8
+/// 			dst.fp8[i] := convert_fp16_to_fp8(__B.fp16[i])
+/// 		ELSE
+/// 			dst.fp8[i] := convert_fp16_to_fp8(__A.fp16[i - 8])
+/// 		FI
+/// 	ELSE
+/// 		dst.fp8[i] := 0
+/// 	FI
+/// ENDFOR
+/// \endcode
+///
+/// \headerfile <immintrin.h>
+///
+/// This intrinsic corresponds to the \c VCVTNE2PH2BF8 instruction.
+///
+/// \param __U
+///    A 16-bit zeroing mask.
+/// \param __A
+///    A 128-bit vector of [8 x fp16].
+/// \param __B
+///    A 128-bit vector of [8 x fp16].
+/// \returns
+///    A 128-bit vector of [16 x fp8]. Lower 8 elements correspond to the
+///    (converted) elements from \a __B; higher order elements correspond to the
+///    (converted) elements from \a __A. If corresponding mask bit is not set, then
+///    zero is taken instead.
 static __inline__ __m128i __DEFAULT_FN_ATTRS128
 _mm_maskz_cvtne2ph_pbf8(__mmask16 __U, __m128h __A, __m128h __B) {
   return (__m128i)__builtin_ia32_selectb_128(
@@ -556,18 +652,114 @@ _mm_maskz_cvtne2ph_pbf8(__mmask16 __U, __m128h __A, __m128h __B) {
       (__v16qi)(__m128i)_mm_setzero_si128());
 }
 
+/// Convert two 256-bit vectors, \a __A and \a __B, containing packed
+/// FP16 floating-point elements to a 256-bit vector
+/// containing E5M2 FP8 elements.
+///
+/// \code{.operation]
+/// FOR i := 0 to 32 
+/// 	IF i < 16 
+/// 		dst.fp8[i] := convert_fp16_to_fp8(__B.fp16[i])
+/// 	ELSE
+/// 		dst.fp8[i] := convert_fp16_to_fp8(__A.fp16[i - 16])
+/// 	FI
+/// ENDFOR
+/// \endcode
+///
+/// \headerfile <immintrin.h>
+///
+/// This intrinsic corresponds to the \c VCVTNE2PH2BF8 instruction.
+///
+/// \param __A
+///    A 256-bit vector of [16 x fp16].
+/// \param __B
+///    A 256-bit vector of [16 x fp16].
+/// \returns
+///    A 256-bit vector of [32 x fp8]. Lower 16 elements correspond to the
+///    (converted) elements from \a __B; higher order elements correspond to the
+///    (converted) elements from \a __A.
 static __inline__ __m256i __DEFAULT_FN_ATTRS256
 _mm256_cvtne2ph_pbf8(__m256h __A, __m256h __B) {
   return (__m256i)__builtin_ia32_vcvtne2ph2bf8_256((__v16hf)(__A),
                                                    (__v16hf)(__B));
 }
 
+/// Convert two 256-bit vectors, \a __A and \a __B, containing packed FP16
+/// floating-point elements to a 256-bit vector containing E5M2 FP8 elements.
+/// Merging mask \a __U is used to determine if given element should be taken
+/// from \a __W instead.
+///
+/// \code{.operation]
+/// FOR i := 0 to 32 
+/// 	IF __U[i]
+/// 		dst.fp8[i] := __W.fp8[i]
+/// 	ELSE
+/// 		IF i < 16 
+/// 			dst.fp8[i] := convert_fp16_to_fp8(__B.fp16[i])
+/// 		ELSE
+/// 			dst.fp8[i] := convert_fp16_to_fp8(__A.fp16[i - 16])
+/// 		FI
+/// 	FI
+/// ENDFOR
+/// \endcode
+///
+/// \headerfile <immintrin.h>
+///
+/// This intrinsic corresponds to the \c VCVTNE2PH2BF8 instruction.
+///
+/// \param __W
+///    A 256-bit vector of [32 x fp8].
+/// \param __U
+///    A 32-bit merging mask.
+/// \param __A
+///    A 256-bit vector of [16 x fp16].
+/// \param __B
+///    A 256-bit vector of [16 x fp16].
+/// \returns
+///    A 256-bit vector of [32 x fp8]. Lower 16 elements correspond to the
+///    (converted) elements from \a __B; higher order elements correspond to the
+///    (converted) elements from \a __A. If corresponding mask bit is set, then
+///    element from \a __W is taken instead.
 static __inline__ __m256i __DEFAULT_FN_ATTRS256 _mm256_mask_cvtne2ph_pbf8(
     __m256i __W, __mmask32 __U, __m256h __A, __m256h __B) {
   return (__m256i)__builtin_ia32_selectb_256(
       (__mmask16)__U, (__v32qi)_mm256_cvtne2ph_pbf8(__A, __B), (__v32qi)__W);
 }
 
+/// Convert two 256-bit vectors, \a __A and \a __B, containing packed FP16
+/// floating-point elements to a 256-bit vector containing E5M2 FP8 elements.
+/// Merging mask \a __U is used to determine if given element should be zeroed
+/// instead.
+///
+/// \code{.operation]
+/// FOR i := 0 to 32 
+/// 	IF __U[i]
+/// 		dst.fp8[i] := 0
+/// 	ELSE
+/// 		IF i < 16 
+/// 			dst.fp8[i] := convert_fp16_to_fp8(__B.fp16[i])
+/// 		ELSE
+/// 			dst.fp8[i] := convert_fp16_to_fp8(__A.fp16[i - 16])
+/// 		FI
+/// 	FI
+/// ENDFOR
+/// \endcode
+///
+/// \headerfile <immintrin.h>
+///
+/// This intrinsic corresponds to the \c VCVTNE2PH2BF8 instruction.
+///
+/// \param __U
+///    A 32-bit zeroing mask.
+/// \param __A
+///    A 256-bit vector of [16 x fp16].
+/// \param __B
+///    A 256-bit vector of [16 x fp16].
+/// \returns
+///    A 256-bit vector of [32 x fp8]. Lower 16 elements correspond to the
+///    (converted) elements from \a __B; higher order elements correspond to the
+///    (converted) elements from \a __A. If corresponding mask bit is not set,
+///    then element from \a __W is taken instead.
 static __inline__ __m256i __DEFAULT_FN_ATTRS256
 _mm256_maskz_cvtne2ph_pbf8(__mmask32 __U, __m256h __A, __m256h __B) {
   return (__m256i)__builtin_ia32_selectb_256(
