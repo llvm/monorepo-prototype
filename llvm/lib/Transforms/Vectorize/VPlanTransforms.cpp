@@ -27,6 +27,8 @@
 #include "llvm/Analysis/VectorUtils.h"
 #include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/PatternMatch.h"
+#include "llvm/Support/Casting.h"
+#include "llvm/Support/TypeSize.h"
 
 using namespace llvm;
 
@@ -661,17 +663,20 @@ static void recursivelyDeleteDeadRecipes(VPValue *V) {
   }
 }
 
-void VPlanTransforms::optimizeForTCAndVFAndUF(VPlan &Plan, unsigned TC,
-                                              ElementCount BestVF,
-                                              unsigned BestUF) {
-  assert(Plan.hasVF(BestVF) && "BestVF is not available in Plan");
-  assert(Plan.hasUF(BestUF) && "BestUF is not available in Plan");
+/// Optimize the width of vector induction variables based on \p TC, \p BestVF
+/// and \p BestUF.
+static bool optimizeVectorInductionWidthForTCAndVFUF(VPlan &Plan,
+                                                     ElementCount BestVF,
+                                                     unsigned BestUF) {
+  auto *TC = dyn_cast_if_present<ConstantInt>(
+      Plan.getTripCount()->getUnderlyingValue());
   if (!TC || !BestVF.isFixed())
-    return;
+    return false;
 
   // Calculate the widest type required for known TC, VF and UF.
+  uint64_t TCVal = TC->getZExtValue();
   uint64_t Width = BestVF.getKnownMinValue() * BestUF;
-  uint64_t MaxVal = alignTo(TC, Width) - 1;
+  uint64_t MaxVal = alignTo(TCVal, Width) - 1;
   unsigned MaxActiveBits = Log2_64_Ceil(MaxVal);
   unsigned NewBitWidth = std::max<unsigned>(PowerOf2Ceil(MaxActiveBits), 8);
   LLVMContext &Ctx = Plan.getCanonicalIV()->getScalarType()->getContext();
@@ -682,24 +687,19 @@ void VPlanTransforms::optimizeForTCAndVFAndUF(VPlan &Plan, unsigned TC,
   VPBasicBlock *HeaderVPBB = Plan.getVectorLoopRegion()->getEntryBasicBlock();
   for (VPRecipeBase &Phi : HeaderVPBB->phis()) {
     auto *WideIV = dyn_cast<VPWidenIntOrFpInductionRecipe>(&Phi);
-    if (!WideIV || !WideIV->isCanonical())
-      continue;
-
-    if (WideIV->hasMoreThanOneUniqueUser())
+    if (!WideIV || !WideIV->isCanonical() ||
+        WideIV->hasMoreThanOneUniqueUser() ||
+        NewIVTy == WideIV->getScalarType())
       continue;
 
     // Currently only handle cases where the single user is a header-mask
     // comparison with the backedge-taken-count.
     VPValue *Bound;
     using namespace VPlanPatternMatch;
-    auto *Cmp = dyn_cast<VPInstruction>(*WideIV->user_begin());
-    if (!Cmp ||
-        !match(Cmp, m_Binary<Instruction::ICmp>(m_Specific(WideIV),
-                                                m_VPValue(Bound))) ||
+    if (!match(*WideIV->user_begin(),
+               m_Binary<Instruction::ICmp>(m_Specific(WideIV),
+                                           m_VPValue(Bound))) ||
         Bound != Plan.getOrCreateBackedgeTakenCount())
-      continue;
-
-    if (NewIVTy == WideIV->getScalarType())
       continue;
 
     // Update IV operands and comparison bound to use new narrower type.
@@ -707,23 +707,19 @@ void VPlanTransforms::optimizeForTCAndVFAndUF(VPlan &Plan, unsigned TC,
     WideIV->setStartValue(NewStart);
     auto *NewStep = Plan.getOrAddLiveIn(ConstantInt::get(NewIVTy, 1));
     WideIV->setStepValue(NewStep);
-    auto *NewBound = Plan.getOrAddLiveIn(ConstantInt::get(NewIVTy, TC - 1));
+    auto *NewBound = Plan.getOrAddLiveIn(ConstantInt::get(NewIVTy, TCVal - 1));
+    auto *Cmp = dyn_cast<VPInstruction>(*WideIV->user_begin());
     Cmp->setOperand(1, NewBound);
 
     MadeChange = true;
   }
 
-  if (MadeChange) {
-    Plan.setVF(BestVF);
-    Plan.setUF(BestUF);
-  }
+  return MadeChange;
 }
 
-void VPlanTransforms::optimizeForVFAndUF(VPlan &Plan, ElementCount BestVF,
-                                         unsigned BestUF,
-                                         PredicatedScalarEvolution &PSE) {
-  assert(Plan.hasVF(BestVF) && "BestVF is not available in Plan");
-  assert(Plan.hasUF(BestUF) && "BestUF is not available in Plan");
+static bool simplifyBranchConditionForVFAndUF(VPlan &Plan, ElementCount BestVF,
+                                              unsigned BestUF,
+                                              PredicatedScalarEvolution &PSE) {
   VPBasicBlock *ExitingVPBB =
       Plan.getVectorLoopRegion()->getExitingBasicBlock();
   auto *Term = &ExitingVPBB->back();
@@ -736,7 +732,7 @@ void VPlanTransforms::optimizeForVFAndUF(VPlan &Plan, ElementCount BestVF,
   if (!match(Term, m_BranchOnCount(m_VPValue(), m_VPValue())) &&
       !match(Term,
              m_BranchOnCond(m_Not(m_ActiveLaneMask(m_VPValue(), m_VPValue())))))
-    return;
+    return false;
 
   ScalarEvolution &SE = *PSE.getSE();
   const SCEV *TripCount =
@@ -747,7 +743,7 @@ void VPlanTransforms::optimizeForVFAndUF(VPlan &Plan, ElementCount BestVF,
   const SCEV *C = SE.getElementCount(TripCount->getType(), NumElements);
   if (TripCount->isZero() ||
       !SE.isKnownPredicate(CmpInst::ICMP_ULE, TripCount, C))
-    return;
+    return false;
 
   LLVMContext &Ctx = SE.getContext();
   auto *BOC = new VPInstruction(
@@ -759,8 +755,24 @@ void VPlanTransforms::optimizeForVFAndUF(VPlan &Plan, ElementCount BestVF,
   for (VPValue *Op : PossiblyDead)
     recursivelyDeleteDeadRecipes(Op);
   ExitingVPBB->appendRecipe(BOC);
-  Plan.setVF(BestVF);
-  Plan.setUF(BestUF);
+
+  return true;
+}
+
+void VPlanTransforms::optimizeForVFAndUF(VPlan &Plan, ElementCount BestVF,
+                                         unsigned BestUF,
+                                         PredicatedScalarEvolution &PSE) {
+  assert(Plan.hasVF(BestVF) && "BestVF is not available in Plan");
+  assert(Plan.hasUF(BestUF) && "BestUF is not available in Plan");
+
+  bool MadeChange =
+      simplifyBranchConditionForVFAndUF(Plan, BestVF, BestUF, PSE);
+  MadeChange |= optimizeVectorInductionWidthForTCAndVFUF(Plan, BestVF, BestUF);
+
+  if (MadeChange) {
+    Plan.setVF(BestVF);
+    Plan.setUF(BestUF);
+  }
   // TODO: Further simplifications are possible
   //      1. Replace inductions with constants.
   //      2. Replace vector loop region with VPBasicBlock.
