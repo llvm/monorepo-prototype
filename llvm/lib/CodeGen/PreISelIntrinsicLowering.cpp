@@ -457,9 +457,9 @@ bool PreISelIntrinsicLowering::lowerIntrinsics(Module &M) const {
     case Intrinsic::exp:
     case Intrinsic::exp2:
       Changed |= forEachCall(F, [&](CallInst *CI) {
-        unsigned Op = ISD::exp;
+        unsigned Op = ISD::FEXP;
         if (F.getIntrinsicID() == Intrinsic::exp2)
-          Op = ISD::exp2;
+          Op = ISD::FEXP2;
         Type *Ty = CI->getArgOperand(0)->getType();
         if (!Ty->isVectorTy() || !Ty->isScalableTy())
           return false;
