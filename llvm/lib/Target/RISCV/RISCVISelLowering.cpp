@@ -22339,6 +22339,416 @@ bool RISCVTargetLowering::lowerInterleaveIntrinsicToStore(
   return true;
 }
 
+/// Lower an interleaved vp.load into a vlsegN intrinsic.
+///
+/// E.g. Lower an interleaved vp.load (Factor = 2):
+///   %l = call <vscale x 64 x i8> @llvm.vp.load.nxv64i8.p0(ptr %ptr,
+///                                                         %mask,
+///                                                         i32 %wide.rvl)
+///   %dl = tail call { <vscale x 32 x i8>, <vscale x 32 x i8> }
+///             @llvm.vector.deinterleave2.nxv64i8(
+///               <vscale x 64 x i8> %l)
+///   %r0 = extractvalue { <vscale x 32 x i8>, <vscale x 32 x i8> } %dl, 0
+///   %r1 = extractvalue { <vscale x 32 x i8>, <vscale x 32 x i8> } %dl, 1
+///
+/// Into:
+///   %rvl = udiv %wide.rvl, 2
+///   %sl = call { <vscale x 32 x i8>, <vscale x 32 x i8> }
+///             @llvm.riscv.vlseg2.mask.nxv32i8.i64(<vscale x 32 x i8> undef,
+///                                                 <vscale x 32 x i8> undef,
+///                                                 ptr %ptr,
+///                                                 %mask,
+///                                                 i64 %rvl,
+///                                                 i64 1)
+///   %r0 = extractvalue { <vscale x 32 x i8>, <vscale x 32 x i8> } %sl, 0
+///   %r1 = extractvalue { <vscale x 32 x i8>, <vscale x 32 x i8> } %sl, 1
+///
+/// NOTE: the deinterleave2 intrinsic won't be touched and is expected to be
+/// removed by the caller
+bool RISCVTargetLowering::lowerInterleavedScalableLoad(
+    VPIntrinsic *Load, Value *Mask, IntrinsicInst *DeinterleaveIntrin,
+    unsigned Factor, ArrayRef<Value *> DeInterleaveResults) const {
+  assert(Load->getIntrinsicID() == Intrinsic::vp_load &&
+         "Unexpected intrinsic");
+
+  auto *WideVTy = cast<VectorType>(Load->getType());
+  unsigned WideNumElements = WideVTy->getElementCount().getKnownMinValue();
+  assert(WideNumElements % Factor == 0 &&
+         "ElementCount of a wide load must be divisible by interleave factor");
+  auto *VTy =
+      VectorType::get(WideVTy->getScalarType(), WideNumElements / Factor,
+                      WideVTy->isScalableTy());
+  // FIXME: Should pass alignment attribute from pointer, but vectorizer needs
+  // to emit it first.
+  auto &DL = Load->getModule()->getDataLayout();
+  Align Alignment = Align(DL.getTypeStoreSize(WideVTy->getScalarType()));
+  if (!isLegalInterleavedAccessType(
+          VTy, Factor, Alignment,
+          Load->getArgOperand(0)->getType()->getPointerAddressSpace(), DL))
+    return false;
+
+  IRBuilder<> Builder(Load);
+  Value *WideEVL = Load->getArgOperand(2);
+  auto *XLenTy = Type::getIntNTy(Load->getContext(), Subtarget.getXLen());
+  Value *EVL = Builder.CreateZExtOrTrunc(
+      Builder.CreateUDiv(WideEVL, ConstantInt::get(WideEVL->getType(), Factor)),
+      XLenTy);
+
+  static const Intrinsic::ID IntrMaskIds[] = {
+      Intrinsic::riscv_vlseg2_mask, Intrinsic::riscv_vlseg3_mask,
+      Intrinsic::riscv_vlseg4_mask, Intrinsic::riscv_vlseg5_mask,
+      Intrinsic::riscv_vlseg6_mask, Intrinsic::riscv_vlseg7_mask,
+      Intrinsic::riscv_vlseg8_mask,
+  };
+  static const Intrinsic::ID IntrIds[] = {
+      Intrinsic::riscv_vlseg2, Intrinsic::riscv_vlseg3, Intrinsic::riscv_vlseg4,
+      Intrinsic::riscv_vlseg5, Intrinsic::riscv_vlseg6, Intrinsic::riscv_vlseg7,
+      Intrinsic::riscv_vlseg8,
+  };
+
+  unsigned SEW = DL.getTypeSizeInBits(VTy->getElementType());
+  unsigned NumElts = VTy->getElementCount().getKnownMinValue();
+  Type *VecTupTy = TargetExtType::get(
+      Load->getContext(), "riscv.vector.tuple",
+      ScalableVectorType::get(Type::getInt8Ty(Load->getContext()),
+                              NumElts * SEW / 8),
+      Factor);
+
+  Value *PoisonVal = PoisonValue::get(VecTupTy);
+  SmallVector<Value *> Operands;
+  Operands.append({PoisonVal, Load->getArgOperand(0)});
+
+  Function *VlsegNFunc;
+  if (Mask) {
+    VlsegNFunc = Intrinsic::getOrInsertDeclaration(
+        Load->getModule(), IntrMaskIds[Factor - 2],
+        {VecTupTy, Mask->getType(), EVL->getType()});
+    Operands.push_back(Mask);
+  } else {
+    VlsegNFunc = Intrinsic::getOrInsertDeclaration(
+        Load->getModule(), IntrIds[Factor - 2], {VecTupTy, EVL->getType()});
+  }
+
+  Operands.push_back(EVL);
+
+  // Tail-policy
+  if (Mask)
+    Operands.push_back(ConstantInt::get(XLenTy, 1));
+
+  Operands.push_back(ConstantInt::get(XLenTy, Log2_64(SEW)));
+
+  CallInst *VlsegN = Builder.CreateCall(VlsegNFunc, Operands);
+
+  SmallVector<Type *, 8> AggrTypes{Factor, VTy};
+  Value *Return =
+      PoisonValue::get(StructType::get(Load->getContext(), AggrTypes));
+  Function *VecExtractFunc = Intrinsic::getOrInsertDeclaration(
+      Load->getModule(), Intrinsic::riscv_tuple_extract, {VTy, VecTupTy});
+  for (unsigned i = 0; i < Factor; ++i) {
+    Value *VecExtract =
+        Builder.CreateCall(VecExtractFunc, {VlsegN, Builder.getInt32(i)});
+    Return = Builder.CreateInsertValue(Return, VecExtract, i);
+  }
+
+  for (auto [Idx, DIO] : enumerate(DeInterleaveResults)) {
+    // We have to create a brand new ExtractValue to replace each
+    // of these old ExtractValue instructions.
+    Value *NewEV =
+        Builder.CreateExtractValue(Return, {static_cast<unsigned>(Idx)});
+    DIO->replaceAllUsesWith(NewEV);
+  }
+  DeinterleaveIntrin->replaceAllUsesWith(
+      UndefValue::get(DeinterleaveIntrin->getType()));
+
+  return true;
+}
+
+/// If we're interleaving 2 constant splats, for instance `<vscale x 8 x i32>
+/// <splat of 666>` and `<vscale x 8 x i32> <splat of 777>`, we can create a
+/// larger splat
+/// `<vscale x 4 x i64> <splat of ((777 << 32) | 666)>` first before casting it
+/// into
+/// `<vscale x 8 x i32>`. This will resuling a simple unit stride store rather
+/// than a segment store, which is more expensive in this case.
+static Value *foldInterleaved2OfConstSplats(IntrinsicInst *InterleaveIntrin,
+                                            VectorType *VTy,
+                                            const TargetLowering *TLI,
+                                            Instruction *VPStore) {
+  // We only handle Factor = 2 for now.
+  assert(InterleaveIntrin->arg_size() == 2);
+  auto *SplatVal0 = dyn_cast_or_null<ConstantInt>(
+      getSplatValue(InterleaveIntrin->getArgOperand(0)));
+  auto *SplatVal1 = dyn_cast_or_null<ConstantInt>(
+      getSplatValue(InterleaveIntrin->getArgOperand(1)));
+  if (!SplatVal0 || !SplatVal1)
+    return nullptr;
+
+  auto &Ctx = VPStore->getContext();
+  auto &DL = VPStore->getModule()->getDataLayout();
+
+  auto *NewVTy = VectorType::getExtendedElementVectorType(VTy);
+  if (!TLI->isTypeLegal(TLI->getValueType(DL, NewVTy)))
+    return nullptr;
+
+  // InterleavedAccessPass will remove VPStore after this but we still want to
+  // preserve it, hence clone another one here.
+  auto *ClonedVPStore = VPStore->clone();
+  ClonedVPStore->insertBefore(VPStore);
+  IRBuilder<> Builder(ClonedVPStore);
+
+  Type *ETy = VTy->getElementType();
+  unsigned Width = ETy->getIntegerBitWidth();
+
+  APInt NewSplatVal(Width * 2, SplatVal1->getZExtValue());
+  NewSplatVal <<= Width;
+  NewSplatVal |= SplatVal0->getZExtValue();
+  auto *NewSplat = ConstantVector::getSplat(NewVTy->getElementCount(),
+                                            ConstantInt::get(Ctx, NewSplatVal));
+  return Builder.CreateBitCast(NewSplat,
+                               VectorType::getDoubleElementsVectorType(VTy));
+}
+
+/// Lower an interleaved vp.store into a vssegN intrinsic.
+///
+/// E.g. Lower an interleaved vp.store (Factor = 2):
+///
+///   %is = tail call <vscale x 64 x i8>
+///             @llvm.vector.interleave2.nxv64i8(
+///                               <vscale x 32 x i8> %load0,
+///                               <vscale x 32 x i8> %load1
+///   %wide.rvl = shl nuw nsw i32 %rvl, 1
+///   tail call void @llvm.vp.store.nxv64i8.p0(
+///                               <vscale x 64 x i8> %is, ptr %ptr,
+///                               %mask,
+///                               i32 %wide.rvl)
+///
+/// Into:
+///   call void @llvm.riscv.vsseg2.mask.nxv32i8.i64(
+///                               <vscale x 32 x i8> %load1,
+///                               <vscale x 32 x i8> %load2, ptr %ptr,
+///                               %mask,
+///                               i64 %rvl)
+bool RISCVTargetLowering::lowerInterleavedScalableStore(
+    VPIntrinsic *Store, Value *Mask, IntrinsicInst *InterleaveIntrin,
+    unsigned Factor, ArrayRef<Value *> InterleaveOperands) const {
+  assert(Store->getIntrinsicID() == Intrinsic::vp_store &&
+         "Unexpected intrinsic");
+
+  VectorType *VTy = cast<VectorType>(InterleaveOperands[0]->getType());
+
+  // FIXME: Should pass alignment attribute from pointer, but vectorizer needs
+  // to emit it first.
+  const DataLayout &DL = Store->getDataLayout();
+  Align Alignment = Align(DL.getTypeStoreSize(VTy->getScalarType()));
+  if (!isLegalInterleavedAccessType(
+          VTy, Factor, Alignment,
+          Store->getArgOperand(1)->getType()->getPointerAddressSpace(), DL))
+    return false;
+
+  if (Factor == 2)
+    if (Value *BC =
+            foldInterleaved2OfConstSplats(InterleaveIntrin, VTy, this, Store)) {
+      InterleaveIntrin->replaceAllUsesWith(BC);
+      return true;
+    }
+
+  IRBuilder<> Builder(Store);
+  Value *WideEVL = Store->getArgOperand(3);
+  auto *XLenTy = Type::getIntNTy(Store->getContext(), Subtarget.getXLen());
+  Value *EVL = Builder.CreateZExtOrTrunc(
+      Builder.CreateUDiv(WideEVL, ConstantInt::get(WideEVL->getType(), Factor)),
+      XLenTy);
+
+  static const Intrinsic::ID IntrMaskIds[] = {
+      Intrinsic::riscv_vsseg2_mask, Intrinsic::riscv_vsseg3_mask,
+      Intrinsic::riscv_vsseg4_mask, Intrinsic::riscv_vsseg5_mask,
+      Intrinsic::riscv_vsseg6_mask, Intrinsic::riscv_vsseg7_mask,
+      Intrinsic::riscv_vsseg8_mask,
+  };
+  static const Intrinsic::ID IntrIds[] = {
+      Intrinsic::riscv_vsseg2, Intrinsic::riscv_vsseg3, Intrinsic::riscv_vsseg4,
+      Intrinsic::riscv_vsseg5, Intrinsic::riscv_vsseg6, Intrinsic::riscv_vsseg7,
+      Intrinsic::riscv_vsseg8,
+  };
+
+  unsigned SEW = DL.getTypeSizeInBits(VTy->getElementType());
+  unsigned NumElts = VTy->getElementCount().getKnownMinValue();
+  Type *VecTupTy = TargetExtType::get(
+      Store->getContext(), "riscv.vector.tuple",
+      ScalableVectorType::get(Type::getInt8Ty(Store->getContext()),
+                              NumElts * SEW / 8),
+      Factor);
+
+  Function *VecInsertFunc = Intrinsic::getOrInsertDeclaration(
+      Store->getModule(), Intrinsic::riscv_tuple_insert, {VecTupTy, VTy});
+  Value *StoredVal = PoisonValue::get(VecTupTy);
+  for (unsigned i = 0; i < Factor; ++i)
+    StoredVal = Builder.CreateCall(
+        VecInsertFunc, {StoredVal, InterleaveOperands[i], Builder.getInt32(i)});
+
+  SmallVector<Value *, 5> Operands;
+  Operands.push_back(StoredVal);
+  Operands.push_back(Store->getArgOperand(1));
+
+  Function *VssegNFunc;
+  if (Mask) {
+    VssegNFunc = Intrinsic::getOrInsertDeclaration(
+        Store->getModule(), IntrMaskIds[Factor - 2],
+        {VecTupTy, Mask->getType(), EVL->getType()});
+    Operands.push_back(Mask);
+  } else {
+    VssegNFunc = Intrinsic::getOrInsertDeclaration(
+        Store->getModule(), IntrIds[Factor - 2], {VecTupTy, EVL->getType()});
+  }
+
+  Operands.push_back(EVL);
+  Operands.push_back(ConstantInt::get(XLenTy, Log2_64(SEW)));
+
+  Builder.CreateCall(VssegNFunc, Operands);
+  return true;
+}
+
+/// Lower an interleaved vp.strided.load into a vlssegN intrinsic.
+///
+/// E.g. Lower an interleaved vp.strided.load (Factor = 2):
+///   %l = call <vscale x 2 x i16>
+///           @llvm.experimental.vp.strided.load.nxv2i16.p0.i64(ptr %ptr,
+///                                                             %stride,
+///                                                             <all-true-mask>,
+///                                                             i32 %rvl)
+///   %l.cast = bitcast <vscale x 2 x i16> %l to <vscale x 4 x i8>
+///   %dl = tail call { <vscale x 2 x i8>, <vscale x 2 x i8> }
+///             @llvm.vector.deinterleave2.nxv2i8(
+///               <vscale x 4 x i8> %l.cast)
+///   %r0 = extractvalue { <vscale x 2 x i8>, <vscale x 2 x i8> } %dl, 0
+///   %r1 = extractvalue { <vscale x 2 x i8>, <vscale x 2 x i8> } %dl, 1
+///
+/// Into:
+///   %ssl = call { <vscale x 2 x i8>, <vscale x 2 x i8> }
+///              @llvm.riscv.vlseg2.nxv2i8.i64(<vscale x 32 x i8> poison,
+///                                            <vscale x 32 x i8> poison,
+///                                            %ptr,
+///                                            %stride,
+///                                            i64 %rvl)
+///   %r0 = extractvalue { <vscale x 2 x i8>, <vscale x 2 x i8> } %ssl, 0
+///   %r1 = extractvalue { <vscale x 2 x i8>, <vscale x 2 x i8> } %ssl, 1
+///
+/// NOTE: the deinterleave2 intrinsic and the bitcast instruction won't be
+/// touched and is expected to be removed by the caller
+bool RISCVTargetLowering::lowerDeinterleaveIntrinsicToStridedLoad(
+    VPIntrinsic *StridedLoad, IntrinsicInst *DI, unsigned Factor,
+    ArrayRef<Value *> DeInterleaveResults) const {
+  using namespace llvm::PatternMatch;
+  Value *BasePtr, *Stride, *Mask, *EVL;
+  if (!match(StridedLoad, m_Intrinsic<Intrinsic::experimental_vp_strided_load>(
+                              m_Value(BasePtr), m_Value(Stride), m_Value(Mask),
+                              m_Value(EVL))))
+    return false;
+
+  [[maybe_unused]] auto *DISrcTy =
+      cast<VectorType>(DI->getOperand(0)->getType());
+  [[maybe_unused]] auto *LTy = cast<VectorType>(StridedLoad->getType());
+  auto &DL = StridedLoad->getModule()->getDataLayout();
+  assert(DL.getTypeAllocSizeInBits(DISrcTy) == DL.getTypeAllocSizeInBits(LTy) &&
+         "The primitive size of strided load and the source of deinterleave "
+         "should be the same.");
+  assert(DISrcTy->getElementCount() == LTy->getElementCount() * Factor &&
+         "ElementCount of source deinterleave should be equal to the "
+         "ElementCount of strided load multiplied by factor.");
+
+  auto *ResTy = cast<VectorType>(DeInterleaveResults[0]->getType());
+
+  Align Alignment =
+      cast<VPIntrinsic>(StridedLoad)->getPointerAlignment().valueOrOne();
+  if (!isLegalInterleavedAccessType(
+          ResTy, Factor, Alignment,
+          BasePtr->getType()->getPointerAddressSpace(), DL))
+    return false;
+
+  IRBuilder<> Builder(StridedLoad);
+  auto *XLenTy =
+      Type::getIntNTy(StridedLoad->getContext(), Subtarget.getXLen());
+  assert(Stride->getType() == XLenTy &&
+         "The type of stride must be the XLEN integer type.");
+  EVL = Builder.CreateZExtOrTrunc(EVL, XLenTy);
+
+  static const Intrinsic::ID IntrMaskIds[] = {
+      Intrinsic::riscv_vlsseg2_mask, Intrinsic::riscv_vlsseg3_mask,
+      Intrinsic::riscv_vlsseg4_mask, Intrinsic::riscv_vlsseg5_mask,
+      Intrinsic::riscv_vlsseg6_mask, Intrinsic::riscv_vlsseg7_mask,
+      Intrinsic::riscv_vlsseg8_mask,
+  };
+
+  static const Intrinsic::ID IntrIds[] = {
+      Intrinsic::riscv_vlsseg2, Intrinsic::riscv_vlsseg3,
+      Intrinsic::riscv_vlsseg4, Intrinsic::riscv_vlsseg5,
+      Intrinsic::riscv_vlsseg6, Intrinsic::riscv_vlsseg7,
+      Intrinsic::riscv_vlsseg8,
+  };
+
+  unsigned SEW = DL.getTypeSizeInBits(ResTy->getElementType());
+  unsigned NumElts = ResTy->getElementCount().getKnownMinValue();
+  Type *VecTupTy = TargetExtType::get(
+      StridedLoad->getContext(), "riscv.vector.tuple",
+      ScalableVectorType::get(Type::getInt8Ty(StridedLoad->getContext()),
+                              NumElts * SEW / 8),
+      Factor);
+
+  Value *PoisonVal = PoisonValue::get(VecTupTy);
+  SmallVector<Value *, 7> Operands;
+  Operands.append({PoisonVal, BasePtr, Stride});
+
+  Intrinsic::ID VlssegNID = IntrIds[Factor - 2];
+  bool IsMasked = !match(Mask, m_AllOnes());
+  if (IsMasked) {
+    VlssegNID = IntrMaskIds[Factor - 2];
+    Operands.push_back(Mask);
+  }
+
+  Operands.push_back(EVL);
+
+  // Set the tail policy to tail-agnostic, mask-agnostic (tama) for masked
+  // intrinsics
+  if (IsMasked)
+    Operands.push_back(ConstantInt::get(XLenTy, 3));
+
+  Operands.push_back(ConstantInt::get(XLenTy, Log2_64(SEW)));
+
+  Function *VlssegNFunc;
+  if (IsMasked) {
+    VlssegNFunc = Intrinsic::getOrInsertDeclaration(
+        StridedLoad->getModule(), VlssegNID,
+        {VecTupTy, EVL->getType(), Mask->getType()});
+  } else {
+    VlssegNFunc = Intrinsic::getOrInsertDeclaration(
+        StridedLoad->getModule(), VlssegNID, {VecTupTy, EVL->getType()});
+  }
+  CallInst *VlssegN = Builder.CreateCall(VlssegNFunc, Operands);
+
+  SmallVector<Type *, 8> AggrTypes{Factor, ResTy};
+  Value *Return =
+      PoisonValue::get(StructType::get(StridedLoad->getContext(), AggrTypes));
+  Function *VecExtractFunc = Intrinsic::getOrInsertDeclaration(
+      StridedLoad->getModule(), Intrinsic::riscv_tuple_extract,
+      {ResTy, VecTupTy});
+  for (unsigned i = 0; i < Factor; ++i) {
+    Value *VecExtract =
+        Builder.CreateCall(VecExtractFunc, {VlssegN, Builder.getInt32(i)});
+    Return = Builder.CreateInsertValue(Return, VecExtract, i);
+  }
+
+  for (auto [Idx, DIO] : enumerate(DeInterleaveResults)) {
+    // We have to create a brand new ExtractValue to replace each
+    // of these old ExtractValue instructions.
+    Value *NewEV =
+        Builder.CreateExtractValue(Return, {static_cast<unsigned>(Idx)});
+    DIO->replaceAllUsesWith(NewEV);
+  }
+  DI->replaceAllUsesWith(UndefValue::get(DI->getType()));
+
+  return true;
+}
+
 MachineInstr *
 RISCVTargetLowering::EmitKCFICheck(MachineBasicBlock &MBB,
                                    MachineBasicBlock::instr_iterator &MBBI,

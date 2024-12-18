@@ -908,6 +908,18 @@ public:
       IntrinsicInst *II, StoreInst *SI,
       SmallVectorImpl<Instruction *> &DeadInsts) const override;
 
+  bool lowerInterleavedScalableLoad(
+      VPIntrinsic *Load, Value *Mask, IntrinsicInst *DeinterleaveIntrin,
+      unsigned Factor, ArrayRef<Value *> DeinterleaveRes) const override;
+
+  bool lowerInterleavedScalableStore(
+      VPIntrinsic *Store, Value *Mask, IntrinsicInst *InterleaveIntrin,
+      unsigned Factor, ArrayRef<Value *> InterleaveOps) const override;
+
+  bool lowerDeinterleaveIntrinsicToStridedLoad(
+      VPIntrinsic *StridedLoad, IntrinsicInst *DI, unsigned Factor,
+      ArrayRef<Value *> DeinterleaveRes) const override;
+
   bool supportKCFIBundles() const override { return true; }
 
   SDValue expandIndirectJTBranch(const SDLoc &dl, SDValue Value, SDValue Addr,
