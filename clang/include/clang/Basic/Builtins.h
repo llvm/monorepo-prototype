@@ -71,6 +71,8 @@ enum ID {
   FirstTSBuiltin
 };
 
+struct InfosShard;
+
 /// The info used to represent each builtin.
 struct Info {
   // Rather than store pointers to the string literals describing these four
@@ -86,6 +88,11 @@ struct Info {
 
   HeaderDesc Header = HeaderDesc::NO_HEADER;
   LanguageID Langs = ALL_LANGUAGES;
+
+  /// Get the name for the builtin represented by this `Info` object.
+  ///
+  /// Must be provided the `Shard` for this `Info` object.
+  std::string getName(const InfosShard &Shard) const;
 };
 
 /// A constexpr function to construct an infos array from X-macros.
@@ -123,6 +130,8 @@ static constexpr std::array<Info, N> MakeInfos(std::array<Info, N> Infos) {
 struct InfosShard {
   const llvm::StringTable *Strings;
   llvm::ArrayRef<Info> Infos;
+
+  llvm::StringLiteral NamePrefix = "";
 };
 
 // A detail macro used below to emit a string literal that, after string literal
@@ -238,9 +247,10 @@ public:
 
   /// Return the identifier name for the specified builtin,
   /// e.g. "__builtin_abs".
-  llvm::StringRef getName(unsigned ID) const;
+  std::string getName(unsigned ID) const;
 
-  /// Return a quoted name for the specified builtin for use in diagnostics.
+  /// Return the identifier name for the specified builtin inside single quotes
+  /// for a diagnostic, e.g. "'__builtin_abs'".
   std::string getQuotedName(unsigned ID) const;
 
   /// Get the type descriptor string for the specified builtin.

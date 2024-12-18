@@ -71,11 +71,22 @@ Builtin::Context::getShardAndInfo(unsigned ID) const {
   llvm_unreachable("Invalid target builtin shard structure!");
 }
 
+std::string Builtin::Info::getName(const Builtin::InfosShard &Shard) const {
+  return (Twine(Shard.NamePrefix) + (*Shard.Strings)[Offsets.Name]).str();
+}
+
 /// Return the identifier name for the specified builtin,
 /// e.g. "__builtin_abs".
-llvm::StringRef Builtin::Context::getName(unsigned ID) const {
+std::string Builtin::Context::getName(unsigned ID) const {
   const auto &[Shard, I] = getShardAndInfo(ID);
-  return (*Shard.Strings)[I.Offsets.Name];
+  return I.getName(Shard);
+}
+
+std::string Builtin::Context::getQuotedName(unsigned ID) const {
+  const auto &[Shard, I] = getShardAndInfo(ID);
+  return (Twine("'") + Shard.NamePrefix + (*Shard.Strings)[I.Offsets.Name] +
+          "'")
+      .str();
 }
 
 const char *Builtin::Context::getTypeString(unsigned ID) const {
@@ -112,12 +123,14 @@ void Builtin::Context::InitializeTarget(const TargetInfo &Target,
 bool Builtin::Context::isBuiltinFunc(llvm::StringRef FuncName) {
   bool InStdNamespace = FuncName.consume_front("std-");
   for (const auto &Shard : {InfosShard{&BuiltinStrings, BuiltinInfos}})
-    for (const auto &I : Shard.Infos)
-      if (FuncName == (*Shard.Strings)[I.Offsets.Name] &&
-          (bool)strchr((*Shard.Strings)[I.Offsets.Attributes].data(), 'z') ==
-              InStdNamespace)
-        return strchr((*Shard.Strings)[I.Offsets.Attributes].data(), 'f') !=
-               nullptr;
+    if (llvm::StringRef FuncNameSuffix = FuncName;
+        FuncNameSuffix.consume_front(Shard.NamePrefix))
+      for (const auto &I : Shard.Infos)
+        if (FuncNameSuffix == (*Shard.Strings)[I.Offsets.Name] &&
+            (bool)strchr((*Shard.Strings)[I.Offsets.Attributes].data(), 'z') ==
+                InStdNamespace)
+          return strchr((*Shard.Strings)[I.Offsets.Attributes].data(), 'f') !=
+                 nullptr;
 
   return false;
 }
@@ -193,7 +206,7 @@ void Builtin::Context::initializeBuiltins(IdentifierTable &Table,
       for (const auto &I : Shard.Infos) {
         // If this is a real builtin (ID != 0) and is supported, add it.
         if (ID != 0 && builtinIsSupported(*Shard.Strings, I, LangOpts))
-          Table.get((*Shard.Strings)[I.Offsets.Name]).setBuiltinID(ID);
+          Table.get(I.getName(Shard)).setBuiltinID(ID);
         ++ID;
       }
     assert(ID == FirstTSBuiltin && "Should have added all non-target IDs!");
@@ -202,14 +215,14 @@ void Builtin::Context::initializeBuiltins(IdentifierTable &Table,
     for (const auto &Shard : TargetShards)
       for (const auto &I : Shard.Infos) {
         if (builtinIsSupported(*Shard.Strings, I, LangOpts))
-          Table.get((*Shard.Strings)[I.Offsets.Name]).setBuiltinID(ID);
+          Table.get(I.getName(Shard)).setBuiltinID(ID);
         ++ID;
       }
 
     // Step #3: Register target-specific builtins for AuxTarget.
     for (const auto &Shard : AuxTargetShards)
       for (const auto &I : Shard.Infos) {
-        Table.get((*Shard.Strings)[I.Offsets.Name]).setBuiltinID(ID);
+        Table.get(I.getName(Shard)).setBuiltinID(ID);
         ++ID;
       }
   }
@@ -226,10 +239,6 @@ void Builtin::Context::initializeBuiltins(IdentifierTable &Table,
       }
     }
   }
-}
-
-std::string Builtin::Context::getQuotedName(unsigned ID) const {
-  return (llvm::Twine("'") + getName(ID) + "'").str();
 }
 
 unsigned Builtin::Context::getRequiredVectorWidth(unsigned ID) const {

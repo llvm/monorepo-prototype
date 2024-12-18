@@ -507,17 +507,13 @@ void RVVEmitter::createBuiltins(raw_ostream &OS) {
   Table.GetOrAddStringOffset("n");
   Table.GetOrAddStringOffset("zve32x");
 
-  auto PrefixName = [](RVVIntrinsic *Def) -> std::string {
-    return ("__builtin_rvv_" + Def->getBuiltinName()).str();
-  };
-
   // Map to unique the builtin names.
   StringMap<RVVIntrinsic *> BuiltinMap;
   std::vector<RVVIntrinsic *> UniqueDefs;
   for (auto &Def : Defs) {
     auto P = BuiltinMap.insert({Def->getBuiltinName(), Def.get()});
     if (P.second) {
-      Table.GetOrAddStringOffset(PrefixName(Def.get()));
+      Table.GetOrAddStringOffset(Def->getBuiltinName());
       if (!Def->hasBuiltinAlias())
         Table.GetOrAddStringOffset(Def->getBuiltinTypeStr());
       UniqueDefs.push_back(Def.get());
@@ -552,8 +548,8 @@ void RVVEmitter::createBuiltins(raw_ostream &OS) {
   OS << "#ifdef GET_RISCVV_BUILTIN_INFOS\n";
   for (RVVIntrinsic *Def : UniqueDefs) {
     OS << "    Builtin::Info{Builtin::Info::StrOffsets{"
-       << Table.GetStringOffset(PrefixName(Def)) << " /* " << PrefixName(Def)
-       << " */, ";
+       << Table.GetStringOffset(Def->getBuiltinName()) << " /* "
+       << Def->getBuiltinName() << " */, ";
     if (Def->hasBuiltinAlias()) {
       OS << "0, ";
     } else {

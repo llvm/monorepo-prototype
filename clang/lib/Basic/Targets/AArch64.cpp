@@ -770,11 +770,12 @@ void AArch64TargetInfo::getTargetDefines(const LangOptions &Opts,
 llvm::SmallVector<Builtin::InfosShard>
 AArch64TargetInfo::getTargetBuiltins() const {
   return {
-      {&NEON::BuiltinStrings, NEON::BuiltinInfos},
-      {&NEON::FP16::BuiltinStrings, NEON::FP16::BuiltinInfos},
-      {&SVE::BuiltinStrings, SVE::BuiltinInfos},
+      {&NEON::BuiltinStrings, NEON::BuiltinInfos, "__builtin_neon_"},
+      {&NEON::FP16::BuiltinStrings, NEON::FP16::BuiltinInfos,
+       "__builtin_neon_"},
+      {&SVE::BuiltinStrings, SVE::BuiltinInfos, "__builtin_sve_"},
       {&BuiltinSVENeonBridgeStrings, BuiltinSVENeonBridgeInfos},
-      {&SME::BuiltinStrings, SME::BuiltinInfos},
+      {&SME::BuiltinStrings, SME::BuiltinInfos, "__builtin_sme_"},
       {&BuiltinAArch64Strings, BuiltinAArch64Infos},
   };
 }

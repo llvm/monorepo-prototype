@@ -1158,10 +1158,11 @@ static constexpr auto BuiltinInfos = Builtin::MakeInfos<NumARMBuiltins>({
 llvm::SmallVector<Builtin::InfosShard>
 ARMTargetInfo::getTargetBuiltins() const {
   return {
-      {&NEON::BuiltinStrings, NEON::BuiltinInfos},
-      {&NEON::FP16::BuiltinStrings, NEON::FP16::BuiltinInfos},
-      {&MVE::BuiltinStrings, MVE::BuiltinInfos},
-      {&CDE::BuiltinStrings, CDE::BuiltinInfos},
+      {&NEON::BuiltinStrings, NEON::BuiltinInfos, "__builtin_neon_"},
+      {&NEON::FP16::BuiltinStrings, NEON::FP16::BuiltinInfos,
+       "__builtin_neon_"},
+      {&MVE::BuiltinStrings, MVE::BuiltinInfos, "__builtin_arm_mve_"},
+      {&CDE::BuiltinStrings, CDE::BuiltinInfos, "__builtin_arm_cde_"},
       {&BuiltinStrings, BuiltinInfos},
   };
 }

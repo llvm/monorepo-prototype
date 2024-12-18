@@ -2068,16 +2068,12 @@ void NeonEmitter::genBuiltinsDef(raw_ostream &OS,
   Table.GetOrAddStringOffset("");
   Table.GetOrAddStringOffset("n");
 
-  auto PrefixName = [](Intrinsic *Def) -> std::string {
-    return (llvm::Twine("__builtin_neon_") + Def->getMangledName()).str();
-  };
-
   for (auto *Def : Defs) {
     if (Def->hasBody())
       continue;
 
     if (Builtins.insert({Def->getMangledName(), Def}).second) {
-      Table.GetOrAddStringOffset(PrefixName(Def));
+      Table.GetOrAddStringOffset(Def->getMangledName());
       Table.GetOrAddStringOffset(Def->getBuiltinTypeStr());
       Table.GetOrAddStringOffset(Def->getTargetGuard());
     }
@@ -2096,8 +2092,8 @@ void NeonEmitter::genBuiltinsDef(raw_ostream &OS,
   OS << "#ifdef GET_NEON_BUILTIN_INFOS\n";
   for (const auto &[Name, Def] : Builtins) {
     OS << "    Builtin::Info{Builtin::Info::StrOffsets{"
-       << Table.GetStringOffset(PrefixName(Def)) << " /* " << PrefixName(Def)
-       << " */, ";
+       << Table.GetStringOffset(Def->getMangledName()) << " /* "
+       << Def->getMangledName() << " */, ";
     OS << Table.GetStringOffset(Def->getBuiltinTypeStr()) << " /* "
        << Def->getBuiltinTypeStr() << " */, ";
     OS << Table.GetStringOffset("n") << " /* n */, ";

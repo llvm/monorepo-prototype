@@ -1955,10 +1955,8 @@ void MveEmitter::EmitBuiltinDef(raw_ostream &OS) {
   Table.GetOrAddStringOffset("ntu");
   Table.GetOrAddStringOffset("vi.");
 
-  auto Prefix = [](Twine Name) { return ("__builtin_arm_mve_" + Name).str(); };
-
   for (const auto &[_, Int] : ACLEIntrinsics)
-    Table.GetOrAddStringOffset(Prefix(Int->fullName()));
+    Table.GetOrAddStringOffset(Int->fullName());
 
   std::map<std::string, ACLEIntrinsic *> ShortNameIntrinsics;
   for (const auto &[_, Int] : ACLEIntrinsics) {
@@ -1967,15 +1965,15 @@ void MveEmitter::EmitBuiltinDef(raw_ostream &OS) {
 
     StringRef Name = Int->shortName();
     if (ShortNameIntrinsics.insert({Name.str(), Int.get()}).second)
-      Table.GetOrAddStringOffset(Prefix(Name));
+      Table.GetOrAddStringOffset(Name);
   }
 
   OS << "#ifdef GET_MVE_BUILTIN_ENUMERATORS\n";
   for (const auto &[_, Int] : ACLEIntrinsics) {
-    OS << "  BI" << Prefix(Int->fullName()) << ",\n";
+    OS << "  BI__builtin_arm_mve_" << Int->fullName() << ",\n";
   }
   for (const auto &[Name, _] : ShortNameIntrinsics) {
-    OS << "  BI" << Prefix(Name) << ",\n";
+    OS << "  BI__builtin_arm_mve_" << Name << ",\n";
   }
   OS << "#endif // GET_MVE_BUILTIN_ENUMERATORS\n\n";
 
@@ -1986,15 +1984,15 @@ void MveEmitter::EmitBuiltinDef(raw_ostream &OS) {
   OS << "#ifdef GET_MVE_BUILTIN_INFOS\n";
   for (const auto &[_, Int] : ACLEIntrinsics) {
     OS << "    Builtin::Info{Builtin::Info::StrOffsets{"
-       << Table.GetStringOffset(Prefix(Int->fullName())) << " /* "
-       << Prefix(Int->fullName()) << " */, " << Table.GetStringOffset("")
-       << ", " << Table.GetStringOffset("n") << " /* n */}},\n";
+       << Table.GetStringOffset(Int->fullName()) << " /* " << Int->fullName()
+       << " */, " << Table.GetStringOffset("") << ", "
+       << Table.GetStringOffset("n") << " /* n */}},\n";
   }
   for (const auto &[Name, Int] : ShortNameIntrinsics) {
     StringRef Attrs = Int->nonEvaluating() ? "ntu" : "nt";
     OS << "    Builtin::Info{Builtin::Info::StrOffsets{"
-       << Table.GetStringOffset(Prefix(Name)) << " /* " << Prefix(Name)
-       << " */, " << Table.GetStringOffset("vi.") << " /* vi. */, "
+       << Table.GetStringOffset(Name) << " /* " << Name << " */, "
+       << Table.GetStringOffset("vi.") << " /* vi. */, "
        << Table.GetStringOffset(Attrs) << " /* " << Attrs << " */}},\n";
   }
   OS << "#endif // GET_MVE_BUILTIN_INFOS\n\n";
@@ -2188,16 +2186,14 @@ void CdeEmitter::EmitBuiltinDef(raw_ostream &OS) {
   llvm::StringToOffsetTable Table;
   Table.GetOrAddStringOffset("ncU");
 
-  auto Prefix = [](Twine Name) { return ("__builtin_arm_cde_" + Name).str(); };
-
   for (const auto &[_, Int] : ACLEIntrinsics)
     if (!Int->headerOnly())
-      Table.GetOrAddStringOffset(Prefix(Int->fullName()));
+      Table.GetOrAddStringOffset(Int->fullName());
 
   OS << "#ifdef GET_CDE_BUILTIN_ENUMERATORS\n";
   for (const auto &[_, Int] : ACLEIntrinsics)
     if (!Int->headerOnly())
-      OS << "  BI" << Prefix(Int->fullName()) << ",\n";
+      OS << "  BI__builtin_arm_cde_" << Int->fullName() << ",\n";
   OS << "#endif // GET_CDE_BUILTIN_ENUMERATORS\n\n";
 
   OS << "#ifdef GET_CDE_BUILTIN_STR_TABLE\n";
@@ -2208,9 +2204,9 @@ void CdeEmitter::EmitBuiltinDef(raw_ostream &OS) {
   for (const auto &[_, Int] : ACLEIntrinsics)
     if (!Int->headerOnly())
       OS << "    Builtin::Info{Builtin::Info::StrOffsets{"
-         << Table.GetStringOffset(Prefix(Int->fullName())) << " /* "
-         << Prefix(Int->fullName()) << " */, " << Table.GetStringOffset("")
-         << ", " << Table.GetStringOffset("ncU") << " /* ncU */}},\n";
+         << Table.GetStringOffset(Int->fullName()) << " /* " << Int->fullName()
+         << " */, " << Table.GetStringOffset("") << ", "
+         << Table.GetStringOffset("ncU") << " /* ncU */}},\n";
   OS << "#endif // GET_CDE_BUILTIN_INFOS\n\n";
 }
 
