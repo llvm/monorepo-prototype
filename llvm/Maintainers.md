@@ -133,8 +133,7 @@ matze@braunis.de (email), [MatzeB](https://github.com/MatzeB) (GitHub)
 
 #### VLIW Instruction Scheduling, Packetization
 
-Sergei Larin \
-slarin@codeaurora.org (email)
+???
 
 #### Register allocation
 
@@ -458,6 +457,7 @@ Evan Cheng (evan.cheng@apple.com) -- Parts of code generator not covered by some
 Renato Golin (rengolin@systemcall.eu, [rengolin](https://github.com/rengolin)) -- ARM backend \
 James Grosbach (grosbach@apple.com) -- MC layer \
 Anton Korobeynikov (anton@korobeynikov.info, [asl](https://github.com/asl)) -- ARM EABI \
+Sergei Larin (slarin@codeaurora.org) -- VLIW Instruction Scheduling, Packetization
 Chad Rosier (mcrosier@codeaurora.org) -- FastISel \
 Hans Wennborg (hans@chromium.org, [zmodem](https://github.com/zmodem)) -- Release management \
 Kostya Serebryany ([kcc](https://github.com/kcc)) -- Sanitizers \
