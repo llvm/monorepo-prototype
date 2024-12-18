@@ -11,12 +11,12 @@
 ; ----------------------------------------------------------------------
 ; Fully unaligned cases
 
-define void @unaligned_memcpy0(ptr nocapture %dest, ptr %src) nounwind {
-; RV32-BOTH-LABEL: unaligned_memcpy0:
+define void @unaligned_memmove0(ptr nocapture %dest, ptr %src) nounwind {
+; RV32-BOTH-LABEL: unaligned_memmove0:
 ; RV32-BOTH:       # %bb.0: # %entry
 ; RV32-BOTH-NEXT:    ret
 ;
-; RV64-BOTH-LABEL: unaligned_memcpy0:
+; RV64-BOTH-LABEL: unaligned_memmove0:
 ; RV64-BOTH:       # %bb.0: # %entry
 ; RV64-BOTH-NEXT:    ret
 entry:
@@ -24,14 +24,14 @@ entry:
   ret void
 }
 
-define void @unaligned_memcpy1(ptr nocapture %dest, ptr %src) nounwind {
-; RV32-BOTH-LABEL: unaligned_memcpy1:
+define void @unaligned_memmove1(ptr nocapture %dest, ptr %src) nounwind {
+; RV32-BOTH-LABEL: unaligned_memmove1:
 ; RV32-BOTH:       # %bb.0: # %entry
 ; RV32-BOTH-NEXT:    lbu a1, 0(a1)
 ; RV32-BOTH-NEXT:    sb a1, 0(a0)
 ; RV32-BOTH-NEXT:    ret
 ;
-; RV64-BOTH-LABEL: unaligned_memcpy1:
+; RV64-BOTH-LABEL: unaligned_memmove1:
 ; RV64-BOTH:       # %bb.0: # %entry
 ; RV64-BOTH-NEXT:    lbu a1, 0(a1)
 ; RV64-BOTH-NEXT:    sb a1, 0(a0)
@@ -41,8 +41,8 @@ entry:
   ret void
 }
 
-define void @unaligned_memcpy2(ptr nocapture %dest, ptr %src) nounwind {
-; RV32-LABEL: unaligned_memcpy2:
+define void @unaligned_memmove2(ptr nocapture %dest, ptr %src) nounwind {
+; RV32-LABEL: unaligned_memmove2:
 ; RV32:       # %bb.0: # %entry
 ; RV32-NEXT:    lbu a2, 0(a1)
 ; RV32-NEXT:    lbu a1, 1(a1)
@@ -50,7 +50,7 @@ define void @unaligned_memcpy2(ptr nocapture %dest, ptr %src) nounwind {
 ; RV32-NEXT:    sb a1, 1(a0)
 ; RV32-NEXT:    ret
 ;
-; RV64-LABEL: unaligned_memcpy2:
+; RV64-LABEL: unaligned_memmove2:
 ; RV64:       # %bb.0: # %entry
 ; RV64-NEXT:    lbu a2, 0(a1)
 ; RV64-NEXT:    lbu a1, 1(a1)
@@ -58,13 +58,13 @@ define void @unaligned_memcpy2(ptr nocapture %dest, ptr %src) nounwind {
 ; RV64-NEXT:    sb a1, 1(a0)
 ; RV64-NEXT:    ret
 ;
-; RV32-FAST-LABEL: unaligned_memcpy2:
+; RV32-FAST-LABEL: unaligned_memmove2:
 ; RV32-FAST:       # %bb.0: # %entry
 ; RV32-FAST-NEXT:    lh a1, 0(a1)
 ; RV32-FAST-NEXT:    sh a1, 0(a0)
 ; RV32-FAST-NEXT:    ret
 ;
-; RV64-FAST-LABEL: unaligned_memcpy2:
+; RV64-FAST-LABEL: unaligned_memmove2:
 ; RV64-FAST:       # %bb.0: # %entry
 ; RV64-FAST-NEXT:    lh a1, 0(a1)
 ; RV64-FAST-NEXT:    sh a1, 0(a0)
@@ -74,8 +74,8 @@ entry:
   ret void
 }
 
-define void @unaligned_memcpy3(ptr nocapture %dest, ptr %src) nounwind {
-; RV32-LABEL: unaligned_memcpy3:
+define void @unaligned_memmove3(ptr nocapture %dest, ptr %src) nounwind {
+; RV32-LABEL: unaligned_memmove3:
 ; RV32:       # %bb.0: # %entry
 ; RV32-NEXT:    lbu a2, 0(a1)
 ; RV32-NEXT:    lbu a3, 1(a1)
@@ -85,7 +85,7 @@ define void @unaligned_memcpy3(ptr nocapture %dest, ptr %src) nounwind {
 ; RV32-NEXT:    sb a1, 2(a0)
 ; RV32-NEXT:    ret
 ;
-; RV64-LABEL: unaligned_memcpy3:
+; RV64-LABEL: unaligned_memmove3:
 ; RV64:       # %bb.0: # %entry
 ; RV64-NEXT:    lbu a2, 0(a1)
 ; RV64-NEXT:    lbu a3, 1(a1)
@@ -95,7 +95,7 @@ define void @unaligned_memcpy3(ptr nocapture %dest, ptr %src) nounwind {
 ; RV64-NEXT:    sb a1, 2(a0)
 ; RV64-NEXT:    ret
 ;
-; RV32-FAST-LABEL: unaligned_memcpy3:
+; RV32-FAST-LABEL: unaligned_memmove3:
 ; RV32-FAST:       # %bb.0: # %entry
 ; RV32-FAST-NEXT:    lh a2, 0(a1)
 ; RV32-FAST-NEXT:    lbu a1, 2(a1)
@@ -103,7 +103,7 @@ define void @unaligned_memcpy3(ptr nocapture %dest, ptr %src) nounwind {
 ; RV32-FAST-NEXT:    sb a1, 2(a0)
 ; RV32-FAST-NEXT:    ret
 ;
-; RV64-FAST-LABEL: unaligned_memcpy3:
+; RV64-FAST-LABEL: unaligned_memmove3:
 ; RV64-FAST:       # %bb.0: # %entry
 ; RV64-FAST-NEXT:    lh a2, 0(a1)
 ; RV64-FAST-NEXT:    lbu a1, 2(a1)
@@ -115,8 +115,8 @@ entry:
   ret void
 }
 
-define void @unaligned_memcpy4(ptr nocapture %dest, ptr %src) nounwind {
-; RV32-LABEL: unaligned_memcpy4:
+define void @unaligned_memmove4(ptr nocapture %dest, ptr %src) nounwind {
+; RV32-LABEL: unaligned_memmove4:
 ; RV32:       # %bb.0: # %entry
 ; RV32-NEXT:    lbu a2, 0(a1)
 ; RV32-NEXT:    lbu a3, 1(a1)
@@ -128,7 +128,7 @@ define void @unaligned_memcpy4(ptr nocapture %dest, ptr %src) nounwind {
 ; RV32-NEXT:    sb a1, 3(a0)
 ; RV32-NEXT:    ret
 ;
-; RV64-LABEL: unaligned_memcpy4:
+; RV64-LABEL: unaligned_memmove4:
 ; RV64:       # %bb.0: # %entry
 ; RV64-NEXT:    lbu a2, 0(a1)
 ; RV64-NEXT:    lbu a3, 1(a1)
@@ -140,13 +140,13 @@ define void @unaligned_memcpy4(ptr nocapture %dest, ptr %src) nounwind {
 ; RV64-NEXT:    sb a1, 3(a0)
 ; RV64-NEXT:    ret
 ;
-; RV32-FAST-LABEL: unaligned_memcpy4:
+; RV32-FAST-LABEL: unaligned_memmove4:
 ; RV32-FAST:       # %bb.0: # %entry
 ; RV32-FAST-NEXT:    lw a1, 0(a1)
 ; RV32-FAST-NEXT:    sw a1, 0(a0)
 ; RV32-FAST-NEXT:    ret
 ;
-; RV64-FAST-LABEL: unaligned_memcpy4:
+; RV64-FAST-LABEL: unaligned_memmove4:
 ; RV64-FAST:       # %bb.0: # %entry
 ; RV64-FAST-NEXT:    lw a1, 0(a1)
 ; RV64-FAST-NEXT:    sw a1, 0(a0)
@@ -156,8 +156,8 @@ entry:
   ret void
 }
 
-define void @unaligned_memcpy7(ptr nocapture %dest, ptr %src) nounwind {
-; RV32-LABEL: unaligned_memcpy7:
+define void @unaligned_memmove7(ptr nocapture %dest, ptr %src) nounwind {
+; RV32-LABEL: unaligned_memmove7:
 ; RV32:       # %bb.0: # %entry
 ; RV32-NEXT:    lbu a2, 4(a1)
 ; RV32-NEXT:    lbu a3, 5(a1)
@@ -175,7 +175,7 @@ define void @unaligned_memcpy7(ptr nocapture %dest, ptr %src) nounwind {
 ; RV32-NEXT:    sb a1, 3(a0)
 ; RV32-NEXT:    ret
 ;
-; RV64-LABEL: unaligned_memcpy7:
+; RV64-LABEL: unaligned_memmove7:
 ; RV64:       # %bb.0: # %entry
 ; RV64-NEXT:    lbu a2, 4(a1)
 ; RV64-NEXT:    lbu a3, 5(a1)
@@ -193,7 +193,7 @@ define void @unaligned_memcpy7(ptr nocapture %dest, ptr %src) nounwind {
 ; RV64-NEXT:    sb a1, 3(a0)
 ; RV64-NEXT:    ret
 ;
-; RV32-FAST-LABEL: unaligned_memcpy7:
+; RV32-FAST-LABEL: unaligned_memmove7:
 ; RV32-FAST:       # %bb.0: # %entry
 ; RV32-FAST-NEXT:    lw a2, 0(a1)
 ; RV32-FAST-NEXT:    lh a3, 4(a1)
@@ -203,7 +203,7 @@ define void @unaligned_memcpy7(ptr nocapture %dest, ptr %src) nounwind {
 ; RV32-FAST-NEXT:    sb a1, 6(a0)
 ; RV32-FAST-NEXT:    ret
 ;
-; RV64-FAST-LABEL: unaligned_memcpy7:
+; RV64-FAST-LABEL: unaligned_memmove7:
 ; RV64-FAST:       # %bb.0: # %entry
 ; RV64-FAST-NEXT:    lw a2, 0(a1)
 ; RV64-FAST-NEXT:    lh a3, 4(a1)
@@ -217,8 +217,8 @@ entry:
   ret void
 }
 
-define void @unaligned_memcpy8(ptr nocapture %dest, ptr %src) nounwind {
-; RV32-LABEL: unaligned_memcpy8:
+define void @unaligned_memmove8(ptr nocapture %dest, ptr %src) nounwind {
+; RV32-LABEL: unaligned_memmove8:
 ; RV32:       # %bb.0: # %entry
 ; RV32-NEXT:    lbu a2, 0(a1)
 ; RV32-NEXT:    lbu a3, 1(a1)
@@ -238,7 +238,7 @@ define void @unaligned_memcpy8(ptr nocapture %dest, ptr %src) nounwind {
 ; RV32-NEXT:    sb a5, 3(a0)
 ; RV32-NEXT:    ret
 ;
-; RV64-LABEL: unaligned_memcpy8:
+; RV64-LABEL: unaligned_memmove8:
 ; RV64:       # %bb.0: # %entry
 ; RV64-NEXT:    lbu a2, 0(a1)
 ; RV64-NEXT:    lbu a3, 1(a1)
@@ -258,7 +258,7 @@ define void @unaligned_memcpy8(ptr nocapture %dest, ptr %src) nounwind {
 ; RV64-NEXT:    sb a5, 3(a0)
 ; RV64-NEXT:    ret
 ;
-; RV32-FAST-LABEL: unaligned_memcpy8:
+; RV32-FAST-LABEL: unaligned_memmove8:
 ; RV32-FAST:       # %bb.0: # %entry
 ; RV32-FAST-NEXT:    lw a2, 0(a1)
 ; RV32-FAST-NEXT:    lw a1, 4(a1)
@@ -266,7 +266,7 @@ define void @unaligned_memcpy8(ptr nocapture %dest, ptr %src) nounwind {
 ; RV32-FAST-NEXT:    sw a1, 4(a0)
 ; RV32-FAST-NEXT:    ret
 ;
-; RV64-FAST-LABEL: unaligned_memcpy8:
+; RV64-FAST-LABEL: unaligned_memmove8:
 ; RV64-FAST:       # %bb.0: # %entry
 ; RV64-FAST-NEXT:    ld a1, 0(a1)
 ; RV64-FAST-NEXT:    sd a1, 0(a0)
@@ -276,18 +276,18 @@ entry:
   ret void
 }
 
-define void @unaligned_memcpy15(ptr nocapture %dest, ptr %src) nounwind {
-; RV32-LABEL: unaligned_memcpy15:
+define void @unaligned_memmove15(ptr nocapture %dest, ptr %src) nounwind {
+; RV32-LABEL: unaligned_memmove15:
 ; RV32:       # %bb.0: # %entry
 ; RV32-NEXT:    li a2, 15
 ; RV32-NEXT:    tail memmove
 ;
-; RV64-LABEL: unaligned_memcpy15:
+; RV64-LABEL: unaligned_memmove15:
 ; RV64:       # %bb.0: # %entry
 ; RV64-NEXT:    li a2, 15
 ; RV64-NEXT:    tail memmove
 ;
-; RV32-FAST-LABEL: unaligned_memcpy15:
+; RV32-FAST-LABEL: unaligned_memmove15:
 ; RV32-FAST:       # %bb.0: # %entry
 ; RV32-FAST-NEXT:    lbu a2, 14(a1)
 ; RV32-FAST-NEXT:    lw a3, 0(a1)
@@ -301,7 +301,7 @@ define void @unaligned_memcpy15(ptr nocapture %dest, ptr %src) nounwind {
 ; RV32-FAST-NEXT:    sh a1, 12(a0)
 ; RV32-FAST-NEXT:    ret
 ;
-; RV64-FAST-LABEL: unaligned_memcpy15:
+; RV64-FAST-LABEL: unaligned_memmove15:
 ; RV64-FAST:       # %bb.0: # %entry
 ; RV64-FAST-NEXT:    ld a2, 0(a1)
 ; RV64-FAST-NEXT:    lw a3, 8(a1)
@@ -317,18 +317,18 @@ entry:
   ret void
 }
 
-define void @unaligned_memcpy16(ptr nocapture %dest, ptr %src) nounwind {
-; RV32-LABEL: unaligned_memcpy16:
+define void @unaligned_memmove16(ptr nocapture %dest, ptr %src) nounwind {
+; RV32-LABEL: unaligned_memmove16:
 ; RV32:       # %bb.0: # %entry
 ; RV32-NEXT:    li a2, 16
 ; RV32-NEXT:    tail memmove
 ;
-; RV64-LABEL: unaligned_memcpy16:
+; RV64-LABEL: unaligned_memmove16:
 ; RV64:       # %bb.0: # %entry
 ; RV64-NEXT:    li a2, 16
 ; RV64-NEXT:    tail memmove
 ;
-; RV32-FAST-LABEL: unaligned_memcpy16:
+; RV32-FAST-LABEL: unaligned_memmove16:
 ; RV32-FAST:       # %bb.0: # %entry
 ; RV32-FAST-NEXT:    lw a2, 0(a1)
 ; RV32-FAST-NEXT:    lw a3, 4(a1)
@@ -340,7 +340,7 @@ define void @unaligned_memcpy16(ptr nocapture %dest, ptr %src) nounwind {
 ; RV32-FAST-NEXT:    sw a1, 12(a0)
 ; RV32-FAST-NEXT:    ret
 ;
-; RV64-FAST-LABEL: unaligned_memcpy16:
+; RV64-FAST-LABEL: unaligned_memmove16:
 ; RV64-FAST:       # %bb.0: # %entry
 ; RV64-FAST-NEXT:    ld a2, 0(a1)
 ; RV64-FAST-NEXT:    ld a1, 8(a1)
@@ -352,18 +352,18 @@ entry:
   ret void
 }
 
-define void @unaligned_memcpy31(ptr nocapture %dest, ptr %src) nounwind {
-; RV32-BOTH-LABEL: unaligned_memcpy31:
+define void @unaligned_memmove31(ptr nocapture %dest, ptr %src) nounwind {
+; RV32-BOTH-LABEL: unaligned_memmove31:
 ; RV32-BOTH:       # %bb.0: # %entry
 ; RV32-BOTH-NEXT:    li a2, 31
 ; RV32-BOTH-NEXT:    tail memmove
 ;
-; RV64-LABEL: unaligned_memcpy31:
+; RV64-LABEL: unaligned_memmove31:
 ; RV64:       # %bb.0: # %entry
 ; RV64-NEXT:    li a2, 31
 ; RV64-NEXT:    tail memmove
 ;
-; RV64-FAST-LABEL: unaligned_memcpy31:
+; RV64-FAST-LABEL: unaligned_memmove31:
 ; RV64-FAST:       # %bb.0: # %entry
 ; RV64-FAST-NEXT:    lh a2, 28(a1)
 ; RV64-FAST-NEXT:    lbu a3, 30(a1)
@@ -386,12 +386,12 @@ entry:
 ; ----------------------------------------------------------------------
 ; Fully aligned cases
 
-define void @aligned_memcpy0(ptr nocapture %dest, ptr %src) nounwind {
-; RV32-BOTH-LABEL: aligned_memcpy0:
+define void @aligned_memmove0(ptr nocapture %dest, ptr %src) nounwind {
+; RV32-BOTH-LABEL: aligned_memmove0:
 ; RV32-BOTH:       # %bb.0: # %entry
 ; RV32-BOTH-NEXT:    ret
 ;
-; RV64-BOTH-LABEL: aligned_memcpy0:
+; RV64-BOTH-LABEL: aligned_memmove0:
 ; RV64-BOTH:       # %bb.0: # %entry
 ; RV64-BOTH-NEXT:    ret
 entry:
@@ -399,14 +399,14 @@ entry:
   ret void
 }
 
-define void @aligned_memcpy1(ptr nocapture %dest, ptr %src) nounwind {
-; RV32-BOTH-LABEL: aligned_memcpy1:
+define void @aligned_memmove1(ptr nocapture %dest, ptr %src) nounwind {
+; RV32-BOTH-LABEL: aligned_memmove1:
 ; RV32-BOTH:       # %bb.0: # %entry
 ; RV32-BOTH-NEXT:    lbu a1, 0(a1)
 ; RV32-BOTH-NEXT:    sb a1, 0(a0)
 ; RV32-BOTH-NEXT:    ret
 ;
-; RV64-BOTH-LABEL: aligned_memcpy1:
+; RV64-BOTH-LABEL: aligned_memmove1:
 ; RV64-BOTH:       # %bb.0: # %entry
 ; RV64-BOTH-NEXT:    lbu a1, 0(a1)
 ; RV64-BOTH-NEXT:    sb a1, 0(a0)
@@ -416,14 +416,14 @@ entry:
   ret void
 }
 
-define void @aligned_memcpy2(ptr nocapture %dest, ptr %src) nounwind {
-; RV32-BOTH-LABEL: aligned_memcpy2:
+define void @aligned_memmove2(ptr nocapture %dest, ptr %src) nounwind {
+; RV32-BOTH-LABEL: aligned_memmove2:
 ; RV32-BOTH:       # %bb.0: # %entry
 ; RV32-BOTH-NEXT:    lh a1, 0(a1)
 ; RV32-BOTH-NEXT:    sh a1, 0(a0)
 ; RV32-BOTH-NEXT:    ret
 ;
-; RV64-BOTH-LABEL: aligned_memcpy2:
+; RV64-BOTH-LABEL: aligned_memmove2:
 ; RV64-BOTH:       # %bb.0: # %entry
 ; RV64-BOTH-NEXT:    lh a1, 0(a1)
 ; RV64-BOTH-NEXT:    sh a1, 0(a0)
@@ -433,8 +433,8 @@ entry:
   ret void
 }
 
-define void @aligned_memcpy3(ptr nocapture %dest, ptr %src) nounwind {
-; RV32-BOTH-LABEL: aligned_memcpy3:
+define void @aligned_memmove3(ptr nocapture %dest, ptr %src) nounwind {
+; RV32-BOTH-LABEL: aligned_memmove3:
 ; RV32-BOTH:       # %bb.0: # %entry
 ; RV32-BOTH-NEXT:    lh a2, 0(a1)
 ; RV32-BOTH-NEXT:    lbu a1, 2(a1)
@@ -442,7 +442,7 @@ define void @aligned_memcpy3(ptr nocapture %dest, ptr %src) nounwind {
 ; RV32-BOTH-NEXT:    sb a1, 2(a0)
 ; RV32-BOTH-NEXT:    ret
 ;
-; RV64-BOTH-LABEL: aligned_memcpy3:
+; RV64-BOTH-LABEL: aligned_memmove3:
 ; RV64-BOTH:       # %bb.0: # %entry
 ; RV64-BOTH-NEXT:    lh a2, 0(a1)
 ; RV64-BOTH-NEXT:    lbu a1, 2(a1)
@@ -454,14 +454,14 @@ entry:
   ret void
 }
 
-define void @aligned_memcpy4(ptr nocapture %dest, ptr %src) nounwind {
-; RV32-BOTH-LABEL: aligned_memcpy4:
+define void @aligned_memmove4(ptr nocapture %dest, ptr %src) nounwind {
+; RV32-BOTH-LABEL: aligned_memmove4:
 ; RV32-BOTH:       # %bb.0: # %entry
 ; RV32-BOTH-NEXT:    lw a1, 0(a1)
 ; RV32-BOTH-NEXT:    sw a1, 0(a0)
 ; RV32-BOTH-NEXT:    ret
 ;
-; RV64-BOTH-LABEL: aligned_memcpy4:
+; RV64-BOTH-LABEL: aligned_memmove4:
 ; RV64-BOTH:       # %bb.0: # %entry
 ; RV64-BOTH-NEXT:    lw a1, 0(a1)
 ; RV64-BOTH-NEXT:    sw a1, 0(a0)
@@ -471,8 +471,8 @@ entry:
   ret void
 }
 
-define void @aligned_memcpy7(ptr nocapture %dest, ptr %src) nounwind {
-; RV32-BOTH-LABEL: aligned_memcpy7:
+define void @aligned_memmove7(ptr nocapture %dest, ptr %src) nounwind {
+; RV32-BOTH-LABEL: aligned_memmove7:
 ; RV32-BOTH:       # %bb.0: # %entry
 ; RV32-BOTH-NEXT:    lw a2, 0(a1)
 ; RV32-BOTH-NEXT:    lh a3, 4(a1)
@@ -482,7 +482,7 @@ define void @aligned_memcpy7(ptr nocapture %dest, ptr %src) nounwind {
 ; RV32-BOTH-NEXT:    sb a1, 6(a0)
 ; RV32-BOTH-NEXT:    ret
 ;
-; RV64-BOTH-LABEL: aligned_memcpy7:
+; RV64-BOTH-LABEL: aligned_memmove7:
 ; RV64-BOTH:       # %bb.0: # %entry
 ; RV64-BOTH-NEXT:    lw a2, 0(a1)
 ; RV64-BOTH-NEXT:    lh a3, 4(a1)
@@ -496,8 +496,8 @@ entry:
   ret void
 }
 
-define void @aligned_memcpy8(ptr nocapture %dest, ptr %src) nounwind {
-; RV32-BOTH-LABEL: aligned_memcpy8:
+define void @aligned_memmove8(ptr nocapture %dest, ptr %src) nounwind {
+; RV32-BOTH-LABEL: aligned_memmove8:
 ; RV32-BOTH:       # %bb.0: # %entry
 ; RV32-BOTH-NEXT:    lw a2, 0(a1)
 ; RV32-BOTH-NEXT:    sw a2, 0(a0)
@@ -505,7 +505,7 @@ define void @aligned_memcpy8(ptr nocapture %dest, ptr %src) nounwind {
 ; RV32-BOTH-NEXT:    sw a1, 4(a0)
 ; RV32-BOTH-NEXT:    ret
 ;
-; RV64-BOTH-LABEL: aligned_memcpy8:
+; RV64-BOTH-LABEL: aligned_memmove8:
 ; RV64-BOTH:       # %bb.0: # %entry
 ; RV64-BOTH-NEXT:    ld a1, 0(a1)
 ; RV64-BOTH-NEXT:    sd a1, 0(a0)
@@ -515,8 +515,8 @@ entry:
   ret void
 }
 
-define void @aligned_memcpy15(ptr nocapture %dest, ptr %src) nounwind {
-; RV32-BOTH-LABEL: aligned_memcpy15:
+define void @aligned_memmove15(ptr nocapture %dest, ptr %src) nounwind {
+; RV32-BOTH-LABEL: aligned_memmove15:
 ; RV32-BOTH:       # %bb.0: # %entry
 ; RV32-BOTH-NEXT:    lw a2, 0(a1)
 ; RV32-BOTH-NEXT:    lw a3, 8(a1)
@@ -530,7 +530,7 @@ define void @aligned_memcpy15(ptr nocapture %dest, ptr %src) nounwind {
 ; RV32-BOTH-NEXT:    sb a5, 14(a0)
 ; RV32-BOTH-NEXT:    ret
 ;
-; RV64-BOTH-LABEL: aligned_memcpy15:
+; RV64-BOTH-LABEL: aligned_memmove15:
 ; RV64-BOTH:       # %bb.0: # %entry
 ; RV64-BOTH-NEXT:    ld a2, 0(a1)
 ; RV64-BOTH-NEXT:    lw a3, 8(a1)
@@ -546,8 +546,8 @@ entry:
   ret void
 }
 
-define void @aligned_memcpy16(ptr nocapture %dest, ptr %src) nounwind {
-; RV32-BOTH-LABEL: aligned_memcpy16:
+define void @aligned_memmove16(ptr nocapture %dest, ptr %src) nounwind {
+; RV32-BOTH-LABEL: aligned_memmove16:
 ; RV32-BOTH:       # %bb.0: # %entry
 ; RV32-BOTH-NEXT:    lw a2, 0(a1)
 ; RV32-BOTH-NEXT:    lw a3, 8(a1)
@@ -559,7 +559,7 @@ define void @aligned_memcpy16(ptr nocapture %dest, ptr %src) nounwind {
 ; RV32-BOTH-NEXT:    sw a1, 12(a0)
 ; RV32-BOTH-NEXT:    ret
 ;
-; RV64-BOTH-LABEL: aligned_memcpy16:
+; RV64-BOTH-LABEL: aligned_memmove16:
 ; RV64-BOTH:       # %bb.0: # %entry
 ; RV64-BOTH-NEXT:    ld a2, 0(a1)
 ; RV64-BOTH-NEXT:    ld a1, 8(a1)
@@ -571,13 +571,13 @@ entry:
   ret void
 }
 
-define void @aligned_memcpy31(ptr nocapture %dest, ptr %src) nounwind {
-; RV32-BOTH-LABEL: aligned_memcpy31:
+define void @aligned_memmove31(ptr nocapture %dest, ptr %src) nounwind {
+; RV32-BOTH-LABEL: aligned_memmove31:
 ; RV32-BOTH:       # %bb.0: # %entry
 ; RV32-BOTH-NEXT:    li a2, 31
 ; RV32-BOTH-NEXT:    tail memmove
 ;
-; RV64-BOTH-LABEL: aligned_memcpy31:
+; RV64-BOTH-LABEL: aligned_memmove31:
 ; RV64-BOTH:       # %bb.0: # %entry
 ; RV64-BOTH-NEXT:    lh a2, 28(a1)
 ; RV64-BOTH-NEXT:    lbu a3, 30(a1)
@@ -601,8 +601,8 @@ entry:
 ; A few partially aligned cases
 
 
-define void @memcpy16_align4(ptr nocapture %dest, ptr nocapture %src) nounwind {
-; RV32-BOTH-LABEL: memcpy16_align4:
+define void @memmove16_align4(ptr nocapture %dest, ptr nocapture %src) nounwind {
+; RV32-BOTH-LABEL: memmove16_align4:
 ; RV32-BOTH:       # %bb.0: # %entry
 ; RV32-BOTH-NEXT:    lw a2, 0(a1)
 ; RV32-BOTH-NEXT:    lw a3, 4(a1)
@@ -614,7 +614,7 @@ define void @memcpy16_align4(ptr nocapture %dest, ptr nocapture %src) nounwind {
 ; RV32-BOTH-NEXT:    sw a1, 12(a0)
 ; RV32-BOTH-NEXT:    ret
 ;
-; RV64-LABEL: memcpy16_align4:
+; RV64-LABEL: memmove16_align4:
 ; RV64:       # %bb.0: # %entry
 ; RV64-NEXT:    lw a2, 0(a1)
 ; RV64-NEXT:    lw a3, 4(a1)
@@ -626,7 +626,7 @@ define void @memcpy16_align4(ptr nocapture %dest, ptr nocapture %src) nounwind {
 ; RV64-NEXT:    sw a1, 12(a0)
 ; RV64-NEXT:    ret
 ;
-; RV64-FAST-LABEL: memcpy16_align4:
+; RV64-FAST-LABEL: memmove16_align4:
 ; RV64-FAST:       # %bb.0: # %entry
 ; RV64-FAST-NEXT:    ld a2, 0(a1)
 ; RV64-FAST-NEXT:    ld a1, 8(a1)
@@ -638,8 +638,8 @@ entry:
   ret void
 }
 
-define i32 @memcpy11_align8(ptr nocapture %dest, ptr %src) {
-; RV32-BOTH-LABEL: memcpy11_align8:
+define i32 @memmove11_align8(ptr nocapture %dest, ptr %src) {
+; RV32-BOTH-LABEL: memmove11_align8:
 ; RV32-BOTH:       # %bb.0: # %entry
 ; RV32-BOTH-NEXT:    lw a2, 0(a1)
 ; RV32-BOTH-NEXT:    lh a3, 8(a1)
@@ -652,7 +652,7 @@ define i32 @memcpy11_align8(ptr nocapture %dest, ptr %src) {
 ; RV32-BOTH-NEXT:    li a0, 0
 ; RV32-BOTH-NEXT:    ret
 ;
-; RV64-BOTH-LABEL: memcpy11_align8:
+; RV64-BOTH-LABEL: memmove11_align8:
 ; RV64-BOTH:       # %bb.0: # %entry
 ; RV64-BOTH-NEXT:    ld a2, 0(a1)
 ; RV64-BOTH-NEXT:    lh a3, 8(a1)
