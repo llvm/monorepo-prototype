@@ -661,12 +661,13 @@ bool InterleavedAccessImpl::lowerInterleavedStore(
 
 bool InterleavedAccessImpl::lowerDeinterleaveIntrinsic(
     IntrinsicInst *DI, SmallSetVector<Instruction *, 32> &DeadInsts) {
-  using namespace PatternMatch;
-  SmallVector<Value *, 8> DeInterleaveResults;
-  unsigned Factor = getVectorDeInterleaveFactor(DI, DeInterleaveResults);
+  if (auto *VPLoad = dyn_cast<VPIntrinsic>(DI->getOperand(0))) {
+    SmallVector<Value *, 8> DeInterleaveResults;
+    unsigned Factor = getVectorDeInterleaveFactor(DI, DeInterleaveResults);
+    if (!Factor)
+      return false;
 
-  if (auto *VPLoad = dyn_cast<VPIntrinsic>(DI->getOperand(0));
-      Factor && VPLoad) {
+    using namespace PatternMatch;
     if (!match(VPLoad, m_OneUse(m_Intrinsic<Intrinsic::vp_load>())))
       return false;
 
@@ -687,53 +688,6 @@ bool InterleavedAccessImpl::lowerDeinterleaveIntrinsic(
     DeadInsts.insert(DI);
     DeadInsts.insert(VPLoad);
     return true;
-  }
-
-  // Match
-  //   %x = vp.strided.load  ;; VPStridedLoad
-  //   %y = bitcast %x       ;; BitCast
-  //   %y' = inttoptr %y
-  //   %z = deinterleave %y  ;; DI
-  if (Factor && isa<BitCastInst, IntToPtrInst>(DI->getOperand(0))) {
-    auto *BitCast = cast<Instruction>(DI->getOperand(0));
-    if (!BitCast->hasOneUse())
-      return false;
-
-    Instruction *IntToPtrCast = nullptr;
-    if (auto *BC = dyn_cast<BitCastInst>(BitCast->getOperand(0))) {
-      IntToPtrCast = BitCast;
-      BitCast = BC;
-    }
-
-    // Match the type is
-    //   <VF x (factor * elementTy)> bitcast to <(VF * factor) x elementTy>
-    Value *BitCastSrc = BitCast->getOperand(0);
-    auto *BitCastSrcTy = dyn_cast<VectorType>(BitCastSrc->getType());
-    auto *BitCastDstTy = cast<VectorType>(BitCast->getType());
-    if (!BitCastSrcTy || (BitCastSrcTy->getElementCount() * Factor !=
-                          BitCastDstTy->getElementCount()))
-      return false;
-
-    if (auto *VPStridedLoad = dyn_cast<VPIntrinsic>(BitCast->getOperand(0))) {
-      if (VPStridedLoad->getIntrinsicID() !=
-              Intrinsic::experimental_vp_strided_load ||
-          !VPStridedLoad->hasOneUse())
-        return false;
-
-      LLVM_DEBUG(dbgs() << "IA: Found a deinterleave intrinsic: " << *DI
-                        << "\n");
-
-      if (!TLI->lowerDeinterleaveIntrinsicToStridedLoad(
-              VPStridedLoad, DI, Factor, DeInterleaveResults))
-        return false;
-
-      DeadInsts.push_back(DI);
-      if (IntToPtrCast)
-        DeadInsts.push_back(IntToPtrCast);
-      DeadInsts.push_back(BitCast);
-      DeadInsts.push_back(VPStridedLoad);
-      return true;
-    }
   }
 
   LoadInst *LI = dyn_cast<LoadInst>(DI->getOperand(0));
