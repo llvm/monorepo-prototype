@@ -161,29 +161,29 @@ void TypeSanitizer::initializeCallbacks(Module &M) {
   TysanCtorFunction =
       M.getOrInsertFunction(kTysanModuleCtorName, Attr, IRB.getVoidTy());
 
-  TysanIntrumentMemInst =
-      M.getOrInsertFunction("__tysan_instrument_mem_inst", Attr, IRB.getVoidTy(),
-                            IRB.getPtrTy(), // Pointer of data to be written to
-                            IRB.getPtrTy(), // Pointer of data to write
-                            U64Ty,          // Size of the data in bytes
-                            BoolType        // Do we need to call memmove
-      );
+  TysanIntrumentMemInst = M.getOrInsertFunction(
+      "__tysan_instrument_mem_inst", Attr, IRB.getVoidTy(),
+      IRB.getPtrTy(), // Pointer of data to be written to
+      IRB.getPtrTy(), // Pointer of data to write
+      U64Ty,          // Size of the data in bytes
+      BoolType        // Do we need to call memmove
+  );
 
-  TysanInstrumentWithShadowUpdate =
-      M.getOrInsertFunction("__tysan_instrument_with_shadow_update", Attr, IRB.getVoidTy(),
-                            IRB.getPtrTy(), // Pointer to data to be read
-                            IRB.getPtrTy(), // Pointer to type descriptor
-                            BoolType,       // Do we need to type check this
-                            U64Ty,          // Size of data we access in bytes
-                            OrdTy           // Flags
-      );
+  TysanInstrumentWithShadowUpdate = M.getOrInsertFunction(
+      "__tysan_instrument_with_shadow_update", Attr, IRB.getVoidTy(),
+      IRB.getPtrTy(), // Pointer to data to be read
+      IRB.getPtrTy(), // Pointer to type descriptor
+      BoolType,       // Do we need to type check this
+      U64Ty,          // Size of data we access in bytes
+      OrdTy           // Flags
+  );
 
-  TysanSetShadowType =
-      M.getOrInsertFunction("__tysan_set_shadow_type", Attr, IRB.getVoidTy(),
-                            IRB.getPtrTy(), // Pointer of data to be written to
-                            IRB.getPtrTy(), // Pointer to the new type descriptor
-                            U64Ty           // Size of data we access in bytes
-      );
+  TysanSetShadowType = M.getOrInsertFunction(
+      "__tysan_set_shadow_type", Attr, IRB.getVoidTy(),
+      IRB.getPtrTy(), // Pointer of data to be written to
+      IRB.getPtrTy(), // Pointer to the new type descriptor
+      U64Ty           // Size of data we access in bytes
+  );
 }
 
 void TypeSanitizer::instrumentGlobals(Module &M) {
@@ -629,7 +629,7 @@ bool TypeSanitizer::instrumentWithShadowUpdate(
 
   Value *TD = IRB.CreateBitCast(TDGV, IRB.getPtrTy());
 
-  if(ClOutlineInstrumentation){
+  if (ClOutlineInstrumentation) {
     if (!ForceSetType && (!ClWritesAlwaysSetType || IsRead)) {
       // We need to check the type here. If the type is unknown, then the read
       // sets the type. If the type is known, then it is checked. If the type
@@ -640,7 +640,8 @@ bool TypeSanitizer::instrumentWithShadowUpdate(
           ConstantInt::get(OrdTy, (int)IsRead | (((int)IsWrite) << 1));
 
       IRB.CreateCall(TysanInstrumentWithShadowUpdate,
-                    {Ptr, TD, SanitizeFunction ? IRB.getTrue() : IRB.getFalse(),
+                     {Ptr, TD,
+                      SanitizeFunction ? IRB.getTrue() : IRB.getFalse(),
                       IRB.getInt64(AccessSize), Flags});
     } else if (ForceSetType || IsWrite) {
       // In the mode where writes always set the type, for a write (which does
@@ -899,14 +900,13 @@ bool TypeSanitizer::instrumentMemInst(Value *V, Instruction *ShadowBase,
   }
 
   if (ClOutlineInstrumentation) {
-    if(!Src){
+    if (!Src) {
       Src = ConstantPointerNull::get(IRB.getPtrTy());
     }
-    IRB.CreateCall(TysanIntrumentMemInst, {
-      Dest, Src, Size, NeedsMemMove ? IRB.getTrue() : IRB.getFalse()
-    });
-  }
-  else {
+    IRB.CreateCall(
+        TysanIntrumentMemInst,
+        {Dest, Src, Size, NeedsMemMove ? IRB.getTrue() : IRB.getFalse()});
+  } else {
     if (!ShadowBase)
       ShadowBase = getShadowBase(*F);
     if (!AppMemMask)
@@ -920,8 +920,8 @@ bool TypeSanitizer::instrumentMemInst(Value *V, Instruction *ShadowBase,
     Value *ShadowData = IRB.CreateIntToPtr(ShadowDataInt, IRB.getPtrTy());
 
     if (!Src) {
-      IRB.CreateMemSet(ShadowData, IRB.getInt8(0), IRB.CreateShl(Size, PtrShift),
-                      Align(1ull << PtrShift));
+      IRB.CreateMemSet(ShadowData, IRB.getInt8(0),
+                       IRB.CreateShl(Size, PtrShift), Align(1ull << PtrShift));
       return true;
     }
 
@@ -937,7 +937,7 @@ bool TypeSanitizer::instrumentMemInst(Value *V, Instruction *ShadowBase,
                         Align(1ull << PtrShift), IRB.CreateShl(Size, PtrShift));
     } else {
       IRB.CreateMemCpy(ShadowData, Align(1ull << PtrShift), SrcShadowData,
-                      Align(1ull << PtrShift), IRB.CreateShl(Size, PtrShift));
+                       Align(1ull << PtrShift), IRB.CreateShl(Size, PtrShift));
     }
   }
 
