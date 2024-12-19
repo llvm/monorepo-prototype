@@ -3181,19 +3181,6 @@ public:
     return false;
   }
 
-  /// Lower a deinterleave intrinsic to a target specific strided load
-  /// intrinsic. Return true on success.
-  ///
-  /// \p StridedLoad is the vp.strided.load instruction.
-  /// \p DI is the deinterleave intrinsic.
-  /// \p Factor is the interleave factor.
-  /// \p DeinterleaveRes is a list of deinterleaved results.
-  virtual bool lowerDeinterleaveIntrinsicToStridedLoad(
-      VPIntrinsic *StridedLoad, IntrinsicInst *DI, unsigned Factor,
-      ArrayRef<Value *> DeinterleaveRes) const {
-    return false;
-  }
-
   /// Lower a deinterleave intrinsic to a target specific load intrinsic.
   /// Return true on success. Currently only supports
   /// llvm.vector.deinterleave2
