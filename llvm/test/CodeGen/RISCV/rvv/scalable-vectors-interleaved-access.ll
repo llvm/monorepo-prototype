@@ -125,7 +125,7 @@ define void @store_factor2_v2(<vscale x 1 x i32> %v0, <vscale x 1 x i32> %v1, pt
   ret void
 }
 
-; Expecting uni-strde store here rather than segmented store.
+; Expecting unit-stride store here rather than segmented store.
 define void @store_factor2_const_splat(ptr %dst) {
 ; RV32-LABEL: store_factor2_const_splat:
 ; RV32:       # %bb.0:
