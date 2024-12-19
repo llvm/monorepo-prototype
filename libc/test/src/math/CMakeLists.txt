@@ -2777,7 +2777,8 @@ add_fp_unittest(
   HDRS
     AddTest.h
   DEPENDS
-    libc.src.__support.FPUtil.generic.add_or_sub
+    libc.src.__support.CPP.algorithm
+    libc.src.__support.FPUtil.generic.add_sub
     libc.src.__support.macros.properties.types
 )
 
@@ -2791,7 +2792,8 @@ add_fp_unittest(
   HDRS
     SubTest.h
   DEPENDS
-    libc.src.__support.FPUtil.generic.add_or_sub
+    libc.src.__support.CPP.algorithm
+    libc.src.__support.FPUtil.generic.add_sub
     libc.src.__support.macros.properties.types
 )
 

@@ -5136,7 +5136,7 @@ add_fp_unittest(
   DEPENDS
     libc.hdr.errno_macros
     libc.hdr.fenv_macros
-    libc.src.__support.FPUtil.generic.add_or_sub
+    libc.src.__support.FPUtil.generic.add_sub
     libc.src.__support.macros.properties.os
     libc.src.__support.macros.properties.types
 )
@@ -5152,7 +5152,7 @@ add_fp_unittest(
   DEPENDS
     libc.hdr.errno_macros
     libc.hdr.fenv_macros
-    libc.src.__support.FPUtil.generic.add_or_sub
+    libc.src.__support.FPUtil.generic.add_sub
     libc.src.__support.macros.properties.os
     libc.src.__support.macros.properties.types
 )
