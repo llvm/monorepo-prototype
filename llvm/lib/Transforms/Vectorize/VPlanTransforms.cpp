@@ -663,8 +663,8 @@ static void recursivelyDeleteDeadRecipes(VPValue *V) {
   }
 }
 
-/// Optimize the width of vector induction variables based on \p TC, \p BestVF
-/// and \p BestUF.
+/// Optimize the width of vector induction variables in \p Plan based on a known
+/// constant Trip Count, \p BestVF and \p BestUF.
 static bool optimizeVectorInductionWidthForTCAndVFUF(VPlan &Plan,
                                                      ElementCount BestVF,
                                                      unsigned BestUF) {
@@ -673,10 +673,13 @@ static bool optimizeVectorInductionWidthForTCAndVFUF(VPlan &Plan,
   if (!TC || !BestVF.isFixed())
     return false;
 
+  auto TCVal = TC->getValue().tryZExtValue();
+  if (!TCVal)
+    return false;
+
   // Calculate the widest type required for known TC, VF and UF.
-  uint64_t TCVal = TC->getZExtValue();
   uint64_t Width = BestVF.getKnownMinValue() * BestUF;
-  uint64_t MaxVal = alignTo(TCVal, Width) - 1;
+  uint64_t MaxVal = alignTo(*TCVal, Width) - 1;
   unsigned MaxActiveBits = Log2_64_Ceil(MaxVal);
   unsigned NewBitWidth = std::max<unsigned>(PowerOf2Ceil(MaxActiveBits), 8);
   LLVMContext &Ctx = Plan.getCanonicalIV()->getScalarType()->getContext();
@@ -694,12 +697,11 @@ static bool optimizeVectorInductionWidthForTCAndVFUF(VPlan &Plan,
 
     // Currently only handle cases where the single user is a header-mask
     // comparison with the backedge-taken-count.
-    VPValue *Bound;
     using namespace VPlanPatternMatch;
     if (!match(*WideIV->user_begin(),
-               m_Binary<Instruction::ICmp>(m_Specific(WideIV),
-                                           m_VPValue(Bound))) ||
-        Bound != Plan.getOrCreateBackedgeTakenCount())
+               m_Binary<Instruction::ICmp>(
+                   m_Specific(WideIV),
+                   m_Specific(Plan.getOrCreateBackedgeTakenCount()))))
       continue;
 
     // Update IV operands and comparison bound to use new narrower type.
@@ -707,7 +709,7 @@ static bool optimizeVectorInductionWidthForTCAndVFUF(VPlan &Plan,
     WideIV->setStartValue(NewStart);
     auto *NewStep = Plan.getOrAddLiveIn(ConstantInt::get(NewIVTy, 1));
     WideIV->setStepValue(NewStep);
-    auto *NewBound = Plan.getOrAddLiveIn(ConstantInt::get(NewIVTy, TCVal - 1));
+    auto *NewBound = Plan.getOrAddLiveIn(ConstantInt::get(NewIVTy, *TCVal - 1));
     auto *Cmp = dyn_cast<VPInstruction>(*WideIV->user_begin());
     Cmp->setOperand(1, NewBound);
 
