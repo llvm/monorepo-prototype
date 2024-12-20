@@ -8524,8 +8524,7 @@ clang::EnumConstantDecl *TypeSystemClang::AddEnumerationValueToEnumerationType(
   bool is_signed = false;
   underlying_type.IsIntegerType(is_signed);
 
-  // APSInt constructor's sign argument is isUnsigned
-  llvm::APSInt value(enum_value_bit_size, !is_signed);
+  llvm::APSInt value(enum_value_bit_size, is_signed);
   value = enum_value;
 
   return AddEnumerationValueToEnumerationType(enum_type, decl, name, value);
