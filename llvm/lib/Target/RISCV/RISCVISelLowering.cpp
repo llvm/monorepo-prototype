@@ -19066,6 +19066,25 @@ static MachineBasicBlock *emitFROUND(MachineInstr &MI, MachineBasicBlock *MBB,
   return DoneMBB;
 }
 
+static MachineBasicBlock *emitCV_SHUFFLE_SCI_B(MachineInstr &MI,
+                                               MachineBasicBlock *MBB,
+                                               const RISCVSubtarget &
+                                               Subtarget) {
+  DebugLoc DL = MI.getDebugLoc();
+  Register DstReg = MI.getOperand(0).getReg();
+  Register SrcReg = MI.getOperand(1).getReg();
+  uint8_t Imm = MI.getOperand(2).getImm();
+  const unsigned Opcodes[] = {
+      RISCV::CV_SHUFFLEI0_SCI_B, RISCV::CV_SHUFFLEI1_SCI_B,
+      RISCV::CV_SHUFFLEI2_SCI_B, RISCV::CV_SHUFFLEI3_SCI_B};
+  const RISCVInstrInfo &TII = *Subtarget.getInstrInfo();
+  BuildMI(*MBB, MI, DL, TII.get(Opcodes[Imm >> 6]), DstReg)
+      .addReg(SrcReg)
+      .addImm(APInt(6, Imm, true).getSExtValue());
+  MI.eraseFromParent();
+  return MBB;
+}
+
 MachineBasicBlock *
 RISCVTargetLowering::EmitInstrWithCustomInserter(MachineInstr &MI,
                                                  MachineBasicBlock *BB) const {
@@ -19141,6 +19160,8 @@ RISCVTargetLowering::EmitInstrWithCustomInserter(MachineInstr &MI,
   case RISCV::PseudoFROUND_D_INX:
   case RISCV::PseudoFROUND_D_IN32X:
     return emitFROUND(MI, BB, Subtarget);
+  case RISCV::PseudoCV_SHUFFLE_SCI_B:
+    return emitCV_SHUFFLE_SCI_B(MI, BB, Subtarget);
   case TargetOpcode::STATEPOINT:
     // STATEPOINT is a pseudo instruction which has no implicit defs/uses
     // while jal call instruction (where statepoint will be lowered at the end)
