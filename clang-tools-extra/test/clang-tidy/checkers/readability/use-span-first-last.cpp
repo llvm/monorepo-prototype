@@ -147,3 +147,4 @@ void test_different_spans() {
   // CHECK-MESSAGES: :[[@LINE-1]]:16: warning: prefer 'span::last()' over 'subspan()'
   // CHECK-FIXES: auto good2 = s2.last(3);
 }
+

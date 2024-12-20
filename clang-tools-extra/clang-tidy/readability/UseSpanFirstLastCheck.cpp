@@ -7,10 +7,8 @@
 //===----------------------------------------------------------------------===//
 
 #include "UseSpanFirstLastCheck.h"
-#include "../utils/ASTUtils.h"
 #include "../utils/Matchers.h"
 #include "clang/AST/ASTContext.h"
-#include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
 #include "clang/Lex/Lexer.h"
@@ -24,6 +22,10 @@ void UseSpanFirstLastCheck::registerMatchers(MatchFinder *Finder) {
   const auto HasSpanType =
       hasType(hasUnqualifiedDesugaredType(recordType(hasDeclaration(
           classTemplateSpecializationDecl(hasName("::std::span"))))));
+
+  const auto SubspanDecl = cxxMethodDecl(
+      hasName("subspan"),
+      ofClass(classTemplateSpecializationDecl(hasName("::std::span"))));
 
   // Match span.subspan(0, n) -> first(n)
   Finder->addMatcher(
@@ -64,10 +66,6 @@ void UseSpanFirstLastCheck::check(const MatchFinder::MatchResult &Result) {
   if (!SpanObj)
     return;
 
-  StringRef SpanText = Lexer::getSourceText(
-      CharSourceRange::getTokenRange(SpanObj->getSourceRange()),
-      *Result.SourceManager, Result.Context->getLangOpts());
-
   const auto *SubSpan =
       Result.Nodes.getNodeAs<CXXMemberCallExpr>("first_subspan");
   bool IsFirst = true;
@@ -85,7 +83,9 @@ void UseSpanFirstLastCheck::check(const MatchFinder::MatchResult &Result) {
   StringRef CountText = Lexer::getSourceText(
       CharSourceRange::getTokenRange(Count->getSourceRange()),
       *Result.SourceManager, Result.Context->getLangOpts());
-
+  StringRef SpanText = Lexer::getSourceText(
+      CharSourceRange::getTokenRange(SpanObj->getSourceRange()),
+      *Result.SourceManager, Result.Context->getLangOpts());
   const StringRef FirstOrLast = IsFirst ? "first" : "last";
   std::string Replacement =
       (Twine(SpanText) + "." + FirstOrLast + "(" + CountText + ")").str();
