@@ -19066,10 +19066,9 @@ static MachineBasicBlock *emitFROUND(MachineInstr &MI, MachineBasicBlock *MBB,
   return DoneMBB;
 }
 
-static MachineBasicBlock *emitCV_SHUFFLE_SCI_B(MachineInstr &MI,
-                                               MachineBasicBlock *MBB,
-                                               const RISCVSubtarget &
-                                               Subtarget) {
+static MachineBasicBlock *
+emitCV_SHUFFLE_SCI_B(MachineInstr &MI, MachineBasicBlock *MBB,
+                     const RISCVSubtarget &Subtarget) {
   DebugLoc DL = MI.getDebugLoc();
   Register DstReg = MI.getOperand(0).getReg();
   Register SrcReg = MI.getOperand(1).getReg();
