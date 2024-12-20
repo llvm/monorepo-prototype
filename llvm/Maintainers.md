@@ -397,8 +397,8 @@ echristo@gmail.com (email), [echristo](https://github.com/echristo) (GitHub)
 
 #### Exception handling
 
-Anton Korobeynikov \
-anton@korobeynikov.info (email), [asl](https://github.com/asl) (GitHub)
+Eli Friedman \
+efriedma@quicinc.com (email), [efriedma-quic](https://github.com/efriedma-quic) (GitHub)
 
 #### LLVM Buildbot
 
@@ -457,7 +457,7 @@ Jake Ehrlich (jakehehrlich@google.com, [jakehehrlich](https://github.com/jakeheh
 Renato Golin (rengolin@systemcall.eu, [rengolin](https://github.com/rengolin)) -- ARM backend \
 Venkatraman Govindaraju (venkatra@cs.wisc.edu, [vegovin](https://github.com/vegovin) -- Sparc backend \
 James Grosbach (grosbach@apple.com) -- MC layer \
-Anton Korobeynikov (anton@korobeynikov.info, [asl](https://github.com/asl)) -- ARM EABI \
+Anton Korobeynikov (anton@korobeynikov.info, [asl](https://github.com/asl)) -- ARM EABI, Exception handling \
 Chad Rosier (mcrosier@codeaurora.org) -- FastISel \
 Hans Wennborg (hans@chromium.org, [zmodem](https://github.com/zmodem)) -- Release management \
 Kostya Serebryany ([kcc](https://github.com/kcc)) -- Sanitizers \
