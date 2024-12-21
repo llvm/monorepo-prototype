@@ -24,6 +24,8 @@
   __attribute__((__always_inline__, __nodebug__, __target__("avx10.2-256"),    \
                  __min_vector_width__(256)))
 
+//clang-format off
+
 /// Convert two 128-bit vectors, \a __A and \a __B, containing packed
 ///    single-precision (32-bit) floating-point elements to a 128-bit vector
 ///    containing FP16 elements.
@@ -3382,6 +3384,8 @@ _mm256_maskz_cvtpbf8_ph(__mmask8 __U, __m128i __A) {
   return _mm256_castsi256_ph(
       _mm256_slli_epi16(_mm256_maskz_cvtepi8_epi16(__U, __A), 8));
 }
+
+// clang-format on
 
 #undef __DEFAULT_FN_ATTRS128
 #undef __DEFAULT_FN_ATTRS256
