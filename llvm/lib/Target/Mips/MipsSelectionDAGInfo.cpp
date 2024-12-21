@@ -14,18 +14,6 @@ using namespace llvm;
 MipsSelectionDAGInfo::~MipsSelectionDAGInfo() = default;
 
 bool MipsSelectionDAGInfo::isTargetMemoryOpcode(unsigned Opcode) const {
-  switch (static_cast<MipsISD::NodeType>(Opcode)) {
-  default:
-    break;
-  case MipsISD::LWL:
-  case MipsISD::LWR:
-  case MipsISD::SWL:
-  case MipsISD::SWR:
-  case MipsISD::LDL:
-  case MipsISD::LDR:
-  case MipsISD::SDL:
-  case MipsISD::SDR:
-    return true;
-  }
-  return SelectionDAGTargetInfo::isTargetMemoryOpcode(Opcode);
+  return Opcode >= MipsISD::FIRST_MEMORY_OPCODE &&
+         Opcode <= MipsISD::LAST_MEMORY_OPCODE;
 }

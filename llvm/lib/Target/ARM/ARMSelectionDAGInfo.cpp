@@ -31,10 +31,8 @@ cl::opt<TPLoop::MemTransfer> EnableMemtransferTPLoop(
                           "conversion of memcpy to TP loop.")));
 
 bool ARMSelectionDAGInfo::isTargetMemoryOpcode(unsigned Opcode) const {
-  if (Opcode >= ARMISD::FIRST_MEMORY_OPCODE &&
-      Opcode <= ARMISD::LAST_MEMORY_OPCODE)
-    return true;
-  return SelectionDAGTargetInfo::isTargetMemoryOpcode(Opcode);
+  return Opcode >= ARMISD::FIRST_MEMORY_OPCODE &&
+         Opcode <= ARMISD::LAST_MEMORY_OPCODE;
 }
 
 // Emit, if possible, a specialized version of the given Libcall. Typically this

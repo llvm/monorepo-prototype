@@ -14,8 +14,6 @@ using namespace llvm;
 AMDGPUSelectionDAGInfo::~AMDGPUSelectionDAGInfo() = default;
 
 bool AMDGPUSelectionDAGInfo::isTargetMemoryOpcode(unsigned Opcode) const {
-  if (Opcode >= AMDGPUISD::FIRST_MEMORY_OPCODE &&
-      Opcode <= AMDGPUISD::LAST_MEMORY_OPCODE)
-    return true;
-  return SelectionDAGTargetInfo::isTargetMemoryOpcode(Opcode);
+  return Opcode >= AMDGPUISD::FIRST_MEMORY_OPCODE &&
+         Opcode <= AMDGPUISD::LAST_MEMORY_OPCODE;
 }

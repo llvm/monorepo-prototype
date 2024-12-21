@@ -492,11 +492,13 @@ enum NodeType : unsigned {
   STRICT_VFROUND_NOEXCEPT_VL,
   LAST_STRICTFP_OPCODE = STRICT_VFROUND_NOEXCEPT_VL,
 
-  TH_LWD,
+  FIRST_MEMORY_OPCODE,
+  TH_LWD = FIRST_MEMORY_OPCODE,
   TH_LWUD,
   TH_LDD,
   TH_SWD,
   TH_SDD,
+  LAST_MEMORY_OPCODE = TH_SDD,
 };
 // clang-format on
 } // namespace RISCVISD
@@ -700,9 +702,8 @@ public:
   // Note that one specific case requires fence insertion for an
   // AtomicCmpXchgInst but is handled via the RISCVZacasABIFix pass rather
   // than this hook due to limitations in the interface here.
-  bool shouldInsertFencesForAtomic(const Instruction *I) const override {
-    return isa<LoadInst>(I) || isa<StoreInst>(I);
-  }
+  bool shouldInsertFencesForAtomic(const Instruction *I) const override;
+
   Instruction *emitLeadingFence(IRBuilderBase &Builder, Instruction *Inst,
                                 AtomicOrdering Ord) const override;
   Instruction *emitTrailingFence(IRBuilderBase &Builder, Instruction *Inst,
@@ -994,6 +995,7 @@ private:
   SDValue lowerLogicVPOp(SDValue Op, SelectionDAG &DAG) const;
   SDValue lowerVPExtMaskOp(SDValue Op, SelectionDAG &DAG) const;
   SDValue lowerVPSetCCMaskOp(SDValue Op, SelectionDAG &DAG) const;
+  SDValue lowerVPMergeMask(SDValue Op, SelectionDAG &DAG) const;
   SDValue lowerVPSplatExperimental(SDValue Op, SelectionDAG &DAG) const;
   SDValue lowerVPSpliceExperimental(SDValue Op, SelectionDAG &DAG) const;
   SDValue lowerVPReverseExperimental(SDValue Op, SelectionDAG &DAG) const;

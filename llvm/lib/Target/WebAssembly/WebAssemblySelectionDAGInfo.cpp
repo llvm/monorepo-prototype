@@ -21,14 +21,13 @@ WebAssemblySelectionDAGInfo::~WebAssemblySelectionDAGInfo() = default; // anchor
 bool WebAssemblySelectionDAGInfo::isTargetMemoryOpcode(unsigned Opcode) const {
   switch (static_cast<WebAssemblyISD::NodeType>(Opcode)) {
   default:
-    break;
+    return false;
   case WebAssemblyISD::GLOBAL_GET:
   case WebAssemblyISD::GLOBAL_SET:
   case WebAssemblyISD::TABLE_GET:
   case WebAssemblyISD::TABLE_SET:
     return true;
   }
-  return SelectionDAGTargetInfo::isTargetMemoryOpcode(Opcode);
 }
 
 SDValue WebAssemblySelectionDAGInfo::EmitTargetCodeForMemcpy(

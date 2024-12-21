@@ -28,17 +28,13 @@ static cl::opt<bool>
                      cl::desc("Use fast short rep mov in memcpy lowering"));
 
 bool X86SelectionDAGInfo::isTargetMemoryOpcode(unsigned Opcode) const {
-  if (Opcode >= X86ISD::FIRST_MEMORY_OPCODE &&
-      Opcode <= X86ISD::LAST_MEMORY_OPCODE)
-    return true;
-  return SelectionDAGTargetInfo::isTargetMemoryOpcode(Opcode);
+  return Opcode >= X86ISD::FIRST_MEMORY_OPCODE &&
+         Opcode <= X86ISD::LAST_MEMORY_OPCODE;
 }
 
 bool X86SelectionDAGInfo::isTargetStrictFPOpcode(unsigned Opcode) const {
-  if (Opcode >= X86ISD::FIRST_STRICTFP_OPCODE &&
-      Opcode <= X86ISD::LAST_STRICTFP_OPCODE)
-    return true;
-  return SelectionDAGTargetInfo::isTargetStrictFPOpcode(Opcode);
+  return Opcode >= X86ISD::FIRST_STRICTFP_OPCODE &&
+         Opcode <= X86ISD::LAST_STRICTFP_OPCODE;
 }
 
 /// Returns the best type to use with repmovs/repstos depending on alignment.

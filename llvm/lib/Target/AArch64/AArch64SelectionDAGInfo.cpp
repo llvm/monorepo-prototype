@@ -24,23 +24,13 @@ static cl::opt<bool>
                        cl::init(true));
 
 bool AArch64SelectionDAGInfo::isTargetMemoryOpcode(unsigned Opcode) const {
-  if (Opcode >= AArch64ISD::FIRST_MEMORY_OPCODE &&
-      Opcode <= AArch64ISD::LAST_MEMORY_OPCODE)
-    return true;
-  return SelectionDAGTargetInfo::isTargetMemoryOpcode(Opcode);
+  return Opcode >= AArch64ISD::FIRST_MEMORY_OPCODE &&
+         Opcode <= AArch64ISD::LAST_MEMORY_OPCODE;
 }
 
 bool AArch64SelectionDAGInfo::isTargetStrictFPOpcode(unsigned Opcode) const {
-  switch (static_cast<AArch64ISD::NodeType>(Opcode)) {
-  default:
-    break;
-  case AArch64ISD::STRICT_FCMP:
-  case AArch64ISD::STRICT_FCMPE:
-  case AArch64ISD::SME_ZA_LDR:
-  case AArch64ISD::SME_ZA_STR:
-    return true;
-  }
-  return SelectionDAGTargetInfo::isTargetStrictFPOpcode(Opcode);
+  return Opcode >= AArch64ISD::FIRST_STRICTFP_OPCODE &&
+         Opcode <= AArch64ISD::LAST_STRICTFP_OPCODE;
 }
 
 SDValue AArch64SelectionDAGInfo::EmitMOPS(unsigned Opcode, SelectionDAG &DAG,

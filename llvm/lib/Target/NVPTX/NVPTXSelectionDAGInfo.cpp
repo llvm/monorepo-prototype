@@ -14,8 +14,6 @@ using namespace llvm;
 NVPTXSelectionDAGInfo::~NVPTXSelectionDAGInfo() = default;
 
 bool NVPTXSelectionDAGInfo::isTargetMemoryOpcode(unsigned Opcode) const {
-  if (Opcode >= NVPTXISD::FIRST_MEMORY_OPCODE &&
-      Opcode <= NVPTXISD::LAST_MEMORY_OPCODE)
-    return true;
-  return SelectionDAGTargetInfo::isTargetMemoryOpcode(Opcode);
+  return Opcode >= NVPTXISD::FIRST_MEMORY_OPCODE &&
+         Opcode <= NVPTXISD::LAST_MEMORY_OPCODE;
 }

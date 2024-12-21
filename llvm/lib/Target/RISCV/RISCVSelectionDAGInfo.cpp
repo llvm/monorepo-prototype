@@ -14,22 +14,11 @@ using namespace llvm;
 RISCVSelectionDAGInfo::~RISCVSelectionDAGInfo() = default;
 
 bool RISCVSelectionDAGInfo::isTargetMemoryOpcode(unsigned Opcode) const {
-  switch (static_cast<RISCVISD::NodeType>(Opcode)) {
-  default:
-    break;
-  case RISCVISD::TH_LWD:
-  case RISCVISD::TH_LWUD:
-  case RISCVISD::TH_LDD:
-  case RISCVISD::TH_SWD:
-  case RISCVISD::TH_SDD:
-    return true;
-  }
-  return SelectionDAGTargetInfo::isTargetMemoryOpcode(Opcode);
+  return Opcode >= RISCVISD::FIRST_MEMORY_OPCODE &&
+         Opcode <= RISCVISD::LAST_MEMORY_OPCODE;
 }
 
 bool RISCVSelectionDAGInfo::isTargetStrictFPOpcode(unsigned Opcode) const {
-  if (Opcode >= RISCVISD::FIRST_STRICTFP_OPCODE &&
-      Opcode <= RISCVISD::LAST_STRICTFP_OPCODE)
-    return true;
-  return SelectionDAGTargetInfo::isTargetStrictFPOpcode(Opcode);
+  return Opcode >= RISCVISD::FIRST_STRICTFP_OPCODE &&
+         Opcode <= RISCVISD::LAST_STRICTFP_OPCODE;
 }
