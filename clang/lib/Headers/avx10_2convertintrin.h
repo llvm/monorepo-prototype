@@ -35,6 +35,8 @@
 /// 	ELSE
 /// 		dst.fp16[i] := convert_fp32_to_fp16(__A.fp32[i - 4])
 /// 	FI
+///
+/// dst[MAX:127] := 0
 /// ENDFOR
 /// \endcode
 ///
@@ -72,6 +74,8 @@ static __inline__ __m128h __DEFAULT_FN_ATTRS128 _mm_cvtx2ps_ph(__m128 __A,
 /// 	ELSE
 /// 		dst.fp16[i] := __W.fp16[i]
 /// 	FI
+///
+/// dst[MAX:127] := 0
 /// ENDFOR
 /// \endcode
 ///
@@ -115,6 +119,8 @@ _mm_mask_cvtx2ps_ph(__m128h __W, __mmask8 __U, __m128 __A, __m128 __B) {
 /// 		dst.fp16[i] := 0
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:127] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -150,6 +156,8 @@ _mm_maskz_cvtx2ps_ph(__mmask8 __U, __m128 __A, __m128 __B) {
 /// 		dst.fp16[i] := convert_fp32_to_fp16(__A.fp32[i - 8])
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:256] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -188,6 +196,8 @@ static __inline__ __m256h __DEFAULT_FN_ATTRS256 _mm256_cvtx2ps_ph(__m256 __A,
 /// 		dst.fp16[i] := __W.fp16[i]
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:256] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -231,6 +241,8 @@ _mm256_mask_cvtx2ps_ph(__m256h __W, __mmask16 __U, __m256 __A, __m256 __B) {
 /// 		dst.fp16[i] := 0
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:256] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -267,6 +279,8 @@ _mm256_maskz_cvtx2ps_ph(__mmask16 __U, __m256 __A, __m256 __B) {
 /// 		dst.fp16[i] := convert_fp32_to_fp16(__A.fp32[i - 8])
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:256] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -309,6 +323,8 @@ _mm256_maskz_cvtx2ps_ph(__mmask16 __U, __m256 __A, __m256 __B) {
 /// 		dst.fp16[i] := __W.fp16[i]
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:256] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -354,6 +370,8 @@ _mm256_maskz_cvtx2ps_ph(__mmask16 __U, __m256 __A, __m256 __B) {
 /// 		dst.fp16[i] := 0
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:256] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -390,7 +408,7 @@ _mm256_maskz_cvtx2ps_ph(__mmask16 __U, __m256 __A, __m256 __B) {
 /// 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2i])
 /// ENDFOR
 ///
-/// dst[127:64] := 0
+/// dst[MAX:64] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -425,7 +443,7 @@ _mm_cvtbiasph_pbf8(__m128i __A, __m128h __B) {
 /// 	FI
 /// ENDFOR
 ///
-/// dst[127:64] := 0
+/// dst[MAX:64] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -465,7 +483,7 @@ _mm_mask_cvtbiasph_pbf8(__m128i __W, __mmask8 __U, __m128i __A, __m128h __B) {
 ///	 FI
 /// ENDFOR
 ///
-/// dst[127:64] := 0
+/// dst[MAX:64] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -497,6 +515,8 @@ _mm_maskz_cvtbiasph_pbf8(__mmask8 __U, __m128i __A, __m128h __B) {
 /// FOR i := 0 to 15
 /// 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2i])
 /// ENDFOR
+///
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -531,6 +551,8 @@ _mm256_cvtbiasph_pbf8(__m256i __A, __m256h __B) {
 /// 		dst.fp8[i] := _W[i]
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -569,6 +591,8 @@ static __inline__ __m128i __DEFAULT_FN_ATTRS256 _mm256_mask_cvtbiasph_pbf8(
 ///	 	dst.fp8[i] := 0
 ///	 FI
 /// ENDFOR
+///
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -602,7 +626,7 @@ _mm256_maskz_cvtbiasph_pbf8(__mmask16 __U, __m256i __A, __m256h __B) {
 /// 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2i])
 /// ENDFOR
 ///
-/// dst[127:64] := 0
+/// dst[MAX:64] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -637,7 +661,7 @@ _mm_cvtbiassph_pbf8(__m128i __A, __m128h __B) {
 /// 	FI
 /// ENDFOR
 ///
-/// dst[127:64] := 0
+/// dst[MAX:64] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -677,7 +701,7 @@ _mm_mask_cvtbiassph_pbf8(__m128i __W, __mmask8 __U, __m128i __A, __m128h __B) {
 ///	 FI
 /// ENDFOR
 ///
-/// dst[127:64] := 0
+/// dst[MAX:64] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -710,6 +734,8 @@ _mm_maskz_cvtbiassph_pbf8(__mmask8 __U, __m128i __A, __m128h __B) {
 /// FOR i := 0 to 15
 /// 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2i])
 /// ENDFOR
+///
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -744,6 +770,8 @@ _mm256_cvtbiassph_pbf8(__m256i __A, __m256h __B) {
 /// 		dst.fp8[i] := _W[i]
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -782,6 +810,8 @@ static __inline__ __m128i __DEFAULT_FN_ATTRS256 _mm256_mask_cvtbiassph_pbf8(
 ///	 	dst.fp8[i] := 0
 ///	 FI
 /// ENDFOR
+///
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -814,7 +844,7 @@ _mm256_maskz_cvtbiassph_pbf8(__mmask16 __U, __m256i __A, __m256h __B) {
 /// 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2i])
 /// ENDFOR
 ///
-/// dst[127:64] := 0
+/// dst[MAX:64] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -849,7 +879,7 @@ _mm_cvtbiasph_phf8(__m128i __A, __m128h __B) {
 /// 	FI
 /// ENDFOR
 ///
-/// dst[127:64] := 0
+/// dst[MAX:64] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -889,7 +919,7 @@ _mm_mask_cvtbiasph_phf8(__m128i __W, __mmask8 __U, __m128i __A, __m128h __B) {
 ///	 FI
 /// ENDFOR
 ///
-/// dst[127:64] := 0
+/// dst[MAX:64] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -1026,7 +1056,7 @@ _mm256_maskz_cvtbiasph_phf8(__mmask16 __U, __m256i __A, __m256h __B) {
 /// 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2i])
 /// ENDFOR
 ///
-/// dst[127:64] := 0
+/// dst[MAX:64] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -1061,7 +1091,7 @@ _mm_cvtbiassph_phf8(__m128i __A, __m128h __B) {
 /// 	FI
 /// ENDFOR
 ///
-/// dst[127:64] := 0
+/// dst[MAX:64] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -1101,7 +1131,7 @@ _mm_mask_cvtbiassph_phf8(__m128i __W, __mmask8 __U, __m128i __A, __m128h __B) {
 ///	 FI
 /// ENDFOR
 ///
-/// dst[127:64] := 0
+/// dst[MAX:64] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -1134,6 +1164,8 @@ _mm_maskz_cvtbiassph_phf8(__mmask8 __U, __m128i __A, __m128h __B) {
 /// FOR i := 0 to 15
 /// 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2i])
 /// ENDFOR
+///
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -1168,6 +1200,8 @@ _mm256_cvtbiassph_phf8(__m256i __A, __m256h __B) {
 /// 		dst.fp8[i] := _W[i]
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -1206,6 +1240,8 @@ static __inline__ __m128i __DEFAULT_FN_ATTRS256 _mm256_mask_cvtbiassph_phf8(
 ///	 	dst.fp8[i] := 0
 ///	 FI
 /// ENDFOR
+///
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -1233,13 +1269,15 @@ _mm256_maskz_cvtbiassph_phf8(__mmask16 __U, __m256i __A, __m256h __B) {
 ///    floating-point elements to a 128-bit vector containing E5M2 FP8 elements.
 ///
 /// \code{.operation}
-/// FOR i := 0 to 16 
+/// FOR i := 0 to 15 
 /// 	IF i < 8
 /// 		dst.fp8[i] := convert_fp16_to_fp8(__B.fp16[i])
 /// 	ELSE
 /// 		dst.fp8[i] := convert_fp16_to_fp8(__A.fp16[i - 8])
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -1277,6 +1315,8 @@ static __inline__ __m128i __DEFAULT_FN_ATTRS128 _mm_cvtne2ph_pbf8(__m128h __A,
 /// 		dst.fp8 := __W.fp8[i]
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -1308,7 +1348,7 @@ _mm_mask_cvtne2ph_pbf8(__m128i __W, __mmask16 __U, __m128h __A, __m128h __B) {
 ///    instead.
 ///
 /// \code{.operation}
-/// FOR i := 0 to 16 
+/// FOR i := 0 to 15 
 /// 	IF __U[i]
 /// 		IF i < 8
 /// 			dst.fp8[i] := convert_fp16_to_fp8(__B.fp16[i])
@@ -1319,6 +1359,8 @@ _mm_mask_cvtne2ph_pbf8(__m128i __W, __mmask16 __U, __m128h __A, __m128h __B) {
 /// 		dst.fp8[i] := 0
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -1354,6 +1396,8 @@ _mm_maskz_cvtne2ph_pbf8(__mmask16 __U, __m128h __A, __m128h __B) {
 /// 		dst.fp8[i] := convert_fp16_to_fp8(__A.fp16[i - 16])
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:256] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -1391,6 +1435,8 @@ _mm256_cvtne2ph_pbf8(__m256h __A, __m256h __B) {
 /// 		dst.fp8[i] := __W.fp8[i]
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:256] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -1433,6 +1479,8 @@ static __inline__ __m256i __DEFAULT_FN_ATTRS256 _mm256_mask_cvtne2ph_pbf8(
 /// 		FI
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:256] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -1462,13 +1510,15 @@ _mm256_maskz_cvtne2ph_pbf8(__mmask32 __U, __m256h __A, __m256h __B) {
 ///    Resulting elements are saturated in case of an overflow.
 ///
 /// \code{.operation}
-/// FOR i := 0 to 16 
+/// FOR i := 0 to 15 
 /// 	IF i < 8
 /// 		dst.fp8[i] := convert_fp16_to_fp8(__B.fp16[i])
 /// 	ELSE
 /// 		dst.fp8[i] := convert_fp16_to_fp8(__A.fp16[i - 8])
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -1495,7 +1545,7 @@ _mm_cvtnes2ph_pbf8(__m128h __A, __m128h __B) {
 ///    from \a __W instead. Resulting elements are saturated in case of an overflow.
 ///
 /// \code{.operation}
-/// FOR i := 0 to 16 
+/// FOR i := 0 to 15 
 /// 	IF __U[i]
 /// 		IF i < 8
 /// 			dst.fp8[i] := convert_fp16_to_fp8(__B.fp16[i])
@@ -1506,6 +1556,8 @@ _mm_cvtnes2ph_pbf8(__m128h __A, __m128h __B) {
 /// 		dst.fp8 := __W.fp8[i]
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -1548,6 +1600,8 @@ _mm_mask_cvtnes2ph_pbf8(__m128i __W, __mmask16 __U, __m128h __A, __m128h __B) {
 /// 		dst.fp8[i] := 0
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -1584,6 +1638,8 @@ _mm_maskz_cvtnes2ph_pbf8(__mmask16 __U, __m128h __A, __m128h __B) {
 /// 		dst.fp8[i] := convert_fp16_to_fp8(__A.fp16[i - 16])
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:256] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -1621,6 +1677,8 @@ _mm256_cvtnes2ph_pbf8(__m256h __A, __m256h __B) {
 /// 		dst.fp8[i] := __W.fp8[i]
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:256] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -1663,6 +1721,8 @@ static __inline__ __m256i __DEFAULT_FN_ATTRS256 _mm256_mask_cvtnes2ph_pbf8(
 /// 		FI
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:256] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -1698,6 +1758,8 @@ _mm256_maskz_cvtnes2ph_pbf8(__mmask32 __U, __m256h __A, __m256h __B) {
 /// 		dst.fp8[i] := convert_fp16_to_fp8(__A.fp16[i - 8])
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -1735,6 +1797,8 @@ static __inline__ __m128i __DEFAULT_FN_ATTRS128 _mm_cvtne2ph_phf8(__m128h __A,
 /// 		dst.fp8 := __W.fp8[i]
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -1777,6 +1841,8 @@ _mm_mask_cvtne2ph_phf8(__m128i __W, __mmask16 __U, __m128h __A, __m128h __B) {
 /// 		dst.fp8[i] := 0
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -1812,6 +1878,8 @@ _mm_maskz_cvtne2ph_phf8(__mmask16 __U, __m128h __A, __m128h __B) {
 /// 		dst.fp8[i] := convert_fp16_to_fp8(__A.fp16[i - 16])
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:256] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -1849,6 +1917,8 @@ _mm256_cvtne2ph_phf8(__m256h __A, __m256h __B) {
 /// 		dst.fp8[i] := __W.fp8[i]
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:256] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -1891,6 +1961,8 @@ static __inline__ __m256i __DEFAULT_FN_ATTRS256 _mm256_mask_cvtne2ph_phf8(
 /// 		FI
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:256] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -1927,6 +1999,8 @@ _mm256_maskz_cvtne2ph_phf8(__mmask32 __U, __m256h __A, __m256h __B) {
 /// 		dst.fp8[i] := convert_fp16_to_fp8(__A.fp16[i - 8])
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -1964,6 +2038,8 @@ _mm_cvtnes2ph_phf8(__m128h __A, __m128h __B) {
 /// 		dst.fp8 := __W.fp8[i]
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -2006,6 +2082,8 @@ _mm_mask_cvtnes2ph_phf8(__m128i __W, __mmask16 __U, __m128h __A, __m128h __B) {
 /// 		dst.fp8[i] := 0
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -2042,6 +2120,8 @@ _mm_maskz_cvtnes2ph_phf8(__mmask16 __U, __m128h __A, __m128h __B) {
 /// 		dst.fp8[i] := convert_fp16_to_fp8(__A.fp16[i - 16])
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:256] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -2079,6 +2159,8 @@ _mm256_cvtnes2ph_phf8(__m256h __A, __m256h __B) {
 /// 		dst.fp8[i] := __W.fp8[i]
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:256] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -2121,6 +2203,8 @@ static __inline__ __m256i __DEFAULT_FN_ATTRS256 _mm256_mask_cvtnes2ph_phf8(
 /// 		FI
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:256] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -2152,6 +2236,8 @@ _mm256_maskz_cvtnes2ph_phf8(__mmask32 __U, __m256h __A, __m256h __B) {
 /// FOR i := 0 to 7
 /// 	dst.fp16[i] := convert_fp8_to_fp16(__A.fp8[i])
 /// ENDFOR
+///
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -2181,6 +2267,8 @@ static __inline__ __m128h __DEFAULT_FN_ATTRS128 _mm_cvtnehf8_ph(__m128i __A) {
 /// 		dst.fp16[i] := __W.fp16[i]
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -2216,6 +2304,8 @@ _mm_mask_cvtnehf8_ph(__m128h __W, __mmask8 __U, __m128i __A) {
 /// 		dst.fp16[i] := 0
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -2243,6 +2333,8 @@ _mm_maskz_cvtnehf8_ph(__mmask8 __U, __m128i __A) {
 /// FOR i := 0 to 15
 /// 	dst.fp16[i] := convert_fp8_to_fp16(__A.fp8[i])
 /// ENDFOR
+///
+/// dst[MAX:256] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -2273,6 +2365,8 @@ _mm256_cvtnehf8_ph(__m128i __A) {
 /// 		dst.fp16[i] := __W.fp16[i]
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:256] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -2308,6 +2402,8 @@ _mm256_mask_cvtnehf8_ph(__m256h __W, __mmask16 __U, __m128i __A) {
 /// 		dst.fp16[i] := 0
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:256] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -2337,7 +2433,7 @@ _mm256_maskz_cvtnehf8_ph(__mmask16 __U, __m128i __A) {
 /// 	dst.fp8[i] := convert_fp16_to_fp8(__A.fp16[i])
 /// ENDFOR
 ///
-/// dst[127:64] := 0
+/// dst[MAX:64] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -2368,7 +2464,7 @@ static __inline__ __m128i __DEFAULT_FN_ATTRS128 _mm_cvtneph_pbf8(__m128h __A) {
 /// 	FI
 /// ENDFOR
 ///
-/// dst[127:64] := 0
+/// dst[MAX:64] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -2405,7 +2501,7 @@ _mm_mask_cvtneph_pbf8(__m128i __W, __mmask8 __U, __m128h __A) {
 /// 	FI
 /// ENDFOR
 ///
-/// dst[127:64] := 0
+/// dst[MAX:64] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -2434,7 +2530,7 @@ _mm_maskz_cvtneph_pbf8(__mmask8 __U, __m128h __A) {
 /// 	dst.fp8[i] := convert_fp16_to_fp8(__A.fp16[i])
 /// ENDFOR
 ///
-/// dst[255:128] := 0
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -2465,7 +2561,7 @@ _mm256_cvtneph_pbf8(__m256h __A) {
 /// 	FI
 /// ENDFOR
 ///
-/// dst[255:128] := 0
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -2501,7 +2597,7 @@ _mm256_mask_cvtneph_pbf8(__m128i __W, __mmask16 __U, __m256h __A) {
 /// 	FI
 /// ENDFOR
 ///
-/// dst[127:64] := 0
+/// dst[MAX:64] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -2531,7 +2627,7 @@ _mm256_maskz_cvtneph_pbf8(__mmask16 __U, __m256h __A) {
 /// 	dst.fp8[i] := convert_fp16_to_fp8(__A.fp16[i])
 /// ENDFOR
 ///
-/// dst[127:64] := 0
+/// dst[MAX:64] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -2562,7 +2658,7 @@ static __inline__ __m128i __DEFAULT_FN_ATTRS128 _mm_cvtnesph_pbf8(__m128h __A) {
 /// 	FI
 /// ENDFOR
 ///
-/// dst[127:64] := 0
+/// dst[MAX:64] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -2599,7 +2695,7 @@ _mm_mask_cvtnesph_pbf8(__m128i __W, __mmask8 __U, __m128h __A) {
 /// 	FI
 /// ENDFOR
 ///
-/// dst[127:64] := 0
+/// dst[MAX:64] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -2628,7 +2724,7 @@ _mm_maskz_cvtnesph_pbf8(__mmask8 __U, __m128h __A) {
 /// 	dst.fp8[i] := convert_fp16_to_fp8(__A.fp16[i])
 /// ENDFOR
 ///
-/// dst[255:128] := 0
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -2660,7 +2756,7 @@ _mm256_cvtnesph_pbf8(__m256h __A) {
 /// 	FI
 /// ENDFOR
 ///
-/// dst[255:128] := 0
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -2697,7 +2793,7 @@ _mm256_mask_cvtnesph_pbf8(__m128i __W, __mmask16 __U, __m256h __A) {
 /// 	FI
 /// ENDFOR
 ///
-/// dst[127:64] := 0
+/// dst[MAX:64] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -2727,7 +2823,7 @@ _mm256_maskz_cvtnesph_pbf8(__mmask16 __U, __m256h __A) {
 /// 	dst.fp8[i] := convert_fp16_to_fp8(__A.fp16[i])
 /// ENDFOR
 ///
-/// dst[127:64] := 0
+/// dst[MAX:64] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -2758,7 +2854,7 @@ static __inline__ __m128i __DEFAULT_FN_ATTRS128 _mm_cvtneph_phf8(__m128h __A) {
 /// 	FI
 /// ENDFOR
 ///
-/// dst[127:64] := 0
+/// dst[MAX:64] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -2795,7 +2891,7 @@ _mm_mask_cvtneph_phf8(__m128i __W, __mmask8 __U, __m128h __A) {
 /// 	FI
 /// ENDFOR
 ///
-/// dst[127:64] := 0
+/// dst[MAX:64] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -2824,7 +2920,7 @@ _mm_maskz_cvtneph_phf8(__mmask8 __U, __m128h __A) {
 /// 	dst.fp8[i] := convert_fp16_to_fp8(__A.fp16[i])
 /// ENDFOR
 ///
-/// dst[255:128] := 0
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -2855,7 +2951,7 @@ _mm256_cvtneph_phf8(__m256h __A) {
 /// 	FI
 /// ENDFOR
 ///
-/// dst[255:128] := 0
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -2891,7 +2987,7 @@ _mm256_mask_cvtneph_phf8(__m128i __W, __mmask16 __U, __m256h __A) {
 /// 	FI
 /// ENDFOR
 ///
-/// dst[127:64] := 0
+/// dst[MAX:64] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -2921,7 +3017,7 @@ _mm256_maskz_cvtneph_phf8(__mmask16 __U, __m256h __A) {
 /// 	dst.fp8[i] := convert_fp16_to_fp8(__A.fp16[i])
 /// ENDFOR
 ///
-/// dst[127:64] := 0
+/// dst[MAX:64] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -2952,7 +3048,7 @@ static __inline__ __m128i __DEFAULT_FN_ATTRS128 _mm_cvtnesph_phf8(__m128h __A) {
 /// 	FI
 /// ENDFOR
 ///
-/// dst[127:64] := 0
+/// dst[MAX:64] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -2989,7 +3085,7 @@ _mm_mask_cvtnesph_phf8(__m128i __W, __mmask8 __U, __m128h __A) {
 /// 	FI
 /// ENDFOR
 ///
-/// dst[127:64] := 0
+/// dst[MAX:64] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -3018,7 +3114,7 @@ _mm_maskz_cvtnesph_phf8(__mmask8 __U, __m128h __A) {
 /// 	dst.fp8[i] := convert_fp16_to_fp8(__A.fp16[i])
 /// ENDFOR
 ///
-/// dst[255:128] := 0
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -3050,7 +3146,7 @@ _mm256_cvtnesph_phf8(__m256h __A) {
 /// 	FI
 /// ENDFOR
 ///
-/// dst[255:128] := 0
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -3087,7 +3183,7 @@ _mm256_mask_cvtnesph_phf8(__m128i __W, __mmask16 __U, __m256h __A) {
 /// 	FI
 /// ENDFOR
 ///
-/// dst[127:64] := 0
+/// dst[MAX:64] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -3119,7 +3215,7 @@ _mm256_maskz_cvtnesph_phf8(__mmask16 __U, __m256h __A) {
 ///
 /// \headerfile <immintrin.h>
 ///
-/// This intrinsic does not corresponds to a single instruction.
+/// This intrinsic does not correspond to a single instruction.
 ///
 /// \param __A
 ///    A 128-bit vector of [16 x hf8].
@@ -3147,7 +3243,7 @@ static __inline__ __m128h __DEFAULT_FN_ATTRS128 _mm_cvtpbf8_ph(__m128i __A) {
 ///
 /// \headerfile <immintrin.h>
 ///
-/// This intrinsic does not corresponds to a single instruction.
+/// This intrinsic does not correspond to a single instruction.
 ///
 /// \param __W
 ///    A 128-bit vector of [8 x fp16].
@@ -3160,9 +3256,9 @@ static __inline__ __m128h __DEFAULT_FN_ATTRS128 _mm_cvtpbf8_ph(__m128i __A) {
 ///    (converted) elements from \a __A. If corresponding mask bit is not set, then
 ///    element from \a __W is taken instead.
 static __inline__ __m128h __DEFAULT_FN_ATTRS128
-_mm_mask_cvtpbf8_ph(__m128h __S, __mmask8 __U, __m128i __A) {
+_mm_mask_cvtpbf8_ph(__m128h __W, __mmask8 __U, __m128i __A) {
   return _mm_castsi128_ph(
-      _mm_mask_slli_epi16((__m128i)__S, __U, _mm_cvtepi8_epi16(__A), 8));
+      _mm_mask_slli_epi16((__m128i)__W, __U, _mm_cvtepi8_epi16(__A), 8));
 }
 
 /// Convert 128-bit vector \a __A, containing packed FP8 E5M2 floating-point
@@ -3182,7 +3278,7 @@ _mm_mask_cvtpbf8_ph(__m128h __S, __mmask8 __U, __m128i __A) {
 ///
 /// \headerfile <immintrin.h>
 ///
-/// This intrinsic does not corresponds to a single instruction.
+/// This intrinsic does not correspond to a single instruction.
 ///
 /// \param __U
 ///    A 8-bit zeroing mask.
@@ -3208,7 +3304,7 @@ _mm_maskz_cvtpbf8_ph(__mmask8 __U, __m128i __A) {
 ///
 /// \headerfile <immintrin.h>
 ///
-/// This intrinsic does not corresponds to a single instruction.
+/// This intrinsic does not correspond to a single instruction.
 ///
 /// \param __A
 ///    A 256-bit vector of [32 x hf8].
@@ -3236,7 +3332,7 @@ static __inline__ __m256h __DEFAULT_FN_ATTRS256 _mm256_cvtpbf8_ph(__m128i __A) {
 ///
 /// \headerfile <immintrin.h>
 ///
-/// This intrinsic does not corresponds to a single instruction.
+/// This intrinsic does not correspond to a single instruction.
 ///
 /// \param __W
 ///    A 256-bit vector of [16 x fp16].
@@ -3249,9 +3345,9 @@ static __inline__ __m256h __DEFAULT_FN_ATTRS256 _mm256_cvtpbf8_ph(__m128i __A) {
 ///    (converted) elements from \a __A. If corresponding mask bit is not set, then
 ///    element from \a __W is taken instead.
 static __inline__ __m256h __DEFAULT_FN_ATTRS256
-_mm256_mask_cvtpbf8_ph(__m256h __S, __mmask8 __U, __m128i __A) {
+_mm256_mask_cvtpbf8_ph(__m256h __W, __mmask8 __U, __m128i __A) {
   return _mm256_castsi256_ph(
-      _mm256_mask_slli_epi16((__m256i)__S, __U, _mm256_cvtepi8_epi16(__A), 8));
+      _mm256_mask_slli_epi16((__m256i)__W, __U, _mm256_cvtepi8_epi16(__A), 8));
 }
 
 /// Convert 256-bit vector \a __A, containing packed FP8 E5M2 floating-point
@@ -3271,7 +3367,7 @@ _mm256_mask_cvtpbf8_ph(__m256h __S, __mmask8 __U, __m128i __A) {
 ///
 /// \headerfile <immintrin.h>
 ///
-/// This intrinsic does not corresponds to a single instruction.
+/// This intrinsic does not correspond to a single instruction.
 ///
 /// \param __U
 ///    A 16-bit zeroing mask.
