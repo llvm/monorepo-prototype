@@ -302,10 +302,10 @@ _mm256_maskz_cvtx2ps_ph(__mmask16 __U, __m256 __A, __m256 __B) {
 ///    A 256-bit vector of [16 x half]. Lower elements correspond to the
 ///    (converted) elements from \a __B; higher order elements correspond to the
 ///    (converted) elements from \a __A.
-#define _mm256_cvtx_round2ps_ph(A, B, R)                                       \
+#define _mm256_cvtx_round2ps_ph(__A, __B, __R)                                       \
   ((__m256h)__builtin_ia32_vcvt2ps2phx256_mask(                                \
-      (__v8sf)(A), (__v8sf)(B), (__v16hf)_mm256_undefined_ph(),                \
-      (__mmask16)(-1), (const int)(R)))
+      (__v8sf)(__A), (__v8sf)(__B), (__v16hf)_mm256_undefined_ph(),                \
+      (__mmask16)(-1), (const int)(__R)))
 
 /// Convert two 256-bit vectors, \a __A and \a __B, containing packed
 ///    single-precision (32-bit) floating-point elements to a 256-bit vector
@@ -351,9 +351,9 @@ _mm256_maskz_cvtx2ps_ph(__mmask16 __U, __m256 __A, __m256 __B) {
 ///    (converted) elements from \a __B; higher order elements correspond to the
 ///    (converted) elements from \a __A. If corresponding mask bit is not set, then
 ///    element from \a __W is taken instead.
-#define _mm256_mask_cvtx_round2ps_ph(W, U, A, B, R)                            \
+#define _mm256_mask_cvtx_round2ps_ph(__W, __U, __A, __B, __R)                            \
   ((__m256h)__builtin_ia32_vcvt2ps2phx256_mask(                                \
-      (__v8sf)(A), (__v8sf)(B), (__v16hf)(W), (__mmask16)(U), (const int)(R)))
+      (__v8sf)(__A), (__v8sf)(__B), (__v16hf)(__W), (__mmask16)(__U), (const int)(__R)))
 
 /// Convert two 256-bit vectors, \a __A and \a __B, containing packed
 ///    single-precision (32-bit) floating-point elements to a 256-bit vector
@@ -396,10 +396,10 @@ _mm256_maskz_cvtx2ps_ph(__mmask16 __U, __m256 __A, __m256 __B) {
 ///    (converted) elements from \a __B; higher order elements correspond to the
 ///    (converted) elements from \a __A. If corresponding mask bit is not set,
 ///    then zero is taken instead.
-#define _mm256_maskz_cvtx_round2ps_ph(U, A, B, R)                              \
+#define _mm256_maskz_cvtx_round2ps_ph(__U, __A, __B, __R)                              \
   ((__m256h)__builtin_ia32_vcvt2ps2phx256_mask(                                \
-      (__v8sf)(A), (__v8sf)(B), (__v16hf)(_mm256_setzero_ph()),                \
-      (__mmask16)(U), (const int)(R)))
+      (__v8sf)(__A), (__v8sf)(__B), (__v16hf)(_mm256_setzero_ph()),                \
+      (__mmask16)(__U), (const int)(__R)))
 
 /// Add two 128-bit vectors, \a __A and \a __B, containing packed FP16
 ///    floating-point elements and 8-bit integers stored in the lower half of
