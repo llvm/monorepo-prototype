@@ -407,7 +407,7 @@ _mm256_maskz_cvtx2ps_ph(__mmask16 __U, __m256 __A, __m256 __B) {
 ///
 /// \code{.operation}
 /// FOR i := 0 to 7
-/// 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2i])
+/// 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2 * i])
 /// ENDFOR
 ///
 /// dst[MAX:64] := 0
@@ -439,7 +439,7 @@ _mm_cvtbiasph_pbf8(__m128i __A, __m128h __B) {
 /// \code{.operation}
 /// FOR i := 0 to 7
 /// 	IF __U[i]
-/// 		dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2i])
+/// 		dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2 * i])
 /// 	ELSE
 /// 		dst.fp8[i] := _W[i]
 /// 	FI
@@ -479,7 +479,7 @@ _mm_mask_cvtbiasph_pbf8(__m128i __W, __mmask8 __U, __m128i __A, __m128h __B) {
 /// \code{.operation}
 /// FOR i := 0 to 7
 /// 	IF __U[i]
-///	 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2i])
+///	 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2 * i])
 ///	 ELSE
 ///	 	dst.fp8[i] := 0
 ///	 FI
@@ -515,7 +515,7 @@ _mm_maskz_cvtbiasph_pbf8(__mmask8 __U, __m128i __A, __m128h __B) {
 ///
 /// \code{.operation}
 /// FOR i := 0 to 15
-/// 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2i])
+/// 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2 * i])
 /// ENDFOR
 ///
 /// dst[MAX:128] := 0
@@ -548,7 +548,7 @@ _mm256_cvtbiasph_pbf8(__m256i __A, __m256h __B) {
 /// \code{.operation}
 /// FOR i := 0 to 15
 /// 	IF __U[i]
-/// 		dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2i])
+/// 		dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2 * i])
 /// 	ELSE
 /// 		dst.fp8[i] := _W[i]
 /// 	FI
@@ -588,7 +588,7 @@ static __inline__ __m128i __DEFAULT_FN_ATTRS256 _mm256_mask_cvtbiasph_pbf8(
 /// \code{.operation}
 /// FOR i := 0 to 15
 /// 	IF __U[i]
-///	 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2i])
+///	 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2 * i])
 ///	 ELSE
 ///	 	dst.fp8[i] := 0
 ///	 FI
@@ -625,7 +625,7 @@ _mm256_maskz_cvtbiasph_pbf8(__mmask16 __U, __m256i __A, __m256h __B) {
 ///
 /// \code{.operation}
 /// FOR i := 0 to 7
-/// 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2i])
+/// 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2 * i])
 /// ENDFOR
 ///
 /// dst[MAX:64] := 0
@@ -657,7 +657,7 @@ _mm_cvtbiassph_pbf8(__m128i __A, __m128h __B) {
 /// \code{.operation}
 /// FOR i := 0 to 7
 /// 	IF __U[i]
-/// 		dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2i])
+/// 		dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2 * i])
 /// 	ELSE
 /// 		dst.fp8[i] := _W[i]
 /// 	FI
@@ -697,7 +697,7 @@ _mm_mask_cvtbiassph_pbf8(__m128i __W, __mmask8 __U, __m128i __A, __m128h __B) {
 /// \code{.operation}
 /// FOR i := 0 to 7
 /// 	IF __U[i]
-///	 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2i])
+///	 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2 * i])
 ///	 ELSE
 ///	 	dst.fp8[i] := 0
 ///	 FI
@@ -734,7 +734,7 @@ _mm_maskz_cvtbiassph_pbf8(__mmask8 __U, __m128i __A, __m128h __B) {
 ///
 /// \code{.operation}
 /// FOR i := 0 to 15
-/// 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2i])
+/// 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2 * i])
 /// ENDFOR
 ///
 /// dst[MAX:128] := 0
@@ -767,7 +767,7 @@ _mm256_cvtbiassph_pbf8(__m256i __A, __m256h __B) {
 /// \code{.operation}
 /// FOR i := 0 to 15
 /// 	IF __U[i]
-/// 		dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2i])
+/// 		dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2 * i])
 /// 	ELSE
 /// 		dst.fp8[i] := _W[i]
 /// 	FI
@@ -807,7 +807,7 @@ static __inline__ __m128i __DEFAULT_FN_ATTRS256 _mm256_mask_cvtbiassph_pbf8(
 /// \code{.operation}
 /// FOR i := 0 to 15
 /// 	IF __U[i]
-///	 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2i])
+///	 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2 * i])
 ///	 ELSE
 ///	 	dst.fp8[i] := 0
 ///	 FI
@@ -843,7 +843,7 @@ _mm256_maskz_cvtbiassph_pbf8(__mmask16 __U, __m256i __A, __m256h __B) {
 ///
 /// \code{.operation}
 /// FOR i := 0 to 7
-/// 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2i])
+/// 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2 * i])
 /// ENDFOR
 ///
 /// dst[MAX:64] := 0
@@ -875,7 +875,7 @@ _mm_cvtbiasph_phf8(__m128i __A, __m128h __B) {
 /// \code{.operation}
 /// FOR i := 0 to 7
 /// 	IF __U[i]
-/// 		dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2i])
+/// 		dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2 * i])
 /// 	ELSE
 /// 		dst.fp8[i] := _W[i]
 /// 	FI
@@ -915,7 +915,7 @@ _mm_mask_cvtbiasph_phf8(__m128i __W, __mmask8 __U, __m128i __A, __m128h __B) {
 /// \code{.operation}
 /// FOR i := 0 to 7
 /// 	IF __U[i]
-///	 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2i])
+///	 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2 * i])
 ///	 ELSE
 ///	 	dst.fp8[i] := 0
 ///	 FI
@@ -951,7 +951,7 @@ _mm_maskz_cvtbiasph_phf8(__mmask8 __U, __m128i __A, __m128h __B) {
 ///
 /// \code{.operation}
 /// FOR i := 0 to 15
-/// 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2i])
+/// 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2 * i])
 /// ENDFOR
 /// \endcode
 ///
@@ -982,7 +982,7 @@ _mm256_cvtbiasph_phf8(__m256i __A, __m256h __B) {
 /// \code{.operation}
 /// FOR i := 0 to 15
 /// 	IF __U[i]
-/// 		dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2i])
+/// 		dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2 * i])
 /// 	ELSE
 /// 		dst.fp8[i] := _W[i]
 /// 	FI
@@ -1020,7 +1020,7 @@ static __inline__ __m128i __DEFAULT_FN_ATTRS256 _mm256_mask_cvtbiasph_phf8(
 /// \code{.operation}
 /// FOR i := 0 to 15
 /// 	IF __U[i]
-///	 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2i])
+///	 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2 * i])
 ///	 ELSE
 ///	 	dst.fp8[i] := 0
 ///	 FI
@@ -1055,7 +1055,7 @@ _mm256_maskz_cvtbiasph_phf8(__mmask16 __U, __m256i __A, __m256h __B) {
 ///
 /// \code{.operation}
 /// FOR i := 0 to 7
-/// 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2i])
+/// 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2 * i])
 /// ENDFOR
 ///
 /// dst[MAX:64] := 0
@@ -1087,7 +1087,7 @@ _mm_cvtbiassph_phf8(__m128i __A, __m128h __B) {
 /// \code{.operation}
 /// FOR i := 0 to 7
 /// 	IF __U[i]
-/// 		dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2i])
+/// 		dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2 * i])
 /// 	ELSE
 /// 		dst.fp8[i] := _W[i]
 /// 	FI
@@ -1127,7 +1127,7 @@ _mm_mask_cvtbiassph_phf8(__m128i __W, __mmask8 __U, __m128i __A, __m128h __B) {
 /// \code{.operation}
 /// FOR i := 0 to 7
 /// 	IF __U[i]
-///	 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2i])
+///	 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2 * i])
 ///	 ELSE
 ///	 	dst.fp8[i] := 0
 ///	 FI
@@ -1164,7 +1164,7 @@ _mm_maskz_cvtbiassph_phf8(__mmask8 __U, __m128i __A, __m128h __B) {
 ///
 /// \code{.operation}
 /// FOR i := 0 to 15
-/// 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2i])
+/// 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2 * i])
 /// ENDFOR
 ///
 /// dst[MAX:128] := 0
@@ -1197,7 +1197,7 @@ _mm256_cvtbiassph_phf8(__m256i __A, __m256h __B) {
 /// \code{.operation}
 /// FOR i := 0 to 15
 /// 	IF __U[i]
-/// 		dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2i])
+/// 		dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2 * i])
 /// 	ELSE
 /// 		dst.fp8[i] := _W[i]
 /// 	FI
@@ -1237,7 +1237,7 @@ static __inline__ __m128i __DEFAULT_FN_ATTRS256 _mm256_mask_cvtbiassph_phf8(
 /// \code{.operation}
 /// FOR i := 0 to 15
 /// 	IF __U[i]
-///	 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2i])
+///	 	dst.fp8[i] := add_convert_fp16_to_fp8_bias(__A.fp16[i], __B.int8[2 * i])
 ///	 ELSE
 ///	 	dst.fp8[i] := 0
 ///	 FI
