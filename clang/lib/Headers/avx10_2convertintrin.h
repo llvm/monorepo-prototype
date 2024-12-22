@@ -420,7 +420,7 @@ _mm256_maskz_cvtx2ps_ph(__mmask16 __U, __m256 __A, __m256 __B) {
 /// \param __A
 ///    A 128-bit vector of [8 x half].
 /// \param __B
-///    A 128-bit vector of [8 x int16].
+///    A 128-bit vector of [8 x i16].
 /// \returns
 ///    A 128-bit vector of [16 x bf8]. Lower elements correspond to the
 ///    sum of elements from \a __A and \a __B; higher order elements are zeroed.
@@ -459,7 +459,7 @@ _mm_cvtbiasph_pbf8(__m128i __A, __m128h __B) {
 /// \param __A
 ///    A 128-bit vector of [8 x half].
 /// \param __B
-///    A 128-bit vector of [8 x int16].
+///    A 128-bit vector of [8 x i16].
 /// \returns
 ///    A 128-bit vector of [16 x bf8]. Lower elements correspond to the sum of
 ///    elements from \a __A and \a __B; higher order elements are zeroed. If
@@ -497,7 +497,7 @@ _mm_mask_cvtbiasph_pbf8(__m128i __W, __mmask8 __U, __m128i __A, __m128h __B) {
 /// \param __A
 ///    A 128-bit vector of [8 x half].
 /// \param __B
-///    A 128-bit vector of [8 x int16].
+///    A 128-bit vector of [8 x i16].
 /// \returns
 ///    A 128-bit vector of [16 x bf8]. Lower elements correspond to the sum of
 ///    elements from \a __A and \a __B; higher order elements are zeroed. If
@@ -528,7 +528,7 @@ _mm_maskz_cvtbiasph_pbf8(__mmask8 __U, __m128i __A, __m128h __B) {
 /// \param __A
 ///    A 256-bit vector of [16 x half].
 /// \param __B
-///    A 256-bit vector of [16 x int16].
+///    A 256-bit vector of [16 x i16].
 /// \returns
 ///    A 128-bit vector of [16 x bf8]. Elements correspond to the
 ///    sum of elements from \a __A and \a __B.
@@ -568,7 +568,7 @@ _mm256_cvtbiasph_pbf8(__m256i __A, __m256h __B) {
 /// \param __A
 ///    A 256-bit vector of [16 x half].
 /// \param __B
-///    A 256-bit vector of [16 x int16].
+///    A 256-bit vector of [16 x i16].
 /// \returns
 ///    A 128-bit vector of [16 x bf8]. Elements correspond to the sum of
 ///    elements from \a __A and \a __B. If corresponding mask bit is not set, then
@@ -606,7 +606,7 @@ static __inline__ __m128i __DEFAULT_FN_ATTRS256 _mm256_mask_cvtbiasph_pbf8(
 /// \param __A
 ///    A 256-bit vector of [16 x half].
 /// \param __B
-///    A 256-bit vector of [16 x int16].
+///    A 256-bit vector of [16 x i16].
 /// \returns
 ///    A 128-bit vector of [16 x bf8]. Elements correspond to the sum of
 ///    elements from \a __A and \a __B. If corresponding mask bit is not set,
@@ -638,7 +638,7 @@ _mm256_maskz_cvtbiasph_pbf8(__mmask16 __U, __m256i __A, __m256h __B) {
 /// \param __A
 ///    A 128-bit vector of [8 x half].
 /// \param __B
-///    A 128-bit vector of [8 x int16].
+///    A 128-bit vector of [8 x i16].
 /// \returns
 ///    A 128-bit vector of [16 x bf8]. Lower elements correspond to the
 ///    sum of elements from \a __A and \a __B; higher order elements are zeroed.
@@ -677,7 +677,7 @@ _mm_cvtbiassph_pbf8(__m128i __A, __m128h __B) {
 /// \param __A
 ///    A 128-bit vector of [8 x half].
 /// \param __B
-///    A 128-bit vector of [8 x int16].
+///    A 128-bit vector of [8 x i16].
 /// \returns
 ///    A 128-bit vector of [16 x bf8]. Lower elements correspond to the sum of
 ///    elements from \a __A and \a __B; higher order elements are zeroed. If
@@ -715,7 +715,7 @@ _mm_mask_cvtbiassph_pbf8(__m128i __W, __mmask8 __U, __m128i __A, __m128h __B) {
 /// \param __A
 ///    A 128-bit vector of [8 x half].
 /// \param __B
-///    A 128-bit vector of [8 x int16].
+///    A 128-bit vector of [8 x i16].
 /// \returns
 ///    A 128-bit vector of [16 x bf8]. Lower elements correspond to the sum of
 ///    elements from \a __A and \a __B; higher order elements are zeroed. If
@@ -747,7 +747,7 @@ _mm_maskz_cvtbiassph_pbf8(__mmask8 __U, __m128i __A, __m128h __B) {
 /// \param __A
 ///    A 256-bit vector of [16 x half].
 /// \param __B
-///    A 256-bit vector of [16 x int16].
+///    A 256-bit vector of [16 x i16].
 /// \returns
 ///    A 128-bit vector of [16 x bf8]. Elements correspond to the
 ///    sum of elements from \a __A and \a __B.
@@ -787,7 +787,7 @@ _mm256_cvtbiassph_pbf8(__m256i __A, __m256h __B) {
 /// \param __A
 ///    A 256-bit vector of [16 x half].
 /// \param __B
-///    A 256-bit vector of [16 x int16].
+///    A 256-bit vector of [16 x i16].
 /// \returns
 ///    A 128-bit vector of [16 x bf8]. Elements correspond to the sum of
 ///    elements from \a __A and \a __B. If corresponding mask bit is not set, then
@@ -825,7 +825,7 @@ static __inline__ __m128i __DEFAULT_FN_ATTRS256 _mm256_mask_cvtbiassph_pbf8(
 /// \param __A
 ///    A 256-bit vector of [16 x half].
 /// \param __B
-///    A 256-bit vector of [16 x int16].
+///    A 256-bit vector of [16 x i16].
 /// \returns
 ///    A 128-bit vector of [16 x bf8]. Elements correspond to the sum of
 ///    elements from \a __A and \a __B. If corresponding mask bit is not set,
@@ -856,7 +856,7 @@ _mm256_maskz_cvtbiassph_pbf8(__mmask16 __U, __m256i __A, __m256h __B) {
 /// \param __A
 ///    A 128-bit vector of [8 x half].
 /// \param __B
-///    A 128-bit vector of [8 x int16].
+///    A 128-bit vector of [8 x i16].
 /// \returns
 ///    A 128-bit vector of [16 x hf8]. Lower elements correspond to the
 ///    sum of elements from \a __A and \a __B; higher order elements are zeroed.
@@ -895,7 +895,7 @@ _mm_cvtbiasph_phf8(__m128i __A, __m128h __B) {
 /// \param __A
 ///    A 128-bit vector of [8 x half].
 /// \param __B
-///    A 128-bit vector of [8 x int16].
+///    A 128-bit vector of [8 x i16].
 /// \returns
 ///    A 128-bit vector of [16 x hf8]. Lower elements correspond to the sum of
 ///    elements from \a __A and \a __B; higher order elements are zeroed. If
@@ -933,7 +933,7 @@ _mm_mask_cvtbiasph_phf8(__m128i __W, __mmask8 __U, __m128i __A, __m128h __B) {
 /// \param __A
 ///    A 128-bit vector of [8 x half].
 /// \param __B
-///    A 128-bit vector of [8 x int16].
+///    A 128-bit vector of [8 x i16].
 /// \returns
 ///    A 128-bit vector of [16 x hf8]. Lower elements correspond to the sum of
 ///    elements from \a __A and \a __B; higher order elements are zeroed. If
@@ -962,7 +962,7 @@ _mm_maskz_cvtbiasph_phf8(__mmask8 __U, __m128i __A, __m128h __B) {
 /// \param __A
 ///    A 256-bit vector of [16 x half].
 /// \param __B
-///    A 256-bit vector of [16 x int16].
+///    A 256-bit vector of [16 x i16].
 /// \returns
 ///    A 128-bit vector of [16 x hf8]. Elements correspond to the
 ///    sum of elements from \a __A and \a __B.
@@ -1000,7 +1000,7 @@ _mm256_cvtbiasph_phf8(__m256i __A, __m256h __B) {
 /// \param __A
 ///    A 256-bit vector of [16 x half].
 /// \param __B
-///    A 256-bit vector of [16 x int16].
+///    A 256-bit vector of [16 x i16].
 /// \returns
 ///    A 128-bit vector of [16 x hf8]. Elements correspond to the sum of
 ///    elements from \a __A and \a __B. If corresponding mask bit is not set, then
@@ -1036,7 +1036,7 @@ static __inline__ __m128i __DEFAULT_FN_ATTRS256 _mm256_mask_cvtbiasph_phf8(
 /// \param __A
 ///    A 256-bit vector of [16 x half].
 /// \param __B
-///    A 256-bit vector of [16 x int16].
+///    A 256-bit vector of [16 x i16].
 /// \returns
 ///    A 128-bit vector of [16 x hf8]. Elements correspond to the sum of
 ///    elements from \a __A and \a __B. If corresponding mask bit is not set,
@@ -1068,7 +1068,7 @@ _mm256_maskz_cvtbiasph_phf8(__mmask16 __U, __m256i __A, __m256h __B) {
 /// \param __A
 ///    A 128-bit vector of [8 x half].
 /// \param __B
-///    A 128-bit vector of [8 x int16].
+///    A 128-bit vector of [8 x i16].
 /// \returns
 ///    A 128-bit vector of [16 x hf8]. Lower elements correspond to the
 ///    sum of elements from \a __A and \a __B; higher order elements are zeroed.
@@ -1107,7 +1107,7 @@ _mm_cvtbiassph_phf8(__m128i __A, __m128h __B) {
 /// \param __A
 ///    A 128-bit vector of [8 x half].
 /// \param __B
-///    A 128-bit vector of [8 x int16].
+///    A 128-bit vector of [8 x i16].
 /// \returns
 ///    A 128-bit vector of [16 x hf8]. Lower elements correspond to the sum of
 ///    elements from \a __A and \a __B; higher order elements are zeroed. If
@@ -1145,7 +1145,7 @@ _mm_mask_cvtbiassph_phf8(__m128i __W, __mmask8 __U, __m128i __A, __m128h __B) {
 /// \param __A
 ///    A 128-bit vector of [8 x half].
 /// \param __B
-///    A 128-bit vector of [8 x int16].
+///    A 128-bit vector of [8 x i16].
 /// \returns
 ///    A 128-bit vector of [16 x hf8]. Lower elements correspond to the sum of
 ///    elements from \a __A and \a __B; higher order elements are zeroed. If
@@ -1177,7 +1177,7 @@ _mm_maskz_cvtbiassph_phf8(__mmask8 __U, __m128i __A, __m128h __B) {
 /// \param __A
 ///    A 256-bit vector of [16 x half].
 /// \param __B
-///    A 256-bit vector of [16 x int16].
+///    A 256-bit vector of [16 x i16].
 /// \returns
 ///    A 128-bit vector of [16 x hf8]. Elements correspond to the
 ///    sum of elements from \a __A and \a __B.
@@ -1217,7 +1217,7 @@ _mm256_cvtbiassph_phf8(__m256i __A, __m256h __B) {
 /// \param __A
 ///    A 256-bit vector of [16 x half].
 /// \param __B
-///    A 256-bit vector of [16 x int16].
+///    A 256-bit vector of [16 x i16].
 /// \returns
 ///    A 128-bit vector of [16 x hf8]. Elements correspond to the sum of
 ///    elements from \a __A and \a __B. If corresponding mask bit is not set, then
@@ -1255,7 +1255,7 @@ static __inline__ __m128i __DEFAULT_FN_ATTRS256 _mm256_mask_cvtbiassph_phf8(
 /// \param __A
 ///    A 256-bit vector of [16 x half].
 /// \param __B
-///    A 256-bit vector of [16 x int16].
+///    A 256-bit vector of [16 x i16].
 /// \returns
 ///    A 128-bit vector of [16 x hf8]. Elements correspond to the sum of
 ///    elements from \a __A and \a __B. If corresponding mask bit is not set,
