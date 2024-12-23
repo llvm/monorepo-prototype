@@ -6548,6 +6548,8 @@ ProcessDeclAttribute(Sema &S, Scope *scope, Decl *D, const ParsedAttr &AL,
                ? (unsigned)diag::err_keyword_not_supported_on_target
            : AL.isDeclspecAttribute()
                ? (unsigned)diag::warn_unhandled_ms_attribute_ignored
+           : AL.getScopeName()
+               ? (unsigned)diag::ext_unknown_attribute_ignored
                : (unsigned)diag::warn_unknown_attribute_ignored)
         << AL << AL.getRange();
     return;
