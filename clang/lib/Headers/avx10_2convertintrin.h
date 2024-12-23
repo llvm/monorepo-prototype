@@ -38,8 +38,9 @@
 /// 		dst.fp16[i] := convert_fp32_to_fp16(__A.fp32[i - 4])
 /// 	FI
 ///
-/// dst[MAX:127] := 0
 /// ENDFOR
+///
+/// dst[MAX:127] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -76,9 +77,9 @@ static __inline__ __m128h __DEFAULT_FN_ATTRS128 _mm_cvtx2ps_ph(__m128 __A,
 /// 	ELSE
 /// 		dst.fp16[i] := __W.fp16[i]
 /// 	FI
+/// ENDFOR
 ///
 /// dst[MAX:127] := 0
-/// ENDFOR
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -953,6 +954,8 @@ _mm_maskz_cvtbiasph_phf8(__mmask8 __U, __m128i __A, __m128h __B) {
 /// FOR i := 0 to 15
 /// 	dst.fp8[i] := add_fp16_int8_convert_to_hf8(__A.fp16[i], __B.int8[2 * i])
 /// ENDFOR
+///
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -987,6 +990,8 @@ _mm256_cvtbiasph_phf8(__m256i __A, __m256h __B) {
 /// 		dst.fp8[i] := _W[i]
 /// 	FI
 /// ENDFOR
+///
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -1025,6 +1030,8 @@ static __inline__ __m128i __DEFAULT_FN_ATTRS256 _mm256_mask_cvtbiasph_phf8(
 ///	 	dst.fp8[i] := 0
 ///	 FI
 /// ENDFOR
+///
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -3347,7 +3354,7 @@ static __inline__ __m256h __DEFAULT_FN_ATTRS256 _mm256_cvtpbf8_ph(__m128i __A) {
 ///    (converted) elements from \a __A. If corresponding mask bit is not set, then
 ///    element from \a __W is taken instead.
 static __inline__ __m256h __DEFAULT_FN_ATTRS256
-_mm256_mask_cvtpbf8_ph(__m256h __W, __mmask8 __U, __m128i __A) {
+_mm256_mask_cvtpbf8_ph(__m256h __W, __mmask16 __U, __m128i __A) {
   return _mm256_castsi256_ph(
       _mm256_mask_slli_epi16((__m256i)__W, __U, _mm256_cvtepi8_epi16(__A), 8));
 }
@@ -3380,7 +3387,7 @@ _mm256_mask_cvtpbf8_ph(__m256h __W, __mmask8 __U, __m128i __A) {
 ///    (converted) elements from \a __A. If corresponding mask bit is not set, then
 ///    zero is taken instead.
 static __inline__ __m256h __DEFAULT_FN_ATTRS256
-_mm256_maskz_cvtpbf8_ph(__mmask8 __U, __m128i __A) {
+_mm256_maskz_cvtpbf8_ph(__mmask16 __U, __m128i __A) {
   return _mm256_castsi256_ph(
       _mm256_slli_epi16(_mm256_maskz_cvtepi8_epi16(__U, __A), 8));
 }
