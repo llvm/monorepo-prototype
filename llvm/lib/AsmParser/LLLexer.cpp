@@ -704,7 +704,10 @@ lltok::Kind LLLexer::LexIdentifier() {
   KEYWORD(errnomem);
   KEYWORD(argmemonly);
   KEYWORD(inaccessiblememonly);
+  KEYWORD(errnomemonly);
   KEYWORD(inaccessiblemem_or_argmemonly);
+  KEYWORD(inaccessiblemem_or_errnomemonly);
+  KEYWORD(inaccessiblemem_or_argmem_or_errnomemonly);
 
   // nofpclass attribute
   KEYWORD(all);

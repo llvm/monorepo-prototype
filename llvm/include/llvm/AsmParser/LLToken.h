@@ -207,6 +207,8 @@ enum Kind {
   kw_argmemonly,
   kw_inaccessiblememonly,
   kw_inaccessiblemem_or_argmemonly,
+  kw_inaccessiblemem_or_errnomemonly,
+  kw_inaccessiblemem_or_argmem_or_errnomemonly,
   kw_errnomemonly,
 
   // nofpclass attribute:

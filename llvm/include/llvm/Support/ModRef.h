@@ -156,6 +156,27 @@ public:
     return FRMB;
   }
 
+  /// Create MemoryEffectsBase that can only access inaccessible or errno
+  /// memory.
+  static MemoryEffectsBase
+  inaccessibleOrErrnoMemOnly(ModRefInfo MR = ModRefInfo::ModRef) {
+    MemoryEffectsBase FRMB = none();
+    FRMB.setModRef(Location::ErrnoMem, MR);
+    FRMB.setModRef(Location::InaccessibleMem, MR);
+    return FRMB;
+  }
+
+  /// Create MemoryEffectsBase that can only access inaccessible, argument or
+  /// errno memory.
+  static MemoryEffectsBase
+  inaccessibleOrArgOrErrnoMemOnly(ModRefInfo MR = ModRefInfo::ModRef) {
+    MemoryEffectsBase FRMB = none();
+    FRMB.setModRef(Location::ArgMem, MR);
+    FRMB.setModRef(Location::ErrnoMem, MR);
+    FRMB.setModRef(Location::InaccessibleMem, MR);
+    return FRMB;
+  }
+
   /// Create MemoryEffectsBase from an encoded integer value (used by memory
   /// attribute).
   static MemoryEffectsBase createFromIntValue(uint32_t Data) {
@@ -234,6 +255,23 @@ public:
   bool onlyAccessesInaccessibleOrArgMem() const {
     return getWithoutLoc(Location::InaccessibleMem)
         .getWithoutLoc(Location::ArgMem)
+        .doesNotAccessMemory();
+  }
+
+  /// Whether this function only (at most) accesses inaccessible and errno
+  /// memory.
+  bool onlyAccessesInaccessibleOrErrnoMem() const {
+    return getWithoutLoc(Location::InaccessibleMem)
+        .getWithoutLoc(Location::ErrnoMem)
+        .doesNotAccessMemory();
+  }
+
+  /// Whether this function only (at most) accesses inaccessible, argument and
+  /// errno memory.
+  bool onlyAccessesInaccessibleOrArgOrErrnoMem() const {
+    return getWithoutLoc(Location::InaccessibleMem)
+        .getWithoutLoc(Location::ArgMem)
+        .getWithoutLoc(Location::ErrnoMem)
         .doesNotAccessMemory();
   }
 

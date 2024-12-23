@@ -1674,6 +1674,12 @@ static bool upgradeMemoryAttr(MemoryEffects &ME, lltok::Kind Kind) {
   case lltok::kw_inaccessiblemem_or_argmemonly:
     ME &= MemoryEffects::inaccessibleOrArgMemOnly();
     return true;
+  case lltok::kw_inaccessiblemem_or_errnomemonly:
+    ME &= MemoryEffects::inaccessibleOrErrnoMemOnly();
+    return true;
+  case lltok::kw_inaccessiblemem_or_argmem_or_errnomemonly:
+    ME &= MemoryEffects::inaccessibleOrArgOrErrnoMemOnly();
+    return true;
   default:
     return false;
   }

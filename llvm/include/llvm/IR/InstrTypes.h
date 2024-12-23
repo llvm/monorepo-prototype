@@ -1916,6 +1916,17 @@ public:
   bool onlyAccessesInaccessibleMemOrArgMem() const;
   void setOnlyAccessesInaccessibleMemOrArgMem();
 
+  /// Determine if the function may only access memory that is
+  ///  either inaccessible from the IR or errno memory.
+  bool onlyAccessesInaccessibleMemOrErrnoMem() const;
+  void setOnlyAccessesInaccessibleMemOrErrnoMem();
+
+  /// Determine if the function may only access memory that is
+  ///  either inaccessible from the IR, pointed to by its arguments, or errno
+  ///  memory.
+  bool onlyAccessesInaccessibleMemOrArgMemOrErrnoMem() const;
+  void setOnlyAccessesInaccessibleMemOrArgMemOrErrnoMem();
+
   /// Determine if the call cannot return.
   bool doesNotReturn() const { return hasFnAttr(Attribute::NoReturn); }
   void setDoesNotReturn() { addFnAttr(Attribute::NoReturn); }
