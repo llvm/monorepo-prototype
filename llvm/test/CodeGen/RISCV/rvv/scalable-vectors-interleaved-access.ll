@@ -507,6 +507,113 @@ define {<vscale x 2 x i32>, <vscale x 2 x i32>, <vscale x 2 x i32>, <vscale x 2 
   ret { <vscale x 2 x i32>, <vscale x 2 x i32>, <vscale x 2 x i32>, <vscale x 2 x i32> } %res3
 }
 
+; We should not transform this function because the expression is not a balanced tree.
+define {<vscale x 4 x i32>, <vscale x 2 x i32>, <vscale x 1 x i32>, <vscale x 1 x i32>} @not_balanced_load_tree(ptr %ptr, i32 %rvl) {
+; RV32-LABEL: not_balanced_load_tree:
+; RV32:       # %bb.0:
+; RV32-NEXT:    vsetvli zero, a1, e32, m4, ta, ma
+; RV32-NEXT:    vle32.v v12, (a0)
+; RV32-NEXT:    li a0, 32
+; RV32-NEXT:    vsetvli a1, zero, e32, m2, ta, ma
+; RV32-NEXT:    vnsrl.wx v8, v12, a0
+; RV32-NEXT:    vnsrl.wi v16, v12, 0
+; RV32-NEXT:    vsetvli a1, zero, e32, m1, ta, ma
+; RV32-NEXT:    vnsrl.wi v10, v16, 0
+; RV32-NEXT:    vnsrl.wx v11, v16, a0
+; RV32-NEXT:    vsetvli a1, zero, e32, mf2, ta, ma
+; RV32-NEXT:    vnsrl.wx v12, v11, a0
+; RV32-NEXT:    vnsrl.wi v11, v11, 0
+; RV32-NEXT:    ret
+;
+; RV64-LABEL: not_balanced_load_tree:
+; RV64:       # %bb.0:
+; RV64-NEXT:    slli a1, a1, 32
+; RV64-NEXT:    srli a1, a1, 32
+; RV64-NEXT:    vsetvli zero, a1, e32, m4, ta, ma
+; RV64-NEXT:    vle32.v v12, (a0)
+; RV64-NEXT:    li a0, 32
+; RV64-NEXT:    vsetvli a1, zero, e32, m2, ta, ma
+; RV64-NEXT:    vnsrl.wx v8, v12, a0
+; RV64-NEXT:    vnsrl.wi v16, v12, 0
+; RV64-NEXT:    vsetvli a1, zero, e32, m1, ta, ma
+; RV64-NEXT:    vnsrl.wi v10, v16, 0
+; RV64-NEXT:    vnsrl.wx v11, v16, a0
+; RV64-NEXT:    vsetvli a1, zero, e32, mf2, ta, ma
+; RV64-NEXT:    vnsrl.wx v12, v11, a0
+; RV64-NEXT:    vnsrl.wi v11, v11, 0
+; RV64-NEXT:    ret
+  %wide.masked.load = call <vscale x 8 x i32> @llvm.vp.load.nxv8i32.p0(ptr %ptr, <vscale x 8 x i1> shufflevector (<vscale x 8 x i1> insertelement (<vscale x 8 x i1> poison, i1 true, i32 0), <vscale x 8 x i1> poison, <vscale x 8 x i32> zeroinitializer), i32 %rvl)
+  %d0 = call { <vscale x 4 x i32>, <vscale x 4 x i32> } @llvm.vector.deinterleave2.nxv8i32(<vscale x 8 x i32> %wide.masked.load)
+  %d0.0 = extractvalue { <vscale x 4 x i32>, <vscale x 4 x i32> } %d0, 0
+  %t0 = extractvalue { <vscale x 4 x i32>, <vscale x 4 x i32> } %d0, 1
+  %d1 = call { <vscale x 2 x i32>, <vscale x 2 x i32> } @llvm.vector.deinterleave2.nxv4i32(<vscale x 4 x i32> %d0.0)
+  %t1 = extractvalue { <vscale x 2 x i32>, <vscale x 2 x i32> } %d1, 0
+  %d1.1 = extractvalue { <vscale x 2 x i32>, <vscale x 2 x i32> } %d1, 1
+  %d2 = call { <vscale x 1 x i32>, <vscale x 1 x i32> } @llvm.vector.deinterleave2.nxv4i32(<vscale x 2 x i32> %d1.1)
+  %t2 = extractvalue { <vscale x 1 x i32>, <vscale x 1 x i32> } %d2, 0
+  %t3 = extractvalue { <vscale x 1 x i32>, <vscale x 1 x i32> } %d2, 1
+
+  %res0 = insertvalue { <vscale x 4 x i32>, <vscale x 2 x i32>, <vscale x 1 x i32>, <vscale x 1 x i32> } undef, <vscale x 4 x i32> %t0, 0
+  %res1 = insertvalue { <vscale x 4 x i32>, <vscale x 2 x i32>, <vscale x 1 x i32>, <vscale x 1 x i32> } %res0, <vscale x 2 x i32> %t1, 1
+  %res2 = insertvalue { <vscale x 4 x i32>, <vscale x 2 x i32>, <vscale x 1 x i32>, <vscale x 1 x i32> } %res1, <vscale x 1 x i32> %t2, 2
+  %res3 = insertvalue { <vscale x 4 x i32>, <vscale x 2 x i32>, <vscale x 1 x i32>, <vscale x 1 x i32> } %res2, <vscale x 1 x i32> %t3, 3
+  ret { <vscale x 4 x i32>, <vscale x 2 x i32>, <vscale x 1 x i32>, <vscale x 1 x i32> } %res3
+}
+
+define void @not_balanced_store_tree(<vscale x 1 x i32> %v0, <vscale x 2 x i32> %v1, <vscale x 4 x i32> %v2, ptr %ptr, i32 %rvl) {
+; RV32-LABEL: not_balanced_store_tree:
+; RV32:       # %bb.0:
+; RV32-NEXT:    vsetvli a2, zero, e32, mf2, ta, ma
+; RV32-NEXT:    vwaddu.vv v12, v8, v8
+; RV32-NEXT:    li a2, -1
+; RV32-NEXT:    csrr a3, vlenb
+; RV32-NEXT:    vwmaccu.vx v12, a2, v8
+; RV32-NEXT:    srli a3, a3, 3
+; RV32-NEXT:    vsetvli a4, zero, e32, m1, ta, ma
+; RV32-NEXT:    vslidedown.vx v8, v12, a3
+; RV32-NEXT:    add a4, a3, a3
+; RV32-NEXT:    vsetvli zero, a4, e32, m1, ta, ma
+; RV32-NEXT:    vslideup.vx v12, v8, a3
+; RV32-NEXT:    vsetvli a3, zero, e32, m1, ta, ma
+; RV32-NEXT:    vwaddu.vv v14, v12, v9
+; RV32-NEXT:    vwmaccu.vx v14, a2, v9
+; RV32-NEXT:    vsetvli a3, zero, e32, m2, ta, ma
+; RV32-NEXT:    vwaddu.vv v16, v14, v10
+; RV32-NEXT:    vwmaccu.vx v16, a2, v10
+; RV32-NEXT:    vsetvli zero, a1, e32, m4, ta, ma
+; RV32-NEXT:    vse32.v v16, (a0)
+; RV32-NEXT:    ret
+;
+; RV64-LABEL: not_balanced_store_tree:
+; RV64:       # %bb.0:
+; RV64-NEXT:    vsetvli a2, zero, e32, mf2, ta, ma
+; RV64-NEXT:    vwaddu.vv v12, v8, v8
+; RV64-NEXT:    li a2, -1
+; RV64-NEXT:    csrr a3, vlenb
+; RV64-NEXT:    slli a1, a1, 32
+; RV64-NEXT:    vwmaccu.vx v12, a2, v8
+; RV64-NEXT:    srli a3, a3, 3
+; RV64-NEXT:    vsetvli a4, zero, e32, m1, ta, ma
+; RV64-NEXT:    vslidedown.vx v8, v12, a3
+; RV64-NEXT:    add a4, a3, a3
+; RV64-NEXT:    vsetvli zero, a4, e32, m1, ta, ma
+; RV64-NEXT:    vslideup.vx v12, v8, a3
+; RV64-NEXT:    vsetvli a3, zero, e32, m1, ta, ma
+; RV64-NEXT:    vwaddu.vv v14, v12, v9
+; RV64-NEXT:    vwmaccu.vx v14, a2, v9
+; RV64-NEXT:    vsetvli a3, zero, e32, m2, ta, ma
+; RV64-NEXT:    vwaddu.vv v16, v14, v10
+; RV64-NEXT:    vwmaccu.vx v16, a2, v10
+; RV64-NEXT:    srli a1, a1, 32
+; RV64-NEXT:    vsetvli zero, a1, e32, m4, ta, ma
+; RV64-NEXT:    vse32.v v16, (a0)
+; RV64-NEXT:    ret
+  %interleaved.vec0 = call <vscale x 2 x i32> @llvm.vector.interleave2.nxv2i32(<vscale x 1 x i32> %v0, <vscale x 1 x i32> %v0)
+  %interleaved.vec1 = call <vscale x 4 x i32> @llvm.vector.interleave2.nxv2i32(<vscale x 2 x i32> %interleaved.vec0, <vscale x 2 x i32> %v1)
+  %interleaved.vec2 = call <vscale x 8 x i32> @llvm.vector.interleave2.nxv4i32(<vscale x 4 x i32> %interleaved.vec1, <vscale x 4 x i32> %v2)
+  call void @llvm.vp.store.nxv8i32.p0(<vscale x 8 x i32> %interleaved.vec2, ptr %ptr, <vscale x 8 x i1> shufflevector (<vscale x 8 x i1> insertelement (<vscale x 8 x i1> poison, i1 true, i32 0), <vscale x 8 x i1> poison, <vscale x 8 x i32> zeroinitializer), i32 %rvl)
+  ret void
+}
 
 ;; NOTE: These prefixes are unused and the list is autogenerated. Do not add tests below this line:
 ; CHECK: {{.*}}

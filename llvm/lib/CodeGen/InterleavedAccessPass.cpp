@@ -257,7 +257,7 @@ static bool isReInterleaveMask(ShuffleVectorInst *SVI, unsigned &Factor,
 //        |
 //     A B C D
 //
-//  We will get ABCD at the end while the leave operands/results
+//  We will get ABCD at the end while the leaf operands/results
 //  are ACBD, which are also what we initially collected in
 //  getVectorInterleaveFactor / getVectorDeinterleaveFactor. But TLI
 //  hooks (e.g. lowerInterleavedScalableLoad) expect ABCD, so we need
@@ -311,6 +311,11 @@ static unsigned getVectorInterleaveFactor(IntrinsicInst *II,
           continue;
         }
 
+      // If this is not a perfectly balanced tree, the leaf
+      // result types would be different.
+      if (!Operands.empty() && Op->getType() != Operands.back()->getType())
+        return 0;
+
       ++Factor;
       Operands.push_back(Op);
     }
@@ -318,11 +323,11 @@ static unsigned getVectorInterleaveFactor(IntrinsicInst *II,
 
   // Currently we only recognize power-of-two factors.
   // FIXME: should we assert here instead?
-  if (Factor > 1 && isPowerOf2_32(Factor)) {
-    interleaveLeafValues(Operands);
-    return Factor;
-  }
-  return 0;
+  if (Factor <= 1 || !isPowerOf2_32(Factor))
+    return 0;
+
+  interleaveLeafValues(Operands);
+  return Factor;
 }
 
 /// Check the interleaved mask
@@ -367,7 +372,7 @@ static unsigned getVectorDeInterleaveFactor(IntrinsicInst *II,
 
     unsigned VisitedIdx = 0;
     for (User *Usr : Current->users()) {
-      // We're playing safe here and matches only the expression
+      // We're playing safe here and matching only the expression
       // consisting of a perfectly balanced binary tree in which all
       // intermediate values are only used once.
       if (!Usr->hasOneUse() || !isa<ExtractValueInst>(Usr))
@@ -379,10 +384,10 @@ static unsigned getVectorDeInterleaveFactor(IntrinsicInst *II,
         return 0;
 
       // The idea is that we don't want to have two extractvalue
-      // on the same index. So we XOR (index + 1) onto VisitedIdx
+      // on the same index. So we XOR (1 << index) onto VisitedIdx
       // such that if there is any duplication, VisitedIdx will be
       // zero.
-      VisitedIdx ^= Indices[0] + 1;
+      VisitedIdx ^= (1 << Indices[0]);
       if (!VisitedIdx)
         return 0;
       // We have a legal index. At this point we're either going
@@ -403,15 +408,20 @@ static unsigned getVectorDeInterleaveFactor(IntrinsicInst *II,
                 m_Intrinsic<Intrinsic::vector_deinterleave2>()) &&
           EV->user_back()->hasNUses(2)) {
         auto *EVUsr = cast<IntrinsicInst>(EV->user_back());
-        if (SwapWithLast)
+        if (SwapWithLast && !Queue.empty())
           Queue.insert(Queue.end() - 1, EVUsr);
         else
           Queue.push_back(EVUsr);
         continue;
       }
 
+      // If this is not a perfectly balanced tree, the leaf
+      // result types would be different.
+      if (!Results.empty() && EV->getType() != Results.back()->getType())
+        return 0;
+
       // Save the leaf value.
-      if (SwapWithLast)
+      if (SwapWithLast && !Results.empty())
         Results.insert(Results.end() - 1, EV);
       else
         Results.push_back(EV);
@@ -422,11 +432,11 @@ static unsigned getVectorDeInterleaveFactor(IntrinsicInst *II,
 
   // Currently we only recognize power-of-two factors.
   // FIXME: should we assert here instead?
-  if (Factor > 1 && isPowerOf2_32(Factor)) {
-    interleaveLeafValues(Results);
-    return Factor;
-  }
-  return 0;
+  if (Factor <= 1 || !isPowerOf2_32(Factor))
+    return 0;
+
+  interleaveLeafValues(Results);
+  return Factor;
 }
 
 bool InterleavedAccessImpl::lowerInterleavedLoad(
