@@ -3740,10 +3740,7 @@ struct OmpVariableCategory {
 
 // --- Clauses
 
-struct OmpDirectiveNameEntry {
-  WRAPPER_CLASS_BOILERPLATE(OmpDirectiveNameEntry, llvm::omp::Directive);
-};
-using OmpDirectiveList = std::list<OmpDirectiveNameEntry>;
+using OmpDirectiveList = std::list<llvm::omp::Directive>;
 
 // Ref: [5.2:214]
 //
@@ -3995,10 +3992,9 @@ struct OmpGrainsizeClause {
 // Ref: [5.2: 214]
 //
 // holds-clause ->
-//   HOLDS(expr[, expr])
+//   HOLDS(expr)
 struct OmpHoldsClause {
-  using ExprList = std::list<common::Indirection<Expr>>;
-  WRAPPER_CLASS_BOILERPLATE(OmpHoldsClause, ExprList);
+  WRAPPER_CLASS_BOILERPLATE(OmpHoldsClause, common::Indirection<Expr>);
 };
 
 // Ref: [5.2:72-73], in 4.5-5.1 it's scattered over individual directives
@@ -4230,15 +4226,20 @@ struct OpenMPAssumeConstruct {
   CharBlock source;
 };
 
-struct OmpAssumesDirective {
-  TUPLE_CLASS_BOILERPLATE(OmpAssumesDirective);
+struct OpenMPAssumesConstruct {
+  TUPLE_CLASS_BOILERPLATE(OpenMPAssumesConstruct);
+  std::tuple<Verbatim, OmpClauseList> t;
+  CharBlock source;
+};
+
+struct OmpBeginAssumesDirective {
+  TUPLE_CLASS_BOILERPLATE(OmpBeginAssumesDirective);
   std::tuple<Verbatim, OmpClauseList> t;
   CharBlock source;
 };
 
 struct OmpEndAssumesDirective {
-  TUPLE_CLASS_BOILERPLATE(OmpEndAssumesDirective);
-  std::tuple<Verbatim> t;
+  WRAPPER_CLASS_BOILERPLATE(OmpEndAssumesDirective, Verbatim);
   CharBlock source;
 };
 
@@ -4249,9 +4250,9 @@ struct OpenMPAssumesPartConstruct {
   CharBlock source;
 };
 
-struct OpenMPAssumesConstruct {
-  TUPLE_CLASS_BOILERPLATE(OpenMPAssumesConstruct);
-  std::tuple<OmpAssumesDirective, OpenMPAssumesPartConstruct,
+struct OpenMPBeginAssumesConstruct {
+  TUPLE_CLASS_BOILERPLATE(OpenMPBeginAssumesConstruct);
+  std::tuple<OmpBeginAssumesDirective, OpenMPAssumesPartConstruct,
       OmpEndAssumesDirective>
       t;
   CharBlock source;
@@ -4390,10 +4391,10 @@ struct OpenMPDeclarativeAllocate {
 struct OpenMPDeclarativeConstruct {
   UNION_CLASS_BOILERPLATE(OpenMPDeclarativeConstruct);
   CharBlock source;
-  std::variant<OpenMPDeclarativeAllocate, OpenMPDeclareMapperConstruct,
-      OpenMPDeclareReductionConstruct, OpenMPDeclareSimdConstruct,
-      OpenMPDeclareTargetConstruct, OpenMPThreadprivate,
-      OpenMPRequiresConstruct>
+  std::variant<OpenMPDeclarativeAllocate, OpenMPAssumesConstruct,
+      OpenMPDeclareMapperConstruct, OpenMPDeclareReductionConstruct,
+      OpenMPDeclareSimdConstruct, OpenMPDeclareTargetConstruct,
+      OpenMPThreadprivate, OpenMPRequiresConstruct>
       u;
 };
 
@@ -4663,7 +4664,8 @@ struct OpenMPConstruct {
       OpenMPSectionConstruct, OpenMPLoopConstruct, OpenMPBlockConstruct,
       OpenMPAtomicConstruct, OpenMPDeclarativeAllocate, OpenMPErrorConstruct,
       OpenMPExecutableAllocate, OpenMPAllocatorsConstruct,
-      OpenMPAssumeConstruct, OpenMPAssumesConstruct, OpenMPCriticalConstruct>
+      OpenMPAssumeConstruct, OpenMPBeginAssumesConstruct,
+      OpenMPCriticalConstruct>
       u;
 };
 

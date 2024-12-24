@@ -2074,10 +2074,10 @@ public:
                   },
         x.u);
   }
-  void Unparse(const OmpDirectiveNameModifier &x) {
-    Word(llvm::omp::getOpenMPDirectiveName(x.v));
+  void Unparse(const llvm::omp::Directive &x) {
+    Word(llvm::omp::getOpenMPDirectiveName(x));
   }
-  void Unparse(const OmpDirectiveNameEntry &x) {
+  void Unparse(const OmpDirectiveNameModifier &x) {
     Word(llvm::omp::getOpenMPDirectiveName(x.v));
   }
   void Unparse(const OmpIteratorSpecifier &x) {
@@ -2602,6 +2602,18 @@ public:
     Put("\n");
     EndOpenMP();
   }
+  void Unparse(const OmpBeginAssumesDirective &x) {
+    BeginOpenMP();
+    Word("!$OMP BEGIN ASSUMES");
+    Walk(std::get<OmpClauseList>(x.t), ", ");
+    Put("\n");
+    EndOpenMP();
+  }
+  void Unparse(const OmpEndAssumesDirective &x) {
+    BeginOpenMP();
+    Word("!$OMP END ASSUMES\n");
+    EndOpenMP();
+  }
   void Unparse(const OmpCriticalDirective &x) {
     BeginOpenMP();
     Word("!$OMP CRITICAL");
@@ -2655,6 +2667,13 @@ public:
     Word("!$OMP ");
     return common::visit(
         common::visitors{
+            [&](const OpenMPAssumesConstruct &z) {
+              Word("ASSUMES ");
+              Walk(std::get<OmpClauseList>(z.t));
+              Put("\n");
+              EndOpenMP();
+              return false;
+            },
             [&](const OpenMPDeclarativeAllocate &z) {
               Word("ALLOCATE (");
               Walk(std::get<OmpObjectList>(z.t));
