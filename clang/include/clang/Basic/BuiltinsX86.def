@@ -31,10 +31,13 @@
 // All MMX instructions will be generated via builtins. Any MMX vector
 // types (<1 x i64>, <2 x i32>, etc.) that aren't used by these builtins will be
 // expanded by the back-end.
+//
 // FIXME: _mm_prefetch must be a built-in because it takes a compile-time constant
 // argument and our prior approach of using a #define to the current built-in
 // doesn't work in the presence of re-declaration of _mm_prefetch for windows.
-TARGET_BUILTIN(_mm_prefetch, "vcC*i", "nc", "mmx")
+TARGET_HEADER_BUILTIN(_mm_prefetch, "vcC*i", "nc", IMMINTRIN_H, ALL_LANGUAGES, "mmx")
+TARGET_HEADER_BUILTIN(_m_prefetch, "vv*", "nc", INTRIN_H, ALL_LANGUAGES, "")
+TARGET_HEADER_BUILTIN(_m_prefetchw, "vvDC*", "nc", INTRIN_H, ALL_LANGUAGES, "")
 
 // SSE intrinsics.
 
