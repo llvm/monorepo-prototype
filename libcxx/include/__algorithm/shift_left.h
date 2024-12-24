@@ -36,7 +36,7 @@ _LIBCPP_HIDE_FROM_ABI constexpr pair<_Iter, _Iter> __shift_left(
 
   if (__n == 0) {
     _Iter __end = _IterOps<_AlgPolicy>::next(__first, __last);
-    return {__first, __end};
+    return {std::move(__first), std::move(__end)};
   }
 
   _Iter __m = __first;
