@@ -1414,7 +1414,7 @@ llvm.func @omp_atomic_update(%x:!llvm.ptr, %expr: i32, %xbool: !llvm.ptr, %exprb
 //CHECK-LABEL: @atomic_complex_write
 //CHECK: %[[V:.*]] = alloca { float, float }, i64 1, align 8
 //CHECK: %[[X:.*]] = alloca { float, float }, i64 1, align 8
-//CHECK: %[[LOAD:.*]] = load { float, float }, ptr %1, align 4
+//CHECK: %[[LOAD:.*]] = load { float, float }, ptr %[[V]], align 4
 //CHECK: %[[ALLOCA:.*]] = alloca { float, float }, align 8
 //CHECK: store { float, float } %[[LOAD]], ptr %[[ALLOCA]], align 4
 //CHECK: call void @__atomic_store(i64 8, ptr %[[X]], ptr %[[ALLOCA]], i32 0)
