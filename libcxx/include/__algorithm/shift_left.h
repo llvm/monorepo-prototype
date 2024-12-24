@@ -17,7 +17,7 @@
 #include <__utility/pair.h>
 
 #if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
-#pragma GCC system_header
+#  pragma GCC system_header
 #endif
 
 _LIBCPP_PUSH_MACROS
@@ -28,11 +28,9 @@ _LIBCPP_BEGIN_NAMESPACE_STD
 #if _LIBCPP_STD_VER >= 20
 
 template <class _AlgPolicy, class _Iter, class _Sent>
-_LIBCPP_HIDE_FROM_ABI constexpr pair<_Iter, _Iter> __shift_left(
-    _Iter __first, _Sent __last,
-    typename _IterOps<_AlgPolicy>::template __difference_type<_Iter> __n) {
-  _LIBCPP_ASSERT_UNCATEGORIZED(__n >= 0,
-                               "__n must be greater than or equal to 0");
+_LIBCPP_HIDE_FROM_ABI constexpr pair<_Iter, _Iter>
+__shift_left(_Iter __first, _Sent __last, typename _IterOps<_AlgPolicy>::template __difference_type<_Iter> __n) {
+  _LIBCPP_ASSERT_UNCATEGORIZED(__n >= 0, "__n must be greater than or equal to 0");
 
   if (__n == 0) {
     _Iter __end = _IterOps<_AlgPolicy>::next(__first, __last);
@@ -61,11 +59,10 @@ _LIBCPP_HIDE_FROM_ABI constexpr pair<_Iter, _Iter> __shift_left(
 
 template <class _ForwardIterator>
 inline _LIBCPP_HIDE_FROM_ABI constexpr _ForwardIterator
-shift_left(_ForwardIterator __first, _ForwardIterator __last,
+shift_left(_ForwardIterator __first,
+           _ForwardIterator __last,
            typename iterator_traits<_ForwardIterator>::difference_type __n) {
-  return std::__shift_left<_ClassicAlgPolicy>(std::move(__first),
-                                              std::move(__last), __n)
-      .second;
+  return std::__shift_left<_ClassicAlgPolicy>(std::move(__first), std::move(__last), __n).second;
 }
 
 #endif // _LIBCPP_STD_VER >= 20
