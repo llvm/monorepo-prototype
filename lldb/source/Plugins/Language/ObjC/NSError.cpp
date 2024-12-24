@@ -11,14 +11,14 @@
 #include "Cocoa.h"
 
 #include "Plugins/TypeSystem/Clang/TypeSystemClang.h"
-#include "lldb/Core/ValueObject.h"
-#include "lldb/Core/ValueObjectConstResult.h"
 #include "lldb/DataFormatters/FormattersHelpers.h"
 #include "lldb/Target/Target.h"
 #include "lldb/Utility/DataBufferHeap.h"
 #include "lldb/Utility/Endian.h"
 #include "lldb/Utility/Status.h"
 #include "lldb/Utility/Stream.h"
+#include "lldb/ValueObject/ValueObject.h"
+#include "lldb/ValueObject/ValueObjectConstResult.h"
 
 #include "Plugins/Language/ObjC/NSString.h"
 #include "Plugins/LanguageRuntime/ObjC/ObjCLanguageRuntime.h"
@@ -116,7 +116,7 @@ public:
   // no need to delete m_child_ptr - it's kept alive by the cluster manager on
   // our behalf
 
-  size_t CalculateNumChildren() override {
+  llvm::Expected<uint32_t> CalculateNumChildren() override {
     if (m_child_ptr)
       return 1;
     if (m_child_sp)
@@ -124,7 +124,7 @@ public:
     return 0;
   }
 
-  lldb::ValueObjectSP GetChildAtIndex(size_t idx) override {
+  lldb::ValueObjectSP GetChildAtIndex(uint32_t idx) override {
     if (idx != 0)
       return lldb::ValueObjectSP();
 

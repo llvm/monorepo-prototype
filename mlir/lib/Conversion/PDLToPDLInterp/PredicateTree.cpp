@@ -272,8 +272,7 @@ static void getConstraintPredicates(pdl::ApplyNativeConstraintOp op,
     allPositions.push_back(inputs.lookup(arg));
 
   // Push the constraint to the furthest position.
-  Position *pos = *std::max_element(allPositions.begin(), allPositions.end(),
-                                    comparePosDepth);
+  Position *pos = *llvm::max_element(allPositions, comparePosDepth);
   ResultRange results = op.getResults();
   PredicateBuilder::Predicate pred = builder.getConstraint(
       op.getName(), allPositions, SmallVector<Type>(results.getTypes()),
@@ -819,7 +818,7 @@ std::unique_ptr<MatcherNode> &getOrCreateChild(SwitchNode *node,
   auto it = predicate->patternToAnswer.find(pattern);
   assert(it != predicate->patternToAnswer.end() &&
          "expected pattern to exist in predicate");
-  return node->getChildren().insert({it->second, nullptr}).first->second;
+  return node->getChildren()[it->second];
 }
 
 /// Build the matcher CFG by "pushing" patterns through by sorted predicate

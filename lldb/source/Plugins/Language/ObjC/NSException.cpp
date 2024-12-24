@@ -10,14 +10,14 @@
 
 #include "Cocoa.h"
 
-#include "lldb/Core/ValueObject.h"
-#include "lldb/Core/ValueObjectConstResult.h"
 #include "lldb/DataFormatters/FormattersHelpers.h"
 #include "lldb/Target/Target.h"
 #include "lldb/Utility/DataBufferHeap.h"
 #include "lldb/Utility/Endian.h"
 #include "lldb/Utility/Status.h"
 #include "lldb/Utility/Stream.h"
+#include "lldb/ValueObject/ValueObject.h"
+#include "lldb/ValueObject/ValueObjectConstResult.h"
 
 #include "Plugins/Language/ObjC/NSString.h"
 #include "Plugins/LanguageRuntime/ObjC/ObjCLanguageRuntime.h"
@@ -123,11 +123,9 @@ public:
 
   ~NSExceptionSyntheticFrontEnd() override = default;
 
-  size_t CalculateNumChildren() override {
-    return 4;
-  }
+  llvm::Expected<uint32_t> CalculateNumChildren() override { return 4; }
 
-  lldb::ValueObjectSP GetChildAtIndex(size_t idx) override {
+  lldb::ValueObjectSP GetChildAtIndex(uint32_t idx) override {
     switch (idx) {
       case 0: return m_name_sp;
       case 1: return m_reason_sp;

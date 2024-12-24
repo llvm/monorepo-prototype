@@ -345,6 +345,12 @@ extern module LLVM_Extern_Utils_DataTypes "module.extern.modulemap"
 // Build the module with the tablegen-generated files needed by the
 // TargetParser module before building the TargetParser module itself.
 module TargetParserGen {
+  module AArch64TargetParserDef {
+    textual header "llvm/TargetParser/AArch64CPUFeatures.inc"
+    header "llvm/TargetParser/AArch64TargetParser.h"
+    extern module LLVM_Extern_TargetParser_Gen "module.extern.modulemap"
+    export *
+  }
   module RISCVTargetParserDef {
     header "llvm/TargetParser/RISCVTargetParser.h"
     extern module LLVM_Extern_TargetParser_Gen "module.extern.modulemap"
@@ -420,4 +426,13 @@ module LLVM_WindowsManifest {
   requires cplusplus
   umbrella "llvm/WindowsManifest"
   module * { export * }
+}
+
+module LLVM_SandboxIR {
+  requires cplusplus
+
+  umbrella "llvm/SandboxIR"
+  module * { export * }
+
+  textual header "llvm/SandboxIR/Values.def"
 }

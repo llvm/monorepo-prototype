@@ -1,6 +1,9 @@
 ! Test delayed privatization for the `firstprivate` clause.
 
-! RUN: bbc -emit-hlfir -fopenmp --openmp-enable-delayed-privatization -o - %s 2>&1 | FileCheck %s
+! RUN: %flang_fc1 -emit-hlfir -fopenmp -mmlir --openmp-enable-delayed-privatization \
+! RUN:   -o - %s 2>&1 | FileCheck %s
+! RUN: bbc -emit-hlfir -fopenmp --openmp-enable-delayed-privatization -o - %s 2>&1 \
+! RUN:   | FileCheck %s
 
 subroutine delayed_privatization_firstprivate
   implicit none
@@ -20,7 +23,7 @@ end subroutine
 ! CHECK: } copy {
 ! CHECK: ^bb0(%[[PRIV_ORIG_ARG:.*]]: !fir.ref<i32>, %[[PRIV_PRIV_ARG:.*]]: !fir.ref<i32>):
 ! CHECK:    %[[ORIG_VAL:.*]] = fir.load %[[PRIV_ORIG_ARG]] : !fir.ref<i32>
-! CHECK:    hlfir.assign %[[ORIG_VAL]] to %[[PRIV_PRIV_ARG]] temporary_lhs : i32, !fir.ref<i32>
+! CHECK:    hlfir.assign %[[ORIG_VAL]] to %[[PRIV_PRIV_ARG]] : i32, !fir.ref<i32>
 ! CHECK:    omp.yield(%[[PRIV_PRIV_ARG]] : !fir.ref<i32>)
 ! CHECK: }
 

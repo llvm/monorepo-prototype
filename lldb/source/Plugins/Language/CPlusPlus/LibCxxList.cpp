@@ -9,14 +9,15 @@
 #include "LibCxx.h"
 
 #include "Plugins/TypeSystem/Clang/TypeSystemClang.h"
-#include "lldb/Core/ValueObject.h"
-#include "lldb/Core/ValueObjectConstResult.h"
 #include "lldb/DataFormatters/FormattersHelpers.h"
 #include "lldb/Target/Target.h"
 #include "lldb/Utility/DataBufferHeap.h"
 #include "lldb/Utility/Endian.h"
 #include "lldb/Utility/Status.h"
 #include "lldb/Utility/Stream.h"
+#include "lldb/ValueObject/ValueObject.h"
+#include "lldb/ValueObject/ValueObjectConstResult.h"
+#include "lldb/lldb-enumerations.h"
 
 using namespace lldb;
 using namespace lldb_private;
@@ -136,8 +137,8 @@ class ForwardListFrontEnd : public AbstractListFrontEnd {
 public:
   ForwardListFrontEnd(ValueObject &valobj);
 
-  size_t CalculateNumChildren() override;
-  ValueObjectSP GetChildAtIndex(size_t idx) override;
+  llvm::Expected<uint32_t> CalculateNumChildren() override;
+  ValueObjectSP GetChildAtIndex(uint32_t idx) override;
   lldb::ChildCacheState Update() override;
 };
 
@@ -147,9 +148,9 @@ public:
 
   ~ListFrontEnd() override = default;
 
-  size_t CalculateNumChildren() override;
+  llvm::Expected<uint32_t> CalculateNumChildren() override;
 
-  lldb::ValueObjectSP GetChildAtIndex(size_t idx) override;
+  lldb::ValueObjectSP GetChildAtIndex(uint32_t idx) override;
 
   lldb::ChildCacheState Update() override;
 
@@ -240,7 +241,7 @@ ForwardListFrontEnd::ForwardListFrontEnd(ValueObject &valobj)
   Update();
 }
 
-size_t ForwardListFrontEnd::CalculateNumChildren() {
+llvm::Expected<uint32_t> ForwardListFrontEnd::CalculateNumChildren() {
   if (m_count != UINT32_MAX)
     return m_count;
 
@@ -253,8 +254,8 @@ size_t ForwardListFrontEnd::CalculateNumChildren() {
   return m_count;
 }
 
-ValueObjectSP ForwardListFrontEnd::GetChildAtIndex(size_t idx) {
-  if (idx >= CalculateNumChildren())
+ValueObjectSP ForwardListFrontEnd::GetChildAtIndex(uint32_t idx) {
+  if (idx >= CalculateNumChildrenIgnoringErrors())
     return nullptr;
 
   if (!m_head)
@@ -294,12 +295,17 @@ lldb::ChildCacheState ForwardListFrontEnd::Update() {
 
   ValueObjectSP impl_sp(m_backend.GetChildMemberWithName("__before_begin_"));
   if (!impl_sp)
-    return lldb::ChildCacheState::eRefetch;
-  impl_sp = GetFirstValueOfLibCXXCompressedPair(*impl_sp);
+    return ChildCacheState::eRefetch;
+
+  if (isOldCompressedPairLayout(*impl_sp))
+    impl_sp = GetFirstValueOfLibCXXCompressedPair(*impl_sp);
+
   if (!impl_sp)
-    return lldb::ChildCacheState::eRefetch;
+    return ChildCacheState::eRefetch;
+
   m_head = impl_sp->GetChildMemberWithName("__next_").get();
-  return lldb::ChildCacheState::eRefetch;
+
+  return ChildCacheState::eRefetch;
 }
 
 ListFrontEnd::ListFrontEnd(lldb::ValueObjectSP valobj_sp)
@@ -308,46 +314,54 @@ ListFrontEnd::ListFrontEnd(lldb::ValueObjectSP valobj_sp)
     Update();
 }
 
-size_t ListFrontEnd::CalculateNumChildren() {
+llvm::Expected<uint32_t> ListFrontEnd::CalculateNumChildren() {
   if (m_count != UINT32_MAX)
     return m_count;
   if (!m_head || !m_tail || m_node_address == 0)
     return 0;
-  ValueObjectSP size_alloc(m_backend.GetChildMemberWithName("__size_alloc_"));
-  if (size_alloc) {
-    ValueObjectSP value = GetFirstValueOfLibCXXCompressedPair(*size_alloc);
-    if (value) {
-      m_count = value->GetValueAsUnsigned(UINT32_MAX);
-    }
+
+  ValueObjectSP size_node_sp(m_backend.GetChildMemberWithName("__size_"));
+  if (!size_node_sp) {
+    size_node_sp = m_backend.GetChildMemberWithName(
+        "__size_alloc_"); // pre-compressed_pair rework
+
+    if (!isOldCompressedPairLayout(*size_node_sp))
+      return llvm::createStringError("Unexpected std::list layout: expected "
+                                     "old __compressed_pair layout.");
+
+    size_node_sp = GetFirstValueOfLibCXXCompressedPair(*size_node_sp);
   }
-  if (m_count != UINT32_MAX) {
+
+  if (size_node_sp)
+    m_count = size_node_sp->GetValueAsUnsigned(UINT32_MAX);
+
+  if (m_count != UINT32_MAX)
     return m_count;
-  } else {
-    uint64_t next_val = m_head->GetValueAsUnsigned(0);
-    uint64_t prev_val = m_tail->GetValueAsUnsigned(0);
-    if (next_val == 0 || prev_val == 0)
-      return 0;
-    if (next_val == m_node_address)
-      return 0;
-    if (next_val == prev_val)
-      return 1;
-    uint64_t size = 2;
-    ListEntry current(m_head);
-    while (current.next() && current.next().value() != m_node_address) {
-      size++;
-      current = current.next();
-      if (size > m_list_capping_size)
-        break;
-    }
-    return m_count = (size - 1);
+
+  uint64_t next_val = m_head->GetValueAsUnsigned(0);
+  uint64_t prev_val = m_tail->GetValueAsUnsigned(0);
+  if (next_val == 0 || prev_val == 0)
+    return 0;
+  if (next_val == m_node_address)
+    return 0;
+  if (next_val == prev_val)
+    return 1;
+  uint64_t size = 2;
+  ListEntry current(m_head);
+  while (current.next() && current.next().value() != m_node_address) {
+    size++;
+    current = current.next();
+    if (size > m_list_capping_size)
+      break;
   }
+  return m_count = (size - 1);
 }
 
-lldb::ValueObjectSP ListFrontEnd::GetChildAtIndex(size_t idx) {
+lldb::ValueObjectSP ListFrontEnd::GetChildAtIndex(uint32_t idx) {
   static ConstString g_value("__value_");
   static ConstString g_next("__next_");
 
-  if (idx >= CalculateNumChildren())
+  if (idx >= CalculateNumChildrenIgnoringErrors())
     return lldb::ValueObjectSP();
 
   if (!m_head || !m_tail || m_node_address == 0)

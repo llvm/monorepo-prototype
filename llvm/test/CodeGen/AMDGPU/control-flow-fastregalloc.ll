@@ -129,6 +129,7 @@ endif:
 ; VMEM: v_readlane_b32 s[[S_RELOAD_SAVEEXEC_HI:[0-9]+]], v[[V_RELOAD_SAVEEXEC]], 1
 
 ; GCN: s_or_b64 exec, exec, s[[[S_RELOAD_SAVEEXEC_LO]]:[[S_RELOAD_SAVEEXEC_HI]]]
+
 ; GCN: buffer_load_dword v[[VAL_END:[0-9]+]], off, s[0:3], 0 offset:[[VAL_SUB_OFFSET]] ; 4-byte Folded Reload
 
 ; GCN: flat_store_dword v{{\[[0-9]+:[0-9]+\]}}, v[[VAL_END]]
@@ -277,4 +278,4 @@ attributes #0 = { nounwind }
 attributes #1 = { nounwind readnone }
 
 !llvm.module.flags = !{!0}
-!0 = !{i32 1, !"amdgpu_code_object_version", i32 400}
+!0 = !{i32 1, !"amdhsa_code_object_version", i32 400}

@@ -1,6 +1,9 @@
 ! Test delayed privatization for both `private` and `firstprivate` clauses.
 
-! RUN: bbc -emit-hlfir -fopenmp --openmp-enable-delayed-privatization -o - %s 2>&1 | FileCheck %s
+! RUN: %flang_fc1 -emit-hlfir -fopenmp -mmlir --openmp-enable-delayed-privatization \
+! RUN:   -o - %s 2>&1 | FileCheck %s
+! RUN: bbc -emit-hlfir -fopenmp --openmp-enable-delayed-privatization -o - %s 2>&1 \
+! RUN:   | FileCheck %s
 
 subroutine delayed_privatization_private_firstprivate
   implicit none
@@ -30,5 +33,6 @@ end subroutine
 ! CHECK:  %[[VAR2_DECL:.*]]:2 = hlfir.declare %[[VAR2_ALLOC]]
 
 ! CHECK:  omp.parallel private(
-! CHECK-SAME: @[[VAR1_PRIVATIZER_SYM]] %[[VAR1_DECL]]#0 -> %{{.*}} : !fir.ref<i32>, 
-! CHECK-SAME: @[[VAR2_PRIVATIZER_SYM]] %[[VAR2_DECL]]#0 -> %{{.*}} : !fir.ref<i32>) {
+! CHECK-SAME: @[[VAR1_PRIVATIZER_SYM]] %[[VAR1_DECL]]#0 -> %{{[^,]+}}, 
+! CHECK-SAME: @[[VAR2_PRIVATIZER_SYM]] %[[VAR2_DECL]]#0 -> %{{.*}} :
+! CHECK-SAME: !fir.ref<i32>, !fir.ref<i32>) {

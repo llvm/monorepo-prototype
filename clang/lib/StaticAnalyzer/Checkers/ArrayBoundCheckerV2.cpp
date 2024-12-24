@@ -22,6 +22,7 @@
 #include "clang/StaticAnalyzer/Core/PathSensitive/CheckerContext.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/DynamicExtent.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/ExprEngine.h"
+#include "llvm/ADT/APSInt.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/Support/FormatVariadic.h"
 #include "llvm/Support/raw_ostream.h"
@@ -82,6 +83,8 @@ public:
   void recordUpperBoundAssumption(NonLoc UpperBoundVal) {
     AssumedUpperBound = UpperBoundVal;
   }
+
+  bool assumedNonNegative() { return AssumedNonNegative; }
 
   const NoteTag *createNoteTag(CheckerContext &C) const;
 
@@ -239,26 +242,25 @@ computeOffset(ProgramStateRef State, SValBuilder &SVB, SVal Location) {
 static std::pair<NonLoc, nonloc::ConcreteInt>
 getSimplifiedOffsets(NonLoc offset, nonloc::ConcreteInt extent,
                      SValBuilder &svalBuilder) {
+  const llvm::APSInt &extentVal = extent.getValue();
   std::optional<nonloc::SymbolVal> SymVal = offset.getAs<nonloc::SymbolVal>();
   if (SymVal && SymVal->isExpression()) {
     if (const SymIntExpr *SIE = dyn_cast<SymIntExpr>(SymVal->getSymbol())) {
-      llvm::APSInt constant =
-          APSIntType(extent.getValue()).convert(SIE->getRHS());
+      llvm::APSInt constant = APSIntType(extentVal).convert(SIE->getRHS());
       switch (SIE->getOpcode()) {
       case BO_Mul:
         // The constant should never be 0 here, becasue multiplication by zero
         // is simplified by the engine.
-        if ((extent.getValue() % constant) != 0)
+        if ((extentVal % constant) != 0)
           return std::pair<NonLoc, nonloc::ConcreteInt>(offset, extent);
         else
           return getSimplifiedOffsets(
               nonloc::SymbolVal(SIE->getLHS()),
-              svalBuilder.makeIntVal(extent.getValue() / constant),
-              svalBuilder);
+              svalBuilder.makeIntVal(extentVal / constant), svalBuilder);
       case BO_Add:
         return getSimplifiedOffsets(
             nonloc::SymbolVal(SIE->getLHS()),
-            svalBuilder.makeIntVal(extent.getValue() - constant), svalBuilder);
+            svalBuilder.makeIntVal(extentVal - constant), svalBuilder);
       default:
         break;
       }
@@ -361,7 +363,7 @@ static std::string getRegionName(const SubRegion *Region) {
 
 static std::optional<int64_t> getConcreteValue(NonLoc SV) {
   if (auto ConcreteVal = SV.getAs<nonloc::ConcreteInt>()) {
-    return ConcreteVal->getValue().tryExtValue();
+    return ConcreteVal->getValue()->tryExtValue();
   }
   return std::nullopt;
 }
@@ -371,14 +373,14 @@ static std::optional<int64_t> getConcreteValue(std::optional<NonLoc> SV) {
 }
 
 static Messages getPrecedesMsgs(const SubRegion *Region, NonLoc Offset) {
-  std::string RegName = getRegionName(Region);
-  SmallString<128> Buf;
-  llvm::raw_svector_ostream Out(Buf);
-  Out << "Access of " << RegName << " at negative byte offset";
-  if (auto ConcreteIdx = Offset.getAs<nonloc::ConcreteInt>())
-    Out << ' ' << ConcreteIdx->getValue();
-  return {formatv("Out of bound access to memory preceding {0}", RegName),
-          std::string(Buf)};
+  std::string RegName = getRegionName(Region), OffsetStr = "";
+
+  if (auto ConcreteOffset = getConcreteValue(Offset))
+    OffsetStr = formatv(" {0}", ConcreteOffset);
+
+  return {
+      formatv("Out of bound access to memory preceding {0}", RegName),
+      formatv("Access of {0} at negative byte offset{1}", RegName, OffsetStr)};
 }
 
 /// Try to divide `Val1` and `Val2` (in place) by `Divisor` and return true if
@@ -402,7 +404,8 @@ static bool tryDividePair(std::optional<int64_t> &Val1,
 }
 
 static Messages getExceedsMsgs(ASTContext &ACtx, const SubRegion *Region,
-                               NonLoc Offset, NonLoc Extent, SVal Location) {
+                               NonLoc Offset, NonLoc Extent, SVal Location,
+                               bool AlsoMentionUnderflow) {
   std::string RegName = getRegionName(Region);
   const auto *EReg = Location.getAsRegion()->getAs<ElementRegion>();
   assert(EReg && "this checker only handles element access");
@@ -414,6 +417,7 @@ static Messages getExceedsMsgs(ASTContext &ACtx, const SubRegion *Region,
   int64_t ElemSize = ACtx.getTypeSizeInChars(ElemType).getQuantity();
 
   bool UseByteOffsets = !tryDividePair(OffsetN, ExtentN, ElemSize);
+  const char *OffsetOrIndex = UseByteOffsets ? "byte offset" : "index";
 
   SmallString<256> Buf;
   llvm::raw_svector_ostream Out(Buf);
@@ -421,10 +425,12 @@ static Messages getExceedsMsgs(ASTContext &ACtx, const SubRegion *Region,
   if (!ExtentN && !UseByteOffsets)
     Out << "'" << ElemType.getAsString() << "' element in ";
   Out << RegName << " at ";
-  if (OffsetN) {
-    Out << (UseByteOffsets ? "byte offset " : "index ") << *OffsetN;
+  if (AlsoMentionUnderflow) {
+    Out << "a negative or overflowing " << OffsetOrIndex;
+  } else if (OffsetN) {
+    Out << OffsetOrIndex << " " << *OffsetN;
   } else {
-    Out << "an overflowing " << (UseByteOffsets ? "byte offset" : "index");
+    Out << "an overflowing " << OffsetOrIndex;
   }
   if (ExtentN) {
     Out << ", while it holds only ";
@@ -441,17 +447,20 @@ static Messages getExceedsMsgs(ASTContext &ACtx, const SubRegion *Region,
       Out << "s";
   }
 
-  return {
-      formatv("Out of bound access to memory after the end of {0}", RegName),
-      std::string(Buf)};
+  return {formatv("Out of bound access to memory {0} {1}",
+                  AlsoMentionUnderflow ? "around" : "after the end of",
+                  RegName),
+          std::string(Buf)};
 }
 
-static Messages getTaintMsgs(const SubRegion *Region, const char *OffsetName) {
+static Messages getTaintMsgs(const SubRegion *Region, const char *OffsetName,
+                             bool AlsoMentionUnderflow) {
   std::string RegName = getRegionName(Region);
   return {formatv("Potential out of bound access to {0} with tainted {1}",
                   RegName, OffsetName),
-          formatv("Access of {0} with a tainted {1} that may be too large",
-                  RegName, OffsetName)};
+          formatv("Access of {0} with a tainted {1} that may be {2}too large",
+                  RegName, OffsetName,
+                  AlsoMentionUnderflow ? "negative or " : "")};
 }
 
 const NoteTag *StateUpdateReporter::createNoteTag(CheckerContext &C) const {
@@ -600,6 +609,13 @@ void ArrayBoundCheckerV2::performCheck(const Expr *E, CheckerContext &C) const {
   // CHECK UPPER BOUND
   DefinedOrUnknownSVal Size = getDynamicExtent(State, Reg, SVB);
   if (auto KnownSize = Size.getAs<NonLoc>()) {
+    // In a situation where both underflow and overflow are possible (but the
+    // index is either tainted or known to be invalid), the logic of this
+    // checker will first assume that the offset is non-negative, and then
+    // (with this additional assumption) it will detect an overflow error.
+    // In this situation the warning message should mention both possibilities.
+    bool AlsoMentionUnderflow = SUR.assumedNonNegative();
+
     auto [WithinUpperBound, ExceedsUpperBound] =
         compareValueToThreshold(State, ByteOffset, *KnownSize, SVB);
 
@@ -615,8 +631,9 @@ void ArrayBoundCheckerV2::performCheck(const Expr *E, CheckerContext &C) const {
           return;
         }
 
-        Messages Msgs = getExceedsMsgs(C.getASTContext(), Reg, ByteOffset,
-                                       *KnownSize, Location);
+        Messages Msgs =
+            getExceedsMsgs(C.getASTContext(), Reg, ByteOffset, *KnownSize,
+                           Location, AlsoMentionUnderflow);
         reportOOB(C, ExceedsUpperBound, Msgs, ByteOffset, KnownSize);
         return;
       }
@@ -632,7 +649,7 @@ void ArrayBoundCheckerV2::performCheck(const Expr *E, CheckerContext &C) const {
           if (isTainted(State, ASE->getIdx(), C.getLocationContext()))
             OffsetName = "index";
 
-        Messages Msgs = getTaintMsgs(Reg, OffsetName);
+        Messages Msgs = getTaintMsgs(Reg, OffsetName, AlsoMentionUnderflow);
         reportOOB(C, ExceedsUpperBound, Msgs, ByteOffset, KnownSize,
                   /*IsTaintBug=*/true);
         return;

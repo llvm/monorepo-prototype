@@ -40,7 +40,7 @@ struct __fn {
   _LIBCPP_HIDE_FROM_ABI static constexpr subrange<_Iter>
   operator()(_Iter __first, _Sent __last, iter_difference_t<_Iter> __n) {
     auto __ret = std::__shift_left<_RangeAlgPolicy>(std::move(__first), std::move(__last), std::move(__n));
-    return {std::move(__ret.first), std::move(__ret.second)};
+    return {__ret.first, __ret.second};
   }
 
   template <forward_range _Range>
@@ -48,7 +48,7 @@ struct __fn {
   _LIBCPP_HIDE_FROM_ABI static constexpr borrowed_subrange_t<_Range>
   operator()(_Range&& __range, range_difference_t<_Range> __n) {
     auto __ret = std::__shift_left<_RangeAlgPolicy>(ranges::begin(__range), ranges::end(__range), std::move(__n));
-    return {std::move(__ret.first), std::move(__ret.second)};
+    return {__ret.first, __ret.second};
   }
 };
 

@@ -58,7 +58,7 @@ static gpu::GPUModuleOp genGPUModule(OpBuilder &builder, ModuleOp topModule) {
   for (auto op : topModule.getBodyRegion().getOps<gpu::GPUModuleOp>())
     return op; // existing
   markAsGPUContainer(topModule);
-  builder.setInsertionPointToStart(&topModule.getBodyRegion().front());
+  builder.setInsertionPointToStart(topModule.getBody());
   return builder.create<gpu::GPUModuleOp>(topModule->getLoc(),
                                           "sparse_kernels");
 }
@@ -75,7 +75,7 @@ static gpu::GPUFuncOp genGPUFunc(OpBuilder &builder, gpu::GPUModuleOp gpuModule,
     ("kernel" + Twine(kernelNumber++)).toStringRef(kernelName);
   } while (gpuModule.lookupSymbol(kernelName));
   // Then we insert a new kernel with given arguments into the module.
-  builder.setInsertionPointToStart(&gpuModule.getBodyRegion().front());
+  builder.setInsertionPointToStart(gpuModule.getBody());
   SmallVector<Type> argsTp;
   for (auto arg : args)
     argsTp.push_back(arg.getType());
@@ -928,8 +928,8 @@ static LogicalResult rewriteSpGEMM(PatternRewriter &rewriter,
   Value vt = rewriter.create<bufferization::ToTensorOp>(loc, valH);
   Value rt = rewriter.create<bufferization::ToTensorOp>(loc, rowH);
   Value ct = rewriter.create<bufferization::ToTensorOp>(loc, colH);
-  rewriter.replaceOpWithNewOp<AssembleOp>(op, c.getType(), vt,
-                                          ValueRange{rt, ct});
+  rewriter.replaceOpWithNewOp<AssembleOp>(op, c.getType(), ValueRange{rt, ct},
+                                          vt);
   return success();
 }
 
