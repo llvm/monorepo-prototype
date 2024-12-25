@@ -2717,6 +2717,10 @@ public:
                       FPMathTag, OpBundles),
         Folder(Folder) {
     SetInsertPoint(TheBB);
+    Function *F = TheBB->getParent();
+    if (F && F->hasFnAttribute(Attribute::StrictFP)) {
+      setIsFPConstrained(true);
+    }
   }
 
   explicit IRBuilder(BasicBlock *TheBB, MDNode *FPMathTag = nullptr,
@@ -2724,6 +2728,10 @@ public:
       : IRBuilderBase(TheBB->getContext(), this->Folder, this->Inserter,
                       FPMathTag, OpBundles) {
     SetInsertPoint(TheBB);
+    Function *F = TheBB->getParent();
+    if (F && F->hasFnAttribute(Attribute::StrictFP)) {
+      setIsFPConstrained(true);
+    }
   }
 
   explicit IRBuilder(Instruction *IP, MDNode *FPMathTag = nullptr,
@@ -2731,6 +2739,10 @@ public:
       : IRBuilderBase(IP->getContext(), this->Folder, this->Inserter, FPMathTag,
                       OpBundles) {
     SetInsertPoint(IP);
+    Function *F = IP->getParent()->getParent();
+    if (F && F->hasFnAttribute(Attribute::StrictFP)) {
+      setIsFPConstrained(true);
+    }
   }
 
   IRBuilder(BasicBlock *TheBB, BasicBlock::iterator IP, FolderTy Folder,
@@ -2740,6 +2752,10 @@ public:
                       FPMathTag, OpBundles),
         Folder(Folder) {
     SetInsertPoint(TheBB, IP);
+    Function *F = TheBB->getParent();
+    if (F && F->hasFnAttribute(Attribute::StrictFP)) {
+      setIsFPConstrained(true);
+    }
   }
 
   IRBuilder(BasicBlock *TheBB, BasicBlock::iterator IP,
@@ -2748,6 +2764,10 @@ public:
       : IRBuilderBase(TheBB->getContext(), this->Folder, this->Inserter,
                       FPMathTag, OpBundles) {
     SetInsertPoint(TheBB, IP);
+    Function *F = TheBB->getParent();
+    if (F && F->hasFnAttribute(Attribute::StrictFP)) {
+      setIsFPConstrained(true);
+    }
   }
 
   /// Avoid copying the full IRBuilder. Prefer using InsertPointGuard
