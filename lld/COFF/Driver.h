@@ -182,7 +182,6 @@ private:
   std::list<std::function<void()>> taskQueue;
   std::vector<MemoryBufferRef> resources;
 
-  llvm::DenseSet<StringRef> directivesExports;
   llvm::DenseSet<StringRef> excludedSymbols;
 
   COFFLinkerContext &ctx;
@@ -246,8 +245,6 @@ private:
 
   // Used for dllexported symbols.
   Export parseExport(StringRef arg);
-  void fixupExports();
-  void assignExportOrdinals();
 
   // Parses a string in the form of "key=value" and check
   // if value matches previous values for the key.
