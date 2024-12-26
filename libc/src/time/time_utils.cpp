@@ -209,7 +209,7 @@ int64_t update_from_seconds(int64_t total_seconds, struct tm *tm) {
 
   offset = 0;
   dst = is_dst(tm);
-  filesize = (size_t)lseek(fd, 0, SEEK_END);
+  filesize = static_cast<size_t>(lseek(fd, 0, SEEK_END));
   if (filesize < 0) {
     close(fd);
     return 0;
@@ -223,7 +223,7 @@ int64_t update_from_seconds(int64_t total_seconds, struct tm *tm) {
 
   for (size_t i = 0; i < *ptr_tzset->ttinfo->size; i++) {
     if (dst == ptr_tzset->ttinfo[i].tt_isdst) {
-      offset = (int)ptr_tzset->ttinfo[i].tt_utoff / 3600;
+      offset = static_cast<int>(ptr_tzset->ttinfo[i].tt_utoff / 3600);
     }
   }
 
@@ -293,7 +293,7 @@ unsigned char is_dst(struct tm *tm) {
     dst = sunday <= 0;
   }
 
-  return (unsigned char)dst;
+  return static_cast<unsigned char>(dst);
 }
 
 } // namespace time_utils
