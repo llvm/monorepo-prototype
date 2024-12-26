@@ -111,7 +111,9 @@ Improvements to clang-tidy
 - Improved :program:`clang-tidy`'s `--verify-config` flag by adding support for
   the configuration options of the `Clang Static Analyzer Checks
   <https://clang.llvm.org/docs/analyzer/checkers.html>`_.
+
 - Added `ctime` and `localtime` to clang-tidy.
+
 - Improved :program:`run-clang-tidy.py` script. Fixed minor shutdown noise
   happening on certain platforms when interrupting the script.
 
@@ -186,6 +188,8 @@ Changes in existing checks
 - Improved :doc:`bugprone-branch-clone
   <clang-tidy/checks/bugprone/branch-clone>` check to improve detection of
   branch clones by now detecting duplicate inner and outer if statements.
+
+- Added `ctime` and `localtime` to clang-tidy.
 
 - Improved :doc:`bugprone-casting-through-void
   <clang-tidy/checks/bugprone/casting-through-void>` check to suggest replacing
