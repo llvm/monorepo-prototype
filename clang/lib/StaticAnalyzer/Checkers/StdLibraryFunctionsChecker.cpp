@@ -3534,13 +3534,12 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
 
     // struct tm *localtime_r(const time_t *timer,
     //                        struct tm *result);
-    addToFunctionSummaryMap(
-        "localtime_r",
-        Signature(ArgTypes{ConstTime_tPtrTy, StructTmPtrTy},
-                  RetType{StructTmPtrTy}),
-        Summary(NoEvalCall)
-            .ArgConstraint(NotNull(ArgNo(0)))
-            .ArgConstraint(NotNull(ArgNo(1))));
+    addToFunctionSummaryMap("localtime_r",
+                            Signature(ArgTypes{ConstTime_tPtrTy, StructTmPtrTy},
+                                      RetType{StructTmPtrTy}),
+                            Summary(NoEvalCall)
+                                .ArgConstraint(NotNull(ArgNo(0)))
+                                .ArgConstraint(NotNull(ArgNo(1))));
 
     // struct tm *localtime_s(const time_t *restrict timer,
     //                        struct tm *restrict result);
@@ -3577,7 +3576,10 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
     // char *ctime_r(char *buf, rsize_t buf_size, const time_t *timep);
     addToFunctionSummaryMap(
         "ctime_s",
-        Signature(ArgTypes{CharPtrTy, BufferSize(ArgNo(1), BVF.getValue(26, IntTy)), ConstTime_tPtrTy}, RetType{CharPtrTy}),
+        Signature(ArgTypes{CharPtrTy,
+                           BufferSize(ArgNo(1), BVF.getValue(26, IntTy)),
+                           ConstTime_tPtrTy},
+                  RetType{CharPtrTy}),
         Summary(NoEvalCall)
             .ArgConstraint(NotNull(ArgNo(0)))
             .ArgConstraint(NotNull(ArgNo(1)))
