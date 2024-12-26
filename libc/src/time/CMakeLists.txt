@@ -157,6 +157,7 @@ add_entrypoint_object(
   HDRS
     gmtime.h
   DEPENDS
+    .timezone
     .time_utils
     libc.include.time
     libc.hdr.types.time_t
@@ -170,6 +171,7 @@ add_entrypoint_object(
   HDRS
     gmtime_r.h
   DEPENDS
+    .timezone
     .time_utils
     libc.include.time
     libc.hdr.types.time_t
@@ -183,6 +185,7 @@ add_entrypoint_object(
   HDRS
     mktime.h
   DEPENDS
+    .timezone
     .time_utils
     .time_constants
     libc.include.time
