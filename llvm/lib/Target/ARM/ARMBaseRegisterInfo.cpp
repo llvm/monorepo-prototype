@@ -81,11 +81,11 @@ ARMBaseRegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
                                        : CSR_AAPCS_SwiftTail_SaveList);
   } else if (F.hasFnAttribute("interrupt")) {
 
-    // Don't bother saving the floating point registers if target is not hard
-    // float. This will prevent the Thumb1FrameLowering (cortex-m0) from
-    // crashing due to an llvm_unreachable being triggered when a D-class
-    // register is in the calling convention.
-    if (STI.isTargetHardFloat() && F.hasFnAttribute("save-fp")) {
+    // Don't bother saving the floating point registers if target does not have
+    // floating point registers. This will prevent the Thumb1FrameLowering
+    // (cortex-m0) from crashing due to an llvm_unreachable being triggered when
+    // a D-class register is in the calling convention.
+    if (STI.hasFPRegs() && F.hasFnAttribute("save-fp")) {
       bool HasNEON = STI.hasNEON();
 
       if (STI.isMClass()) {
