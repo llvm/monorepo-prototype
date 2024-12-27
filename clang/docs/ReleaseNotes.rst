@@ -887,6 +887,10 @@ Bug Fixes to C++ Support
 - Fixed a pack expansion issue in checking unexpanded parameter sizes. (#GH17042)
 - Fixed a bug where captured structured bindings were modifiable inside non-mutable lambda (#GH95081)
 
+- Emit an error when the same identifier appears with both internal and
+  external linkage in a translation unit Fixes:
+  (`#54215 <https://github.com/llvm/llvm-project/issues/54215>`_)
+
 Bug Fixes to AST Handling
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
