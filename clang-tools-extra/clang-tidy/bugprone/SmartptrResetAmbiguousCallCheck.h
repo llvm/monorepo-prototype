@@ -13,8 +13,8 @@
 
 namespace clang::tidy::bugprone {
 
-/// Finds potentially erroneous calls to 'reset()' method on smart pointers when
-/// the pointee type also has a 'reset()' method
+/// Finds potentially erroneous calls to 'reset' method on smart pointers when
+/// the pointee type also has a 'reset' method
 ///
 /// For the user-facing documentation see:
 /// http://clang.llvm.org/extra/clang-tidy/checks/bugprone/smartptr-reset-ambiguous-call.html
