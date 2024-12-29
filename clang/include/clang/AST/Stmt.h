@@ -836,7 +836,9 @@ protected:
     LLVM_PREFERRED_TYPE(ExprBitfields)
     unsigned : NumExprBits;
 
-    /// Whether this CXXDefaultArgExpr rewrote its argument and stores a copy.
+    /// Whether this CXXDefaultArgExpr rewrote its argument and stores
+    /// a copy, unlike HasRebuiltInit, when this flag is true, the argument may
+    /// be partially rebuilt.
     LLVM_PREFERRED_TYPE(bool)
     unsigned HasRewrittenInit : 1;
 
@@ -857,7 +859,7 @@ protected:
 
     /// Whether this CXXDefaultInitExpr rewrote its argument and stores
     /// a copy, unlike HasRebuiltInit, when this flag is true, the argument may
-    /// be partial rebuilt.
+    /// be partially rebuilt.
     LLVM_PREFERRED_TYPE(bool)
     unsigned HasRewrittenInit : 1;
 
