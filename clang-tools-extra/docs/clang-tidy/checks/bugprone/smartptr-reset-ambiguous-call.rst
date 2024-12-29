@@ -1,10 +1,11 @@
-.. title:: clang-tidy - bugprone-reset-call
+.. title:: clang-tidy - bugprone-smartptr-reset-ambiguous-call
 
-bugprone-reset-call
-===================
+bugprone-smartptr-reset-ambiguous-call
+======================================
 
-Finds calls to ``reset()`` method on smart pointers where the pointee type
-also has a ``reset()`` method, which makes it easy to accidentally
+Finds potentially erroneous calls to ``reset()`` method on
+smart pointers when the pointee type also has a ``reset()`` method.
+Having ``reset()`` method in both classes makes it easy to accidentally
 make the pointer null when intending to reset the underlying object.
 
 .. code-block:: c++

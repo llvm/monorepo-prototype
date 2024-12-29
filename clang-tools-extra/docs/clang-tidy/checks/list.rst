@@ -124,13 +124,13 @@ Clang-Tidy Checks
    :doc:`bugprone-posix-return <bugprone/posix-return>`, "Yes"
    :doc:`bugprone-redundant-branch-condition <bugprone/redundant-branch-condition>`, "Yes"
    :doc:`bugprone-reserved-identifier <bugprone/reserved-identifier>`, "Yes"
-   :doc:`bugprone-reset-call <bugprone/reset-call>`, "Yes"
    :doc:`bugprone-return-const-ref-from-parameter <bugprone/return-const-ref-from-parameter>`,
    :doc:`bugprone-shared-ptr-array-mismatch <bugprone/shared-ptr-array-mismatch>`, "Yes"
    :doc:`bugprone-signal-handler <bugprone/signal-handler>`,
    :doc:`bugprone-signed-char-misuse <bugprone/signed-char-misuse>`,
    :doc:`bugprone-sizeof-container <bugprone/sizeof-container>`,
    :doc:`bugprone-sizeof-expression <bugprone/sizeof-expression>`,
+   :doc:`bugprone-smartptr-reset-ambiguous-call <bugprone/smartptr-reset-ambiguous-call>`, "Yes"
    :doc:`bugprone-spuriously-wake-up-functions <bugprone/spuriously-wake-up-functions>`,
    :doc:`bugprone-standalone-empty <bugprone/standalone-empty>`, "Yes"
    :doc:`bugprone-string-constructor <bugprone/string-constructor>`, "Yes"

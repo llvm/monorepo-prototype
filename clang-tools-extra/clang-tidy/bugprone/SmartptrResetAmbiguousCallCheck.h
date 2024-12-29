@@ -1,4 +1,4 @@
-//===--- ResetCallCheck.h - clang-tidy --------------------------*- C++ -*-===//
+//===--- SmartptrResetAmbiguousCallCheck.h - clang-tidy ---------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -6,8 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_BUGPRONE_RESETCALLCHECK_H
-#define LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_BUGPRONE_RESETCALLCHECK_H
+#ifndef LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_BUGPRONE_SMARTPTRRESETAMBIGUOUSCALLCHECK_H
+#define LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_BUGPRONE_SMARTPTRRESETAMBIGUOUSCALLCHECK_H
 
 #include "../ClangTidyCheck.h"
 
@@ -17,10 +17,10 @@ namespace clang::tidy::bugprone {
 /// the pointee type also has a 'reset()' method
 ///
 /// For the user-facing documentation see:
-/// http://clang.llvm.org/extra/clang-tidy/checks/bugprone/reset-call.html
-class ResetCallCheck : public ClangTidyCheck {
+/// http://clang.llvm.org/extra/clang-tidy/checks/bugprone/smartptr-reset-ambiguous-call.html
+class SmartptrResetAmbiguousCallCheck : public ClangTidyCheck {
 public:
-  ResetCallCheck(StringRef Name, ClangTidyContext *Context)
+  SmartptrResetAmbiguousCallCheck(StringRef Name, ClangTidyContext *Context)
       : ClangTidyCheck(Name, Context) {}
   void registerMatchers(ast_matchers::MatchFinder *Finder) override;
   void check(const ast_matchers::MatchFinder::MatchResult &Result) override;
@@ -31,4 +31,4 @@ public:
 
 } // namespace clang::tidy::bugprone
 
-#endif // LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_BUGPRONE_RESETCALLCHECK_H
+#endif // LLVM_CLANG_TOOLS_EXTRA_CLANG_TIDY_BUGPRONE_SMARTPTRRESETAMBIGUOUSCALLCHECK_H

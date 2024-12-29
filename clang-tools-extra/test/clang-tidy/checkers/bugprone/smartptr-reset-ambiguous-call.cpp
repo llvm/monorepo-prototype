@@ -1,4 +1,4 @@
-// RUN: %check_clang_tidy %s bugprone-reset-call %t
+// RUN: %check_clang_tidy %s bugprone-smartptr-reset-ambiguous-call %t
 
 namespace std {
 

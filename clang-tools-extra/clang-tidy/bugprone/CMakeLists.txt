@@ -52,7 +52,6 @@ add_clang_library(clangTidyBugproneModule STATIC
   PosixReturnCheck.cpp
   RedundantBranchConditionCheck.cpp
   ReservedIdentifierCheck.cpp
-  ResetCallCheck.cpp
   ReturnConstRefFromParameterCheck.cpp
   SharedPtrArrayMismatchCheck.cpp
   SignalHandlerCheck.cpp
@@ -60,6 +59,7 @@ add_clang_library(clangTidyBugproneModule STATIC
   SizeofContainerCheck.cpp
   SizeofExpressionCheck.cpp
   SmartPtrArrayMismatchCheck.cpp
+  SmartptrResetAmbiguousCallCheck.cpp
   SpuriouslyWakeUpFunctionsCheck.cpp
   StandaloneEmptyCheck.cpp
   StringConstructorCheck.cpp

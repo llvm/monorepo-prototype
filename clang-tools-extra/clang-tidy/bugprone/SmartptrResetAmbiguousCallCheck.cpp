@@ -1,4 +1,4 @@
-//===--- ResetCallCheck.cpp - clang-tidy ----------------------------------===//
+//===--- SmartptrResetAmbiguousCallCheck.cpp - clang-tidy -----------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "ResetCallCheck.h"
+#include "SmartptrResetAmbiguousCallCheck.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
@@ -43,7 +43,7 @@ AST_MATCHER(CXXMethodDecl, hasOnlyDefaultArgs) {
 
 } // namespace
 
-void ResetCallCheck::registerMatchers(MatchFinder *Finder) {
+void SmartptrResetAmbiguousCallCheck::registerMatchers(MatchFinder *Finder) {
   const auto IsSmartptr = hasAnyName("::std::unique_ptr", "::std::shared_ptr");
 
   const auto ResetMethod =
@@ -85,7 +85,8 @@ void ResetCallCheck::registerMatchers(MatchFinder *Finder) {
       this);
 }
 
-void ResetCallCheck::check(const MatchFinder::MatchResult &Result) {
+void SmartptrResetAmbiguousCallCheck::check(
+    const MatchFinder::MatchResult &Result) {
   const auto *SmartptrResetCall =
       Result.Nodes.getNodeAs<CXXMemberCallExpr>("smartptrResetCall");
   const auto *ObjectResetCall =
