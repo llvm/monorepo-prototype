@@ -57,6 +57,7 @@
 #include "PosixReturnCheck.h"
 #include "RedundantBranchConditionCheck.h"
 #include "ReservedIdentifierCheck.h"
+#include "ResetCallCheck.h"
 #include "ReturnConstRefFromParameterCheck.h"
 #include "SharedPtrArrayMismatchCheck.h"
 #include "SignalHandlerCheck.h"
@@ -144,6 +145,7 @@ public:
         "bugprone-inaccurate-erase");
     CheckFactories.registerCheck<IncorrectEnableIfCheck>(
         "bugprone-incorrect-enable-if");
+    CheckFactories.registerCheck<ResetCallCheck>("bugprone-reset-call");
     CheckFactories.registerCheck<ReturnConstRefFromParameterCheck>(
         "bugprone-return-const-ref-from-parameter");
     CheckFactories.registerCheck<SwitchMissingDefaultCaseCheck>(
