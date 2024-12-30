@@ -34,6 +34,7 @@
 #include "clang/Sema/CodeCompleteConsumer.h"
 #include "clang/Sema/DeclSpec.h"
 #include "clang/Sema/Designator.h"
+#include "clang/Sema/HeuristicResolver.h"
 #include "clang/Sema/Lookup.h"
 #include "clang/Sema/Overload.h"
 #include "clang/Sema/ParsedAttr.h"
@@ -5862,8 +5863,10 @@ void SemaCodeCompletion::CodeCompleteMemberReferenceExpr(
   enum CodeCompletionContext::Kind contextKind;
 
   if (IsArrow) {
-    if (const auto *Ptr = ConvertedBaseType->getAs<PointerType>())
-      ConvertedBaseType = Ptr->getPointeeType();
+    if (const auto *PointeeType =
+            Resolver.getPointeeType(ConvertedBaseType.getTypePtr())) {
+      ConvertedBaseType = QualType(PointeeType, 0);
+    }
   }
 
   if (IsArrow) {
@@ -5900,8 +5903,9 @@ void SemaCodeCompletion::CodeCompleteMemberReferenceExpr(
     ExprValueKind BaseKind = Base->getValueKind();
 
     if (IsArrow) {
-      if (const PointerType *Ptr = BaseType->getAs<PointerType>()) {
-        BaseType = Ptr->getPointeeType();
+      if (const auto *PointeeType =
+              Resolver.getPointeeType(BaseType.getTypePtr())) {
+        BaseType = QualType(PointeeType, 0);
         BaseKind = VK_LValue;
       } else if (BaseType->isObjCObjectPointerType() ||
                  BaseType->isTemplateTypeParmType()) {
@@ -10473,4 +10477,5 @@ void SemaCodeCompletion::GatherGlobalCodeCompletions(
 
 SemaCodeCompletion::SemaCodeCompletion(Sema &S,
                                        CodeCompleteConsumer *CompletionConsumer)
-    : SemaBase(S), CodeCompleter(CompletionConsumer) {}
+    : SemaBase(S), CodeCompleter(CompletionConsumer),
+      Resolver(S.getASTContext()) {}
