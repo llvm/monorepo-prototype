@@ -22,3 +22,72 @@ add_entrypoint_object(
     libc.hdr.wchar_macros
     libc.src.__support.wctype_utils
 )
+
+add_entrypoint_object(
+  wmemchr
+  SRCS
+    wmemchr.cpp
+  HDRS
+    wmemchr.h
+  DEPENDS
+    libc.hdr.types.size_t
+    libc.hdr.types.wchar_t
+    libc.src.__support.wctype_utils
+)
+
+add_entrypoint_object(
+  wcslen
+  SRCS
+    wcslen.cpp
+  HDRS
+    wcslen.h
+  DEPENDS
+    libc.hdr.types.size_t
+    libc.hdr.types.wchar_t
+    libc.src.__support.wctype_utils
+)
+
+add_entrypoint_object(
+  wcschr
+  SRCS
+    wcschr.cpp
+  HDRS
+    wcschr.h
+  DEPENDS
+    .wcslen
+    .wmemchr
+    libc.hdr.types.wchar_t
+)
+
+add_entrypoint_object(
+  wcsrchr
+  SRCS
+    wcsrchr.cpp
+  HDRS
+    wcsrchr.h
+  DEPENDS
+    .wcslen
+    libc.hdr.types.wchar_t
+)
+
+add_entrypoint_object(
+  wcspbrk
+  SRCS
+    wcspbrk.cpp
+  HDRS
+    wcspbrk.h
+  DEPENDS
+    .wcslen
+    libc.hdr.types.wchar_t
+)
+
+add_entrypoint_object(
+  wcsstr
+  SRCS
+    wcsstr.cpp
+  HDRS
+    wcsstr.h
+  DEPENDS
+    .wcslen
+    libc.hdr.types.wchar_t
+)
