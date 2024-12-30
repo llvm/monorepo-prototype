@@ -19,6 +19,7 @@
 #include "VPlanDominatorTree.h"
 #include "VPlanPatternMatch.h"
 #include "VPlanUtils.h"
+#include "llvm/ADT/APInt.h"
 #include "llvm/ADT/PostOrderIterator.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SetVector.h"
@@ -673,15 +674,17 @@ static bool optimizeVectorInductionWidthForTCAndVFUF(VPlan &Plan,
   if (!TC || !BestVF.isFixed())
     return false;
 
-  auto TCVal = TC->getValue().tryZExtValue();
-  if (!TCVal)
-    return false;
-
   // Calculate the widest type required for known TC, VF and UF.
-  uint64_t Width = BestVF.getKnownMinValue() * BestUF;
-  uint64_t MaxVal = alignTo(*TCVal, Width) - 1;
-  unsigned MaxActiveBits = Log2_64_Ceil(MaxVal);
-  unsigned NewBitWidth = std::max<unsigned>(PowerOf2Ceil(MaxActiveBits), 8);
+  auto ComputeBitWidth = [](APInt TC, uint64_t Align) {
+    auto AlignedTC =
+        Align * APIntOps::RoundingUDiv(TC, APInt(TC.getBitWidth(), Align),
+                                       APInt::Rounding::UP);
+    auto MaxVal = AlignedTC - 1;
+    return std::max<unsigned>(PowerOf2Ceil(MaxVal.getActiveBits()), 8);
+  };
+  unsigned NewBitWidth =
+      ComputeBitWidth(TC->getValue(), BestVF.getKnownMinValue() * BestUF);
+
   LLVMContext &Ctx = Plan.getCanonicalIV()->getScalarType()->getContext();
   auto *NewIVTy = IntegerType::get(Ctx, NewBitWidth);
 
@@ -709,9 +712,12 @@ static bool optimizeVectorInductionWidthForTCAndVFUF(VPlan &Plan,
     WideIV->setStartValue(NewStart);
     auto *NewStep = Plan.getOrAddLiveIn(ConstantInt::get(NewIVTy, 1));
     WideIV->setStepValue(NewStep);
-    auto *NewBound = Plan.getOrAddLiveIn(ConstantInt::get(NewIVTy, *TCVal - 1));
+
+    auto *NewBTC = new VPWidenCastRecipe(
+        Instruction::Trunc, Plan.getOrCreateBackedgeTakenCount(), NewIVTy);
+    Plan.getVectorPreheader()->appendRecipe(NewBTC);
     auto *Cmp = dyn_cast<VPInstruction>(*WideIV->user_begin());
-    Cmp->setOperand(1, NewBound);
+    Cmp->setOperand(1, NewBTC);
 
     MadeChange = true;
   }
