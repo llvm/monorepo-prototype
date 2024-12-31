@@ -2604,7 +2604,7 @@ genOMP(lower::AbstractConverter &converter, lower::SymMap &symTable,
 static void genOMP(lower::AbstractConverter &converter, lower::SymMap &symTable,
                    semantics::SemanticsContext &semaCtx,
                    lower::pft::Evaluation &eval,
-                   const parser::OpenMPAssumesConstruct &assumesConstruct) {
+                   const parser::OpenMPDeclarativeAssumes &assumesConstruct) {
   TODO(converter.getCurrentLocation(), "OpenMP ASSUMES declaration");
 }
 
@@ -2909,13 +2909,13 @@ static void genOMP(lower::AbstractConverter &converter, lower::SymMap &symTable,
   TODO(clauseLocation, "OpenMP ASSUME construct");
 }
 
-static void
-genOMP(lower::AbstractConverter &converter, lower::SymMap &symTable,
-       semantics::SemanticsContext &semaCtx, lower::pft::Evaluation &eval,
-       const parser::OpenMPBeginAssumesConstruct &beginAssumesConstruct) {
+static void genOMP(lower::AbstractConverter &converter, lower::SymMap &symTable,
+                   semantics::SemanticsContext &semaCtx,
+                   lower::pft::Evaluation &eval,
+                   const parser::OpenMPAssumesConstruct &assumesConstruct) {
   mlir::Location clauseLocation =
-      converter.genLocation(beginAssumesConstruct.source);
-  TODO(clauseLocation, "OpenMP BEGIN ASSUMES construct");
+      converter.genLocation(assumesConstruct.source);
+  TODO(clauseLocation, "OpenMP ASSUMES construct");
 }
 
 static void genOMP(lower::AbstractConverter &converter, lower::SymMap &symTable,

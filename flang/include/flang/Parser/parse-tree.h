@@ -4226,14 +4226,14 @@ struct OpenMPAssumeConstruct {
   CharBlock source;
 };
 
-struct OpenMPAssumesConstruct {
-  TUPLE_CLASS_BOILERPLATE(OpenMPAssumesConstruct);
+struct OpenMPDeclarativeAssumes {
+  TUPLE_CLASS_BOILERPLATE(OpenMPDeclarativeAssumes);
   std::tuple<Verbatim, OmpClauseList> t;
   CharBlock source;
 };
 
-struct OmpBeginAssumesDirective {
-  TUPLE_CLASS_BOILERPLATE(OmpBeginAssumesDirective);
+struct OmpAssumesDirective {
+  TUPLE_CLASS_BOILERPLATE(OmpAssumesDirective);
   std::tuple<Verbatim, OmpClauseList> t;
   CharBlock source;
 };
@@ -4245,14 +4245,14 @@ struct OmpEndAssumesDirective {
 
 //    structured-block
 // ...
-struct OpenMPAssumesPartConstruct {
-  WRAPPER_CLASS_BOILERPLATE(OpenMPAssumesPartConstruct, Block);
+struct OmpAssumesPartConstruct {
+  WRAPPER_CLASS_BOILERPLATE(OmpAssumesPartConstruct, Block);
   CharBlock source;
 };
 
-struct OpenMPBeginAssumesConstruct {
-  TUPLE_CLASS_BOILERPLATE(OpenMPBeginAssumesConstruct);
-  std::tuple<OmpBeginAssumesDirective, OpenMPAssumesPartConstruct,
+struct OpenMPAssumesConstruct {
+  TUPLE_CLASS_BOILERPLATE(OpenMPAssumesConstruct);
+  std::tuple<OmpAssumesDirective, OmpAssumesPartConstruct,
       OmpEndAssumesDirective>
       t;
   CharBlock source;
@@ -4391,7 +4391,7 @@ struct OpenMPDeclarativeAllocate {
 struct OpenMPDeclarativeConstruct {
   UNION_CLASS_BOILERPLATE(OpenMPDeclarativeConstruct);
   CharBlock source;
-  std::variant<OpenMPDeclarativeAllocate, OpenMPAssumesConstruct,
+  std::variant<OpenMPDeclarativeAllocate, OpenMPDeclarativeAssumes,
       OpenMPDeclareMapperConstruct, OpenMPDeclareReductionConstruct,
       OpenMPDeclareSimdConstruct, OpenMPDeclareTargetConstruct,
       OpenMPThreadprivate, OpenMPRequiresConstruct>
@@ -4664,8 +4664,7 @@ struct OpenMPConstruct {
       OpenMPSectionConstruct, OpenMPLoopConstruct, OpenMPBlockConstruct,
       OpenMPAtomicConstruct, OpenMPDeclarativeAllocate, OpenMPErrorConstruct,
       OpenMPExecutableAllocate, OpenMPAllocatorsConstruct,
-      OpenMPAssumeConstruct, OpenMPBeginAssumesConstruct,
-      OpenMPCriticalConstruct>
+      OpenMPAssumeConstruct, OpenMPAssumesConstruct, OpenMPCriticalConstruct>
       u;
 };
 

@@ -2602,9 +2602,9 @@ public:
     Put("\n");
     EndOpenMP();
   }
-  void Unparse(const OmpBeginAssumesDirective &x) {
+  void Unparse(const OmpAssumesDirective &x) {
     BeginOpenMP();
-    Word("!$OMP BEGIN ASSUMES");
+    Word("!$OMP ASSUMES");
     Walk(std::get<OmpClauseList>(x.t), ", ");
     Put("\n");
     EndOpenMP();
@@ -2667,7 +2667,7 @@ public:
     Word("!$OMP ");
     return common::visit(
         common::visitors{
-            [&](const OpenMPAssumesConstruct &z) {
+            [&](const OpenMPDeclarativeAssumes &z) {
               Word("ASSUMES ");
               Walk(std::get<OmpClauseList>(z.t));
               Put("\n");
