@@ -23,6 +23,8 @@ namespace clang::tidy::readability {
 /// The check matches two patterns:
 ///   sv = sv.substr(N) -> sv.remove_prefix(N)
 ///   sv = sv.substr(0, sv.length() - N) -> sv.remove_suffix(N)
+///   sv = sv.substr(0, sv.length()) -> // Remove redundant self-copy
+///   sv1 = sv2.substr(0, sv2.length()) -> sv1 = sv2
 ///
 /// These replacements make the intent clearer and are more efficient as they
 /// modify the string_view in place rather than creating a new one.
@@ -32,6 +34,9 @@ public:
       : ClangTidyCheck(Name, Context) {}
   void registerMatchers(ast_matchers::MatchFinder *Finder) override;
   void check(const ast_matchers::MatchFinder::MatchResult &Result) override;
+  bool isLanguageVersionSupported(const LangOptions &LangOpts) const override {
+    return LangOpts.CPlusPlus17;
+  }
 };
 
 } // namespace clang::tidy::readability

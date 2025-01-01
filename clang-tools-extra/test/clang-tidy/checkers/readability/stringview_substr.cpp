@@ -1,4 +1,4 @@
-// RUN: %check_clang_tidy %s readability-stringview-substr %t
+// RUN: %check_clang_tidy %s readability-stringview-substr -std=c++17 %t
 
 namespace std {
 template <typename T>
@@ -12,6 +12,7 @@ public:
   void remove_prefix(size_type n) {}
   void remove_suffix(size_type n) {}
   size_type length() const { return 0; }
+  size_type size() const { return 0; }
   basic_string_view& operator=(const basic_string_view&) { return *this; }
 };
 
@@ -37,6 +38,28 @@ void test_basic() {
   sv = sv.substr(0, sv.length() - (3 + 2));
   // CHECK-MESSAGES: :[[@LINE-1]]:3: warning: prefer 'remove_suffix' over 'substr' for removing characters from the end [readability-stringview-substr]
   // CHECK-FIXES: sv.remove_suffix((3 + 2))
+}
+
+void test_size_method() {
+  std::string_view sv("test");
+  std::string_view sv2("test");
+
+  // Should match: remove_suffix with size()
+  sv = sv.substr(0, sv.size() - 3);
+  // CHECK-MESSAGES: :[[@LINE-1]]:3: warning: prefer 'remove_suffix' over 'substr' for removing characters from the end [readability-stringview-substr]
+  // CHECK-FIXES: sv.remove_suffix(3)
+  
+  // Should match: remove redundant self copies
+  sv = sv.substr(0, sv.size());
+  // CHECK-MESSAGES: :[[@LINE-1]]:3: warning: redundant self-copy [readability-stringview-substr]
+  
+  sv = sv.substr(0, sv.size() - 0);
+  // CHECK-MESSAGES: :[[@LINE-1]]:3: warning: redundant self-copy [readability-stringview-substr]
+  
+  // Should match: simplify copies between different variables 
+  sv2 = sv.substr(0, sv.size());
+  // CHECK-MESSAGES: :[[@LINE-1]]:3: warning: prefer direct copy over substr [readability-stringview-substr]
+  // CHECK-FIXES: sv2 = sv
 }
 
 void test_copies() {

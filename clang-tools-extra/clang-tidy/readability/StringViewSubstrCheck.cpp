@@ -108,7 +108,7 @@ void StringViewSubstrCheck::check(const MatchFinder::MatchResult &Result) {
         if (const auto *LengthCall = dyn_cast<CXXMemberCallExpr>(LHS)) {
           if (const auto *LengthMethod =
                   dyn_cast<CXXMethodDecl>(LengthCall->getDirectCallee())) {
-            if (LengthMethod->getName() == "length") {
+            if (LengthMethod->getName() == "length" || LengthMethod->getName() == "size") {
               const Expr *LengthObject =
                   LengthCall->getImplicitObjectArgument();
               const auto *LengthDRE =
@@ -151,10 +151,10 @@ void StringViewSubstrCheck::check(const MatchFinder::MatchResult &Result) {
       }
     } else if (const auto *LengthCall =
                    dyn_cast<CXXMemberCallExpr>(LengthArg)) {
-      // Handle direct length() call
+      // Handle direct length() or size() call
       if (const auto *LengthMethod =
               dyn_cast<CXXMethodDecl>(LengthCall->getDirectCallee())) {
-        if (LengthMethod->getName() == "length") {
+        if (LengthMethod->getName() == "length" || LengthMethod->getName() == "size") {
           const Expr *LengthObject = LengthCall->getImplicitObjectArgument();
           const auto *LengthDRE =
               dyn_cast<DeclRefExpr>(LengthObject->IgnoreParenImpCasts());
