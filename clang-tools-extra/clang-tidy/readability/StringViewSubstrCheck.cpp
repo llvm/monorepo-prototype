@@ -22,7 +22,7 @@ void StringViewSubstrCheck::registerMatchers(MatchFinder *Finder) {
   // Match assignment to string_view's substr
   Finder->addMatcher(
       cxxOperatorCallExpr(
-          hasOverloadedOperatorName("="),
+          unless(isInTemplateInstantiation()), hasOverloadedOperatorName("="),
           hasArgument(0, expr(HasStringViewType).bind("target")),
           hasArgument(
               1, cxxMemberCallExpr(callee(memberExpr(hasDeclaration(
@@ -108,7 +108,8 @@ void StringViewSubstrCheck::check(const MatchFinder::MatchResult &Result) {
         if (const auto *LengthCall = dyn_cast<CXXMemberCallExpr>(LHS)) {
           if (const auto *LengthMethod =
                   dyn_cast<CXXMethodDecl>(LengthCall->getDirectCallee())) {
-            if (LengthMethod->getName() == "length" || LengthMethod->getName() == "size") {
+            if (LengthMethod->getName() == "length" ||
+                LengthMethod->getName() == "size") {
               const Expr *LengthObject =
                   LengthCall->getImplicitObjectArgument();
               const auto *LengthDRE =
@@ -154,7 +155,8 @@ void StringViewSubstrCheck::check(const MatchFinder::MatchResult &Result) {
       // Handle direct length() or size() call
       if (const auto *LengthMethod =
               dyn_cast<CXXMethodDecl>(LengthCall->getDirectCallee())) {
-        if (LengthMethod->getName() == "length" || LengthMethod->getName() == "size") {
+        if (LengthMethod->getName() == "length" ||
+            LengthMethod->getName() == "size") {
           const Expr *LengthObject = LengthCall->getImplicitObjectArgument();
           const auto *LengthDRE =
               dyn_cast<DeclRefExpr>(LengthObject->IgnoreParenImpCasts());

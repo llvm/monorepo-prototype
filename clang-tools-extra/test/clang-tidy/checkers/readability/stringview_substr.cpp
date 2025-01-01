@@ -62,6 +62,23 @@ void test_size_method() {
   // CHECK-FIXES: sv2 = sv
 }
 
+template <typename T>
+void test_template_instantiation() {
+  std::basic_string_view<T> sv("test");
+  std::basic_string_view<T> sv2("test");
+
+  // Should not match: inside a template instantiation
+  sv = sv.substr(0, sv.size() - 3);      // No warning
+  sv = sv.substr(0, sv.length());        // No warning
+  sv2 = sv.substr(0, sv.size());         // No warning
+}
+
+// No matches when instantiated
+void test_template_no_matches() {
+  test_template_instantiation<char>();    // No warnings
+  test_template_instantiation<wchar_t>(); // No warnings
+}
+
 void test_copies() {
   std::string_view sv("test");
   std::string_view sv1("test");
