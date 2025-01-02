@@ -441,6 +441,9 @@ public:
   bool Pre(const parser::OpenMPDeclarativeAllocate &);
   void Post(const parser::OpenMPDeclarativeAllocate &) { PopContext(); }
 
+  bool Pre(const parser::OpenMPDispatchConstruct &);
+  void Post(const parser::OpenMPDispatchConstruct &) { PopContext(); }
+
   bool Pre(const parser::OpenMPExecutableAllocate &);
   void Post(const parser::OpenMPExecutableAllocate &);
 
@@ -1992,6 +1995,11 @@ bool OmpAttributeVisitor::Pre(const parser::OpenMPDeclarativeAllocate &x) {
   const auto &list{std::get<parser::OmpObjectList>(x.t)};
   ResolveOmpObjectList(list, Symbol::Flag::OmpDeclarativeAllocateDirective);
   return false;
+}
+
+bool OmpAttributeVisitor::Pre(const parser::OpenMPDispatchConstruct &x) {
+  PushContext(x.source, llvm::omp::Directive::OMPD_dispatch);
+  return true;
 }
 
 bool OmpAttributeVisitor::Pre(const parser::OpenMPExecutableAllocate &x) {

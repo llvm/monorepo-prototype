@@ -4506,6 +4506,31 @@ struct OpenMPDepobjConstruct {
   std::tuple<Verbatim, OmpObject, OmpClause> t;
 };
 
+// Ref: [5.2: 200-201]
+//
+// dispatch-construct -> DISPATCH dispatch-clause
+// dispatch-clause -> depend-clause |
+//                    device-clause |
+//                    is_device_ptr-clause |
+//                    nocontext-clause |
+//                    novariants-clause |
+//                    nowait-clause
+struct OmpDispatchDirective {
+  TUPLE_CLASS_BOILERPLATE(OmpDispatchDirective);
+  CharBlock source;
+  std::tuple<Verbatim, OmpClauseList> t;
+};
+
+EMPTY_CLASS(OmpEndDispatchDirective);
+
+struct OpenMPDispatchConstruct {
+  TUPLE_CLASS_BOILERPLATE(OpenMPDispatchConstruct);
+  CharBlock source;
+  std::tuple<OmpDispatchDirective, Block,
+      std::optional<OmpEndDispatchDirective>>
+      t;
+};
+
 // Ref: OpenMP [5.2:216-218]
 // ERROR AT(compilation|execution) SEVERITY(fatal|warning) MESSAGE("msg-str)
 struct OpenMPErrorConstruct {
@@ -4586,8 +4611,8 @@ struct OpenMPConstruct {
   UNION_CLASS_BOILERPLATE(OpenMPConstruct);
   std::variant<OpenMPStandaloneConstruct, OpenMPSectionsConstruct,
       OpenMPSectionConstruct, OpenMPLoopConstruct, OpenMPBlockConstruct,
-      OpenMPAtomicConstruct, OpenMPDeclarativeAllocate, OpenMPErrorConstruct,
-      OpenMPExecutableAllocate, OpenMPAllocatorsConstruct,
+      OpenMPAtomicConstruct, OpenMPDeclarativeAllocate, OpenMPDispatchConstruct,
+      OpenMPErrorConstruct, OpenMPExecutableAllocate, OpenMPAllocatorsConstruct,
       OpenMPCriticalConstruct>
       u;
 };
