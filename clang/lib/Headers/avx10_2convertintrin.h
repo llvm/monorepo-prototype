@@ -40,7 +40,7 @@
 ///
 /// ENDFOR
 ///
-/// dst[MAX:127] := 0
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -79,7 +79,7 @@ static __inline__ __m128h __DEFAULT_FN_ATTRS128 _mm_cvtx2ps_ph(__m128 __A,
 /// 	FI
 /// ENDFOR
 ///
-/// dst[MAX:127] := 0
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
@@ -123,7 +123,7 @@ _mm_mask_cvtx2ps_ph(__m128h __W, __mmask8 __U, __m128 __A, __m128 __B) {
 /// 	FI
 /// ENDFOR
 ///
-/// dst[MAX:127] := 0
+/// dst[MAX:128] := 0
 /// \endcode
 ///
 /// \headerfile <immintrin.h>
