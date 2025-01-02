@@ -1171,6 +1171,7 @@ unsigned RecurrenceDescriptor::getOpcode(RecurKind Kind) {
 SmallVector<Instruction *, 4>
 RecurrenceDescriptor::getReductionOpChain(PHINode *Phi, Loop *L) const {
   SmallVector<Instruction *, 4> ReductionOperations;
+  assert(Kind != RecurKind::None && "Unexpected recurrence kind");
   bool IsNonArithmetic = !isArithmeticRecurrenceKind(Kind);
 
   // Search down from the Phi to the LoopExitInstr, looking for instructions
