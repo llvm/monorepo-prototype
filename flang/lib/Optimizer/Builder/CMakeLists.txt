@@ -49,6 +49,8 @@ add_flang_library(FIRBuilder
   FIRDialectSupport
   FIRSupport
   HLFIRDialect
+
+  MLIR_LIBS
   ${dialect_libs}
   ${extension_libs}
 )

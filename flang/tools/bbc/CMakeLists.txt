@@ -28,6 +28,9 @@ target_link_libraries(bbc PRIVATE
   flangFrontend
   flangPasses
   FlangOpenMPTransforms
+)
+
+mlir_target_link_libraries(bbc PRIVATE
   ${dialect_libs}
   ${extension_libs}
   MLIRAffineToStandard
