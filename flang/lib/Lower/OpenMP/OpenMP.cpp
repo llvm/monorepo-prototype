@@ -2594,6 +2594,13 @@ genOMP(lower::AbstractConverter &converter, lower::SymMap &symTable,
   TODO(converter.getCurrentLocation(), "OpenMPDeclarativeAllocate");
 }
 
+static void genOMP(lower::AbstractConverter &converter, lower::SymMap &symTable,
+                   semantics::SemanticsContext &semaCtx,
+                   lower::pft::Evaluation &eval,
+                   const parser::OpenMPDeclarativeAssumes &assumesConstruct) {
+  TODO(converter.getCurrentLocation(), "OpenMP ASSUMES declaration");
+}
+
 static void genOMP(
     lower::AbstractConverter &converter, lower::SymMap &symTable,
     semantics::SemanticsContext &semaCtx, lower::pft::Evaluation &eval,
@@ -2884,6 +2891,24 @@ static void genOMP(lower::AbstractConverter &converter, lower::SymMap &symTable,
                           eval, source, directive, clauses)};
   genOMPDispatch(converter, symTable, semaCtx, eval, currentLocation, queue,
                  queue.begin());
+}
+
+static void genOMP(lower::AbstractConverter &converter, lower::SymMap &symTable,
+                   semantics::SemanticsContext &semaCtx,
+                   lower::pft::Evaluation &eval,
+                   const parser::OpenMPAssumeConstruct &assumeConstruct) {
+  const auto &verbatim = std::get<parser::Verbatim>(assumeConstruct.t);
+  mlir::Location clauseLocation = converter.genLocation(verbatim.source);
+  TODO(clauseLocation, "OpenMP ASSUME construct");
+}
+
+static void genOMP(lower::AbstractConverter &converter, lower::SymMap &symTable,
+                   semantics::SemanticsContext &semaCtx,
+                   lower::pft::Evaluation &eval,
+                   const parser::OpenMPAssumesConstruct &assumesConstruct) {
+  mlir::Location clauseLocation =
+      converter.genLocation(assumesConstruct.source);
+  TODO(clauseLocation, "OpenMP ASSUMES construct");
 }
 
 static void genOMP(lower::AbstractConverter &converter, lower::SymMap &symTable,

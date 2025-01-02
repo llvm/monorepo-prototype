@@ -2074,6 +2074,9 @@ public:
                   },
         x.u);
   }
+  void Unparse(const llvm::omp::Directive &x) {
+    Word(llvm::omp::getOpenMPDirectiveName(x));
+  }
   void Unparse(const OmpDirectiveNameModifier &x) {
     Word(llvm::omp::getOpenMPDirectiveName(x.v));
   }
@@ -2113,6 +2116,8 @@ public:
     Walk(std::get<std::optional<std::list<Modifier>>>(x.t), ": ");
     Walk(std::get<ScalarIntExpr>(x.t));
   }
+  void Unparse(const OmpAbsentClause &x) { Walk("", x.v, ","); }
+  void Unparse(const OmpContainsClause &x) { Walk("", x.v, ","); }
   void Unparse(const OmpAffinityClause &x) {
     using Modifier = OmpAffinityClause::Modifier;
     Walk(std::get<std::optional<std::list<Modifier>>>(x.t), ": ");
@@ -2590,6 +2595,25 @@ public:
       Walk(*end);
     }
   }
+  void Unparse(const OpenMPAssumeConstruct &x) {
+    BeginOpenMP();
+    Word("!$OMP ASSUME");
+    Walk(std::get<OmpClauseList>(x.t), ", ");
+    Put("\n");
+    EndOpenMP();
+  }
+  void Unparse(const OmpAssumesDirective &x) {
+    BeginOpenMP();
+    Word("!$OMP ASSUMES");
+    Walk(std::get<OmpClauseList>(x.t), ", ");
+    Put("\n");
+    EndOpenMP();
+  }
+  void Unparse(const OmpEndAssumesDirective &x) {
+    BeginOpenMP();
+    Word("!$OMP END ASSUMES\n");
+    EndOpenMP();
+  }
   void Unparse(const OmpCriticalDirective &x) {
     BeginOpenMP();
     Word("!$OMP CRITICAL");
@@ -2643,6 +2667,13 @@ public:
     Word("!$OMP ");
     return common::visit(
         common::visitors{
+            [&](const OpenMPDeclarativeAssumes &z) {
+              Word("ASSUMES ");
+              Walk(std::get<OmpClauseList>(z.t));
+              Put("\n");
+              EndOpenMP();
+              return false;
+            },
             [&](const OpenMPDeclarativeAllocate &z) {
               Word("ALLOCATE (");
               Walk(std::get<OmpObjectList>(z.t));
@@ -2806,7 +2837,9 @@ public:
     Put("\n");
     EndOpenMP();
   }
-  void Unparse(const OmpClauseList &x) { Walk(" ", x.v, " "); }
+  void Unparse(const OmpClauseList &x, const char *sep = " ") {
+    Walk(" ", x.v, sep);
+  }
   void Unparse(const OpenMPSimpleStandaloneConstruct &x) {
     BeginOpenMP();
     Word("!$OMP ");
@@ -3063,6 +3096,10 @@ private:
   void Walk(const std::list<A> &list, const char *comma = ", ",
       const char *suffix = "") {
     return Walk("", list, comma, suffix);
+  }
+
+  void Walk(const OmpClauseList &x, const char *sep = " ") {
+    return Walk(" ", x.v, sep);
   }
 
   // Traverse a std::tuple<>, with an optional separator.
