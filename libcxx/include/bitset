@@ -524,11 +524,7 @@ inline _LIBCPP_CONSTEXPR __bitset<1, _Size>::__bitset() _NOEXCEPT : __first_(0) 
 
 template <size_t _Size>
 inline _LIBCPP_CONSTEXPR __bitset<1, _Size>::__bitset(unsigned long long __v) _NOEXCEPT
-    : __first_(static_cast<__storage_type>(__v)) {
-  // Force __bits_per_word to be instantiated to avoid "gdb.error: There is no member or method named
-  // __bits_per_word"
-  (void)__bits_per_word;
-}
+    : __first_(_Size == __bits_per_word ? static_cast<__storage_type>(__v) : static_cast<__storage_type>(__v)) {}
 
 template <size_t _Size>
 inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX23 void
