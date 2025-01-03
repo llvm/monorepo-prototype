@@ -143,6 +143,13 @@ void test_should_not_match() {
 
   // No match: Different string_views
   sv = sv2.substr(0, sv2.length() - 3); // No warning
-
   
 }
+
+void f(std::string_view) {}
+void test_expr_with_cleanups() {
+ std::string_view sv("test");
+ const auto copy = sv = sv.substr(0, sv.length() - 3); // No warning
+  f(sv = sv.substr(0, sv.length() - 3)); // No warning
+}
+

@@ -16,20 +16,28 @@ using namespace clang::ast_matchers;
 namespace clang::tidy::readability {
 
 void StringViewSubstrCheck::registerMatchers(MatchFinder *Finder) {
-  const auto HasStringViewType = hasType(hasUnqualifiedDesugaredType(recordType(
-      hasDeclaration(recordDecl(hasName("::std::basic_string_view"))))));
+  // Match string_view type
+  const auto StringViewDecl = recordDecl(hasName("::std::basic_string_view"));
+  const auto IsStringView = qualType(hasUnqualifiedDesugaredType(
+      recordType(hasDeclaration(StringViewDecl))));
 
-  // Match assignment to string_view's substr
+  // Match substr() call on string_views
+  const auto SubstrCall = cxxMemberCallExpr(
+      callee(memberExpr(hasDeclaration(cxxMethodDecl(hasName("substr"))))),
+      on(expr(hasType(IsStringView)).bind("source")));
+
+  // Match assignment to string_view's substr, but exclude assignments in expressions
   Finder->addMatcher(
-      cxxOperatorCallExpr(
-          unless(isInTemplateInstantiation()), hasOverloadedOperatorName("="),
-          hasArgument(0, expr(HasStringViewType).bind("target")),
-          hasArgument(
-              1, cxxMemberCallExpr(callee(memberExpr(hasDeclaration(
-                                       cxxMethodDecl(hasName("substr"))))),
-                                   on(expr(HasStringViewType).bind("source")))
-                     .bind("substr_call")))
-          .bind("assignment"),
+      stmt(
+          cxxOperatorCallExpr(
+              unless(isInTemplateInstantiation()),
+              hasOverloadedOperatorName("="),
+              hasArgument(0, expr(hasType(IsStringView)).bind("target")),
+              hasArgument(1, SubstrCall.bind("substr_call")))
+              .bind("assignment"),
+          // Exclude assignments used in larger expressions
+          unless(hasAncestor(varDecl())),
+          unless(hasAncestor(callExpr()))),
       this);
 }
 
@@ -44,6 +52,8 @@ void StringViewSubstrCheck::check(const MatchFinder::MatchResult &Result) {
   if (!Assignment || !Target || !Source || !SubstrCall) {
     return;
   }
+
+
 
   // Get the DeclRefExpr for the target and source
   const auto *TargetDRE = dyn_cast<DeclRefExpr>(Target->IgnoreParenImpCasts());
