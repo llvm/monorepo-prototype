@@ -239,6 +239,7 @@ def OMPC_Indirect : Clause<"indirect"> {
 }
 def OMPC_Init : Clause<"init"> {
   let clangClass = "OMPInitClause";
+  let flangClass = "OmpInitClause";
 }
 def OMPC_InReduction : Clause<"in_reduction"> {
   let clangClass = "OMPInReductionClause";
@@ -507,6 +508,7 @@ def OMPC_Update : Clause<"update"> {
 }
 def OMPC_Use : Clause<"use"> {
   let clangClass = "OMPUseClause";
+  let flangClass = "OmpUseClause";
 }
 def OMPC_UsesAllocators : Clause<"uses_allocators"> {
   let clangClass = "OMPUsesAllocatorsClause";
