@@ -29,6 +29,12 @@ using namespace mlir::detail;
 
 #define DEBUG_TYPE "dialect-conversion"
 
+/// Debugging flag. If set to "true", the materialization kind is attached as
+/// an attribute to builtin.unrealized_conversion_cast ops. This flag takes
+/// effect only if ConversionConfig::buildMaterialization = false. (Otherwise,
+/// the annotated ops are replaced with materializations.)
+static const bool kDumpMaterializationKind = false;
+
 /// A utility function to log a successful result for the given reason.
 template <typename... Args>
 static void logSuccess(llvm::ScopedPrinter &os, StringRef fmt, Args &&...args) {
@@ -650,7 +656,7 @@ public:
 };
 
 /// The type of materialization.
-enum MaterializationKind {
+enum MaterializationKind : int8_t {
   /// This materialization materializes a conversion for an illegal block
   /// argument type, to the original one.
   Argument,
@@ -1423,6 +1429,8 @@ ValueRange ConversionPatternRewriterImpl::buildUnresolvedMaterialization(
   builder.setInsertionPoint(ip.getBlock(), ip.getPoint());
   auto convertOp =
       builder.create<UnrealizedConversionCastOp>(loc, outputTypes, inputs);
+  if (kDumpMaterializationKind)
+    convertOp->setAttr("kind", builder.getI32IntegerAttr(kind));
   if (valueToMap) {
     assert(outputTypes.size() == 1 && "1:N mapping is not supported");
     mapping.map(valueToMap, convertOp.getResult(0));
