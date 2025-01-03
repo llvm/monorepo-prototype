@@ -6543,14 +6543,16 @@ ProcessDeclAttribute(Sema &S, Scope *scope, Decl *D, const ParsedAttr &AL,
   // though they were unknown attributes.
   if (AL.getKind() == ParsedAttr::UnknownAttribute ||
       !AL.existsInTarget(S.Context.getTargetInfo())) {
-    S.Diag(AL.getLoc(),
-           AL.isRegularKeywordAttribute()
-               ? (unsigned)diag::err_keyword_not_supported_on_target
-           : AL.isDeclspecAttribute()
-               ? (unsigned)diag::warn_unhandled_ms_attribute_ignored
-           : AL.getScopeName() ? (unsigned)diag::ext_unknown_attribute_ignored
-                               : (unsigned)diag::warn_unknown_attribute_ignored)
-        << AL << AL.getRange();
+
+    unsigned DiagID = diag::warn_unknown_attribute_ignored;
+    if (AL.isRegularKeywordAttribute())
+      DiagID = diag::err_keyword_not_supported_on_target;
+    else if (AL.isDeclspecAttribute())
+      DiagID = diag::warn_unhandled_ms_attribute_ignored;
+    else if (AL.getScopeName() && !AL.isKnownScopeName())
+      return;
+
+    S.Diag(AL.getLoc(), DiagID) << AL << AL.getRange();
     return;
   }
 
