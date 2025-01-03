@@ -46,7 +46,7 @@ define void @test(ptr %dp0, ptr addrspace(1) %dp1, ptr addrspace(3) %dp3, bfloat
 ; CHECKPTX71-LABEL: test(
 ; CHECKPTX71:       {
 ; CHECKPTX71-NEXT:    .reg .pred %p<5>;
-; CHECKPTX71-NEXT:    .reg .b16 %rs<18>;
+; CHECKPTX71-NEXT:    .reg .b16 %rs<10>;
 ; CHECKPTX71-NEXT:    .reg .b32 %r<58>;
 ; CHECKPTX71-NEXT:    .reg .f32 %f<12>;
 ; CHECKPTX71-EMPTY:
@@ -69,8 +69,8 @@ define void @test(ptr %dp0, ptr addrspace(1) %dp1, ptr addrspace(3) %dp3, bfloat
 ; CHECKPTX71-NEXT:    cvt.u16.u32 %rs2, %r28;
 ; CHECKPTX71-NEXT:    cvt.f32.bf16 %f1, %rs2;
 ; CHECKPTX71-NEXT:    add.rn.f32 %f3, %f1, %f2;
-; CHECKPTX71-NEXT:    cvt.rn.bf16.f32 %rs4, %f3;
-; CHECKPTX71-NEXT:    cvt.u32.u16 %r29, %rs4;
+; CHECKPTX71-NEXT:    cvt.rn.bf16.f32 %rs3, %f3;
+; CHECKPTX71-NEXT:    cvt.u32.u16 %r29, %rs3;
 ; CHECKPTX71-NEXT:    shl.b32 %r30, %r29, %r2;
 ; CHECKPTX71-NEXT:    and.b32 %r31, %r54, %r3;
 ; CHECKPTX71-NEXT:    or.b32 %r32, %r31, %r30;
@@ -83,11 +83,11 @@ define void @test(ptr %dp0, ptr addrspace(1) %dp1, ptr addrspace(3) %dp3, bfloat
 ; CHECKPTX71-NEXT:  $L__BB0_3: // %atomicrmw.start27
 ; CHECKPTX71-NEXT:    // =>This Inner Loop Header: Depth=1
 ; CHECKPTX71-NEXT:    shr.u32 %r33, %r55, %r2;
-; CHECKPTX71-NEXT:    cvt.u16.u32 %rs6, %r33;
-; CHECKPTX71-NEXT:    cvt.f32.bf16 %f4, %rs6;
+; CHECKPTX71-NEXT:    cvt.u16.u32 %rs4, %r33;
+; CHECKPTX71-NEXT:    cvt.f32.bf16 %f4, %rs4;
 ; CHECKPTX71-NEXT:    add.rn.f32 %f5, %f4, 0f3F800000;
-; CHECKPTX71-NEXT:    cvt.rn.bf16.f32 %rs8, %f5;
-; CHECKPTX71-NEXT:    cvt.u32.u16 %r34, %rs8;
+; CHECKPTX71-NEXT:    cvt.rn.bf16.f32 %rs5, %f5;
+; CHECKPTX71-NEXT:    cvt.u32.u16 %r34, %rs5;
 ; CHECKPTX71-NEXT:    shl.b32 %r35, %r34, %r2;
 ; CHECKPTX71-NEXT:    and.b32 %r36, %r55, %r3;
 ; CHECKPTX71-NEXT:    or.b32 %r37, %r36, %r35;
@@ -99,17 +99,18 @@ define void @test(ptr %dp0, ptr addrspace(1) %dp1, ptr addrspace(3) %dp3, bfloat
 ; CHECKPTX71-NEXT:    and.b32 %r10, %r22, -4;
 ; CHECKPTX71-NEXT:    shl.b32 %r38, %r22, 3;
 ; CHECKPTX71-NEXT:    and.b32 %r11, %r38, 24;
-; CHECKPTX71-NEXT:    shl.b32 %r40, %r26, %r11;
+; CHECKPTX71-NEXT:    mov.b32 %r39, 65535;
+; CHECKPTX71-NEXT:    shl.b32 %r40, %r39, %r11;
 ; CHECKPTX71-NEXT:    not.b32 %r12, %r40;
 ; CHECKPTX71-NEXT:    ld.global.u32 %r56, [%r10];
 ; CHECKPTX71-NEXT:  $L__BB0_5: // %atomicrmw.start9
 ; CHECKPTX71-NEXT:    // =>This Inner Loop Header: Depth=1
 ; CHECKPTX71-NEXT:    shr.u32 %r41, %r56, %r11;
-; CHECKPTX71-NEXT:    cvt.u16.u32 %rs10, %r41;
-; CHECKPTX71-NEXT:    cvt.f32.bf16 %f6, %rs10;
+; CHECKPTX71-NEXT:    cvt.u16.u32 %rs6, %r41;
+; CHECKPTX71-NEXT:    cvt.f32.bf16 %f6, %rs6;
 ; CHECKPTX71-NEXT:    add.rn.f32 %f8, %f6, %f2;
-; CHECKPTX71-NEXT:    cvt.rn.bf16.f32 %rs12, %f8;
-; CHECKPTX71-NEXT:    cvt.u32.u16 %r42, %rs12;
+; CHECKPTX71-NEXT:    cvt.rn.bf16.f32 %rs7, %f8;
+; CHECKPTX71-NEXT:    cvt.u32.u16 %r42, %rs7;
 ; CHECKPTX71-NEXT:    shl.b32 %r43, %r42, %r11;
 ; CHECKPTX71-NEXT:    and.b32 %r44, %r56, %r12;
 ; CHECKPTX71-NEXT:    or.b32 %r45, %r44, %r43;
@@ -121,17 +122,18 @@ define void @test(ptr %dp0, ptr addrspace(1) %dp1, ptr addrspace(3) %dp3, bfloat
 ; CHECKPTX71-NEXT:    and.b32 %r16, %r23, -4;
 ; CHECKPTX71-NEXT:    shl.b32 %r46, %r23, 3;
 ; CHECKPTX71-NEXT:    and.b32 %r17, %r46, 24;
-; CHECKPTX71-NEXT:    shl.b32 %r48, %r26, %r17;
+; CHECKPTX71-NEXT:    mov.b32 %r47, 65535;
+; CHECKPTX71-NEXT:    shl.b32 %r48, %r47, %r17;
 ; CHECKPTX71-NEXT:    not.b32 %r18, %r48;
 ; CHECKPTX71-NEXT:    ld.shared.u32 %r57, [%r16];
 ; CHECKPTX71-NEXT:  $L__BB0_7: // %atomicrmw.start
 ; CHECKPTX71-NEXT:    // =>This Inner Loop Header: Depth=1
 ; CHECKPTX71-NEXT:    shr.u32 %r49, %r57, %r17;
-; CHECKPTX71-NEXT:    cvt.u16.u32 %rs14, %r49;
-; CHECKPTX71-NEXT:    cvt.f32.bf16 %f9, %rs14;
+; CHECKPTX71-NEXT:    cvt.u16.u32 %rs8, %r49;
+; CHECKPTX71-NEXT:    cvt.f32.bf16 %f9, %rs8;
 ; CHECKPTX71-NEXT:    add.rn.f32 %f11, %f9, %f2;
-; CHECKPTX71-NEXT:    cvt.rn.bf16.f32 %rs16, %f11;
-; CHECKPTX71-NEXT:    cvt.u32.u16 %r50, %rs16;
+; CHECKPTX71-NEXT:    cvt.rn.bf16.f32 %rs9, %f11;
+; CHECKPTX71-NEXT:    cvt.u32.u16 %r50, %rs9;
 ; CHECKPTX71-NEXT:    shl.b32 %r51, %r50, %r17;
 ; CHECKPTX71-NEXT:    and.b32 %r52, %r57, %r18;
 ; CHECKPTX71-NEXT:    or.b32 %r53, %r52, %r51;
