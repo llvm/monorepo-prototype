@@ -121,7 +121,8 @@ add_entrypoint_object(
     gmtime.h
   DEPENDS
     .time_utils
-    libc.include.time
+    libc.src.stdio.fopen
+    libc.src.time.clock_gettime
 )
 
 add_entrypoint_object(
@@ -132,7 +133,8 @@ add_entrypoint_object(
     gmtime_r.h
   DEPENDS
     .time_utils
-    libc.include.time
+    libc.src.stdio.fopen
+    libc.src.time.clock_gettime
 )
 
 add_entrypoint_object(
@@ -143,8 +145,9 @@ add_entrypoint_object(
     mktime.h
   DEPENDS
     .time_utils
-    libc.include.time
     libc.src.errno.errno
+    libc.src.stdio.fopen
+    libc.src.time.clock_gettime
 )
 
 add_entrypoint_object(
