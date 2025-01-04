@@ -45,8 +45,8 @@ add_entrypoint_object(
     time_utils.h
   DEPENDS
     .time_utils
-    .linux.localtime_utils
-    .linux.timezone
+    .${LIBC_TARGET_OS}.localtime_utils
+    .${LIBC_TARGET_OS}.timezone
     libc.src.stdio.fopen
 )
 
@@ -58,8 +58,8 @@ add_entrypoint_object(
     ctime_r.h
     time_utils.h
   DEPENDS
-    .linux.localtime_utils
-    .linux.timezone
+    .${LIBC_TARGET_OS}.localtime_utils
+    .${LIBC_TARGET_OS}.timezone
     .time_utils
     libc.src.stdio.fopen
 )
@@ -67,12 +67,12 @@ add_entrypoint_object(
 add_entrypoint_object(
   localtime
   SRCS
-    linux/localtime.cpp
+    ${LIBC_TARGET_OS}/localtime.cpp
   HDRS
     localtime.h
   DEPENDS
-    .linux.localtime_utils
-    .linux.timezone
+    .${LIBC_TARGET_OS}.localtime_utils
+    .${LIBC_TARGET_OS}.timezone
     .time_utils
     libc.src.stdio.fopen
 )
@@ -80,12 +80,12 @@ add_entrypoint_object(
 add_entrypoint_object(
   localtime_r
   SRCS
-    linux/localtime_r.cpp
+    ${LIBC_TARGET_OS}/localtime_r.cpp
   HDRS
     localtime_r.h
   DEPENDS
-    .linux.localtime_utils
-    .linux.timezone
+    .${LIBC_TARGET_OS}.localtime_utils
+    .${LIBC_TARGET_OS}.timezone
     .time_utils
     libc.src.stdio.fopen
 )
@@ -93,12 +93,12 @@ add_entrypoint_object(
 add_entrypoint_object(
   localtime_s
   SRCS
-    linux/localtime_s.cpp
+    ${LIBC_TARGET_OS}/localtime_s.cpp
   HDRS
     localtime_s.h
   DEPENDS
-    .linux.localtime_utils
-    .linux.timezone
+    .${LIBC_TARGET_OS}.localtime_utils
+    .${LIBC_TARGET_OS}.timezone
     .time_utils
     libc.src.stdio.fopen
 )
