@@ -12,9 +12,8 @@ add_libc_unittest(
   CXX_STANDARD
     20
   DEPENDS
-    libc.src.time.timezone
-    libc.src.time.asctime
     libc.src.stdio.fopen
+    libc.src.time.asctime
 )
 
 add_libc_unittest(
@@ -29,9 +28,8 @@ add_libc_unittest(
   CXX_STANDARD
     20
   DEPENDS
-    libc.src.time.timezone
-    libc.src.time.asctime_r
     libc.src.stdio.fopen
+    libc.src.time.asctime_r
 )
 
 add_libc_unittest(
@@ -46,11 +44,12 @@ add_libc_unittest(
   CXX_STANDARD
     20
   DEPENDS
-    libc.include.time
-    libc.hdr.types.time_t
-    libc.src.time.timezone
+#    libc.src.stdio.fopen
+#    libc.include.time
+#    libc.src.time.linux.localtime_utils
+#    libc.hdr.types.time_t
+#    libc.src.time.time_utils
     libc.src.time.ctime
-    libc.src.time.time_utils
 )
 
 add_libc_unittest(
@@ -65,11 +64,11 @@ add_libc_unittest(
   CXX_STANDARD
     20
   DEPENDS
-    libc.include.time
-    libc.hdr.types.time_t
-    libc.src.time.timezone
+#    libc.include.time
+#    libc.hdr.types.time_t
+#    libc.src.time.linux.timezone
     libc.src.time.ctime_r
-    libc.src.time.time_utils
+#    libc.src.time.time_utils
 )
 
 add_libc_unittest(
@@ -84,11 +83,11 @@ add_libc_unittest(
   CXX_STANDARD
     20
   DEPENDS
-    libc.include.time
-    libc.hdr.types.time_t
-    libc.src.time.timezone
+#    libc.include.time
+#    libc.hdr.types.time_t
+#    libc.src.time.linux.timezone
     libc.src.time.localtime
-    libc.src.time.time_utils
+#    libc.src.time.time_utils
 )
 
 add_libc_unittest(
@@ -105,7 +104,7 @@ add_libc_unittest(
   DEPENDS
     libc.include.time
     libc.hdr.types.time_t
-    libc.src.time.timezone
+    libc.src.time.linux.timezone
     libc.src.time.localtime_r
     libc.src.time.time_utils
 )
@@ -124,7 +123,7 @@ add_libc_unittest(
   DEPENDS
     libc.include.time
     libc.hdr.types.time_t
-    libc.src.time.timezone
+    libc.src.time.linux.timezone
     libc.src.time.localtime_s
     libc.src.time.time_utils
 )
