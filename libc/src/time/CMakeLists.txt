@@ -29,18 +29,6 @@ add_object_library(
     libc.hdr.types.struct_tm
 )
 
-add_object_library(
-  timezone
-  SRCS
-    timezone.cpp
-  HDRS
-    timezone.h
-  DEPENDS
-    libc.include.time
-    libc.src.__support.CPP.limits
-    libc.src.errno.errno
-)
-
 add_entrypoint_object(
   asctime
   SRCS
@@ -73,10 +61,9 @@ add_entrypoint_object(
     ctime.cpp
   HDRS
     ctime.h
-    timezone.h
+    time_utils.h
   DEPENDS
     .time_utils
-    .time_constants
     .timezone
     libc.hdr.types.time_t
     libc.include.time
@@ -87,12 +74,13 @@ add_entrypoint_object(
   ctime_r
   SRCS
     ctime_r.cpp
-    timezone.h
   HDRS
     ctime_r.h
+    time_utils.h
   DEPENDS
+    .linux.localtime_utils
+    .linux.timezone
     .time_utils
-    .time_constants
     .timezone
     libc.hdr.types.time_t
     libc.include.time
@@ -105,12 +93,10 @@ add_entrypoint_object(
     linux/localtime.cpp
   HDRS
     localtime.h
-    timezone.h
   DEPENDS
+    .linux.localtime_utils
+    .linux.timezone
     .time_utils
-    .timezone
-    libc.hdr.types.time_t
-    libc.include.time
     libc.src.stdio.fopen
 )
 
@@ -120,12 +106,10 @@ add_entrypoint_object(
     linux/localtime_r.cpp
   HDRS
     localtime_r.h
-    timezone.h
   DEPENDS
+    .linux.localtime_utils
+    .linux.timezone
     .time_utils
-    .timezone
-    libc.hdr.types.time_t
-    libc.include.time
     libc.src.stdio.fopen
 )
 
@@ -135,12 +119,10 @@ add_entrypoint_object(
     linux/localtime_s.cpp
   HDRS
     localtime_s.h
-    timezone.h
   DEPENDS
+    .linux.localtime_utils
+    .linux.timezone
     .time_utils
-    .timezone
-    libc.hdr.types.time_t
-    libc.include.time
     libc.src.stdio.fopen
 )
 
@@ -162,7 +144,7 @@ add_entrypoint_object(
   HDRS
     gmtime.h
   DEPENDS
-    .timezone
+#    .timezone
     .time_utils
     libc.include.time
     libc.hdr.types.time_t
@@ -176,7 +158,7 @@ add_entrypoint_object(
   HDRS
     gmtime_r.h
   DEPENDS
-    .timezone
+#    .timezone
     .time_utils
     libc.include.time
     libc.hdr.types.time_t
@@ -190,7 +172,7 @@ add_entrypoint_object(
   HDRS
     mktime.h
   DEPENDS
-    .timezone
+#    .timezone
     .time_utils
     .time_constants
     libc.include.time

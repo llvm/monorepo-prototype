@@ -9,6 +9,7 @@
 #ifndef LLVM_LIBC_SRC_TIME_TIME_UTILS_H
 #define LLVM_LIBC_SRC_TIME_TIME_UTILS_H
 
+#include "hdr/types/time_t.h"
 #include "src/__support/CPP/limits.h"
 #include "src/errno/libc_errno.h"
 #include "timezone.h"
@@ -82,7 +83,9 @@ struct TimeConstants {
 // Update the "tm" structure's year, month, etc. members from seconds.
 // "total_seconds" is the number of seconds since January 1st, 1970.
 extern int64_t update_from_seconds(int64_t total_seconds, struct tm *tm);
-extern timezone::tzset *get_localtime(struct tm *tm);
+extern ErrorOr<File *> acquire_file(char *filename);
+LIBC_INLINE volatile int file_usage;
+extern void release_file(ErrorOr<File *> error_or_file);
 extern unsigned char is_dst(struct tm *tm);
 extern char *get_env_var(const char *var_name);
 
@@ -159,8 +162,8 @@ LIBC_INLINE struct tm *localtime_internal(const time_t *timer, struct tm *buf) {
     return nullptr;
   }
 
-#ifdef LIBC_TARGET_ARCH_IS_X86_64
-  timezone::tzset *ptr = get_localtime(buf);
+#ifdef LIBC_TARGET_OS_IS_LINUX
+  timezone::tzset *ptr = localtime_utils::get_localtime(buf);
   buf->tm_hour += ptr->global_offset;
   buf->tm_isdst = ptr->global_isdst;
 #endif
