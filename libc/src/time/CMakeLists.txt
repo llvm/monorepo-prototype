@@ -111,6 +111,7 @@ add_entrypoint_object(
     difftime.h
   DEPENDS
     libc.include.time
+    libc.src.stdio.fopen
 )
 
 add_entrypoint_object(
