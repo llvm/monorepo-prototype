@@ -12,8 +12,10 @@
 #include "hdr/types/time_t.h"
 #include "src/__support/CPP/limits.h"
 #include "src/errno/libc_errno.h"
+#ifdef LIBC_TARGET_OS_IS_LINUX
 #include "src/time/linux/localtime_utils.h"
 #include "src/time/linux/timezone.h"
+#endif
 #include <time.h>
 
 namespace LIBC_NAMESPACE_DECL {
