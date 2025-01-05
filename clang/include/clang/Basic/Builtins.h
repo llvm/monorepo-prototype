@@ -233,6 +233,13 @@ class Context {
   unsigned NumTargetBuiltins = 0;
   unsigned NumAuxTargetBuiltins = 0;
 
+  // FIXME: HACK FOR DEBUG
+  bool DebugHackTargetIsAArch64 = false;
+  bool DebugHackTargetIsARM = false;
+  bool DebugHackTargetIsHexagon = false;
+  bool DebugHackTargetIsX86 = false;
+  bool DebugHackTargetIsNVPTX = false;
+
 public:
   Context();
 

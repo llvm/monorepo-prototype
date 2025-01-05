@@ -14,6 +14,7 @@
 #include "BuiltinTargetFeatures.h"
 #include "clang/Basic/IdentifierTable.h"
 #include "clang/Basic/LangOptions.h"
+#include "clang/Basic/TargetBuiltins.h"
 #include "clang/Basic/TargetInfo.h"
 #include "llvm/ADT/StringRef.h"
 using namespace clang;
@@ -118,6 +119,18 @@ void Builtin::Context::InitializeTarget(const TargetInfo &Target,
     for (const auto &Shard : AuxTargetShards)
       NumAuxTargetBuiltins += Shard.Infos.size();
   }
+
+  // FIXME: HACK FOR DEBUG
+  if (Target.getTriple().isX86())
+    DebugHackTargetIsX86 = true;
+  else if (Target.getTriple().isAArch64())
+    DebugHackTargetIsAArch64 = true;
+  else if (Target.getTriple().isARM())
+    DebugHackTargetIsARM = true;
+  else if (Target.getTriple().getArch() == llvm::Triple::hexagon)
+    DebugHackTargetIsHexagon = true;
+  else if (Target.getTriple().isNVPTX())
+    DebugHackTargetIsNVPTX = true;
 }
 
 bool Builtin::Context::isBuiltinFunc(llvm::StringRef FuncName) {
@@ -214,6 +227,34 @@ void Builtin::Context::initializeBuiltins(IdentifierTable &Table,
     // Step #2: Register target-specific builtins.
     for (const auto &Shard : TargetShards)
       for (const auto &I : Shard.Infos) {
+        // FIXME: Hacks for debugging
+        if (DebugHackTargetIsX86 && ID == X86::BI__builtin_ia32_packsswb128) {
+          if (I.getName(Shard) != "__builtin_ia32_packsswb128")
+            llvm::report_fatal_error(
+                llvm::Twine("Name for __builtin_ia32_packsswb128 is: '") +
+                I.getName(Shard) + "'!!!");
+        } else if (DebugHackTargetIsAArch64 &&
+                   ID == SVE::BI__builtin_sve_svundef_u8) {
+          if (I.getName(Shard) != "__builtin_sve_svundef_u8")
+            llvm::report_fatal_error(
+                llvm::Twine("Name for __builtin_sve_svundef_u8 is: '") +
+                I.getName(Shard) + "'!!!");
+        } else if (DebugHackTargetIsARM && ID == ARM::BI__ldrexd) {
+          if (I.getName(Shard) != "__ldrexd")
+            llvm::report_fatal_error(llvm::Twine("Name for __ldrexd is: '") +
+                                     I.getName(Shard) + "'!!!");
+        } else if (DebugHackTargetIsHexagon &&
+                   ID == Hexagon::BI__builtin_HEXAGON_V6_vsub_sf_bf) {
+          if (I.getName(Shard) != "__builtin_HEXAGON_V6_vsub_sf_bf")
+            llvm::report_fatal_error(
+                llvm::Twine("Name for __builtin_HEXAGON_V6_vsub_sf_bf is: '") +
+                I.getName(Shard) + "'!!!");
+        } else if (DebugHackTargetIsNVPTX && ID == NVPTX::BI__nvvm_vote_all) {
+          if (I.getName(Shard) != "__nvvm_vote_all")
+            llvm::report_fatal_error(
+                llvm::Twine("Name for __nvvm_vote_all is: '") +
+                I.getName(Shard) + "'!!!");
+        }
         if (builtinIsSupported(*Shard.Strings, I, LangOpts))
           Table.get(I.getName(Shard)).setBuiltinID(ID);
         ++ID;
