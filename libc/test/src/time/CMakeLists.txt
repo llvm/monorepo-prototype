@@ -186,7 +186,6 @@ add_libc_unittest(
     20
   DEPENDS
     libc.src.time.mktime
-    libc.src.__support.CPP.limits
 )
 
 add_libc_test(
@@ -196,9 +195,7 @@ add_libc_test(
   SRCS
     nanosleep_test.cpp
   DEPENDS
-    libc.include.time
     libc.src.time.nanosleep
-    libc.src.errno.errno
 )
 
 add_libc_unittest(
@@ -209,11 +206,9 @@ add_libc_unittest(
     time_test.cpp
   DEPENDS
     libc.src.time.time
-    libc.src.__support.time.clock_gettime
-    libc.src.errno.errno
 )
 
-add_libc_test(
+add_libc_unittest(
   timespec_get_test
   SUITE
     libc_time_unittests
@@ -223,14 +218,12 @@ add_libc_test(
     libc.src.time.timespec_get
 )
 
-add_libc_test(
+add_libc_unittest(
   clock_test
   SUITE
     libc_time_unittests
   SRCS
     clock_test.cpp
   DEPENDS
-    libc.include.time
     libc.src.time.clock
-    libc.src.errno.errno
 )
