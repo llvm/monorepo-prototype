@@ -73,6 +73,10 @@ quentin.colombet@gmail.com (email), [qcolombet](https://github.com/qcolombet) (G
 Florian Hahn \
 flo@fhahn.com (email), [fhahn](https://github.com/fhahn) (GitHub)
 
+#### LoopInterchange
+Madhur Amilkanthwar \
+madhura@nvidia.com (email), [madhur13490](https://github.com/madhur13490) (GitHub)
+
 #### SandboxVectorizer
 
 Vasileios Porpodas \
