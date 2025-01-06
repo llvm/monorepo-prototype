@@ -76,8 +76,6 @@
 #cmakedefine01 PPC_LINUX_DEFAULT_IEEELONGDOUBLE
 
 /* Enable each functionality of modules */
-#cmakedefine01 CLANG_ENABLE_ARCMT
-#cmakedefine01 CLANG_ENABLE_OBJC_REWRITER
 #cmakedefine01 CLANG_ENABLE_STATIC_ANALYZER
 
 /* Spawn a new process clang.exe for the CC1 tool invocation, when necessary */
