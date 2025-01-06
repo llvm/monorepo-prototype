@@ -2235,6 +2235,24 @@ TEST_P(ASTMatchersTest, ArgumentCountIs_CXXConstructExpr) {
                  Constructor1Arg));
 }
 
+TEST_P(ASTMatchersTest, HasDependentName_DependentScopeDeclRefExpr) {
+  if (!GetParam().isCXX() || GetParam().hasDelayedTemplateParsing()) {
+    // FIXME: Fix this test to work with delayed template parsing.
+    return;
+  }
+
+  EXPECT_TRUE(matches("template <class T> class X : T { void f() { T::v; } };",
+                      dependentScopeDeclRefExpr(hasDependentName("v"))));
+
+  EXPECT_TRUE(matches("template <typename T> struct S { static T Foo; };"
+                      "template <typename T> void x() { (void)S<T>::Foo; }",
+                      dependentScopeDeclRefExpr(hasDependentName("Foo"))));
+
+  EXPECT_TRUE(matches("template <typename T> struct S { static T foo(); };"
+                      "template <typename T> void x() { S<T>::foo(); }",
+                      dependentScopeDeclRefExpr(hasDependentName("foo"))));
+}
+
 TEST(ASTMatchersTest, NamesMember_CXXDependentScopeMemberExpr) {
 
   // Member functions:
@@ -3339,6 +3357,45 @@ TEST_P(ASTMatchersTest,
   }
 
   EXPECT_TRUE(notMatches("template<typename T> void A(T t) { T i; }",
+                         declStmt(isInTemplateInstantiation())));
+}
+
+TEST_P(ASTMatchersTest, IsInstantiated_MatchesVariableInstantiation) {
+  if (!GetParam().isCXX14OrLater()) {
+    return;
+  }
+
+  EXPECT_TRUE(matches("template<typename T> int V = 10; void x() { V<int>; }",
+                      varDecl(isInstantiated())));
+}
+
+TEST_P(ASTMatchersTest, IsInstantiated_NotMatchesVariableDefinition) {
+  if (!GetParam().isCXX14OrLater()) {
+    return;
+  }
+
+  EXPECT_TRUE(notMatches("template<typename T> int V = 10;",
+                         varDecl(isInstantiated())));
+}
+
+TEST_P(ASTMatchersTest,
+       IsInTemplateInstantiation_MatchesVariableInstantiationStmt) {
+  if (!GetParam().isCXX14OrLater()) {
+    return;
+  }
+
+  EXPECT_TRUE(matches(
+      "template<typename T> auto V = []() { T i; }; void x() { V<int>(); }",
+      declStmt(isInTemplateInstantiation())));
+}
+
+TEST_P(ASTMatchersTest,
+       IsInTemplateInstantiation_NotMatchesVariableDefinitionStmt) {
+  if (!GetParam().isCXX14OrLater()) {
+    return;
+  }
+
+  EXPECT_TRUE(notMatches("template<typename T> auto V = []() { T i; };",
                          declStmt(isInTemplateInstantiation())));
 }
 
