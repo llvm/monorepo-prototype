@@ -5012,6 +5012,25 @@ static void handleCallConvAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
   case ParsedAttr::AT_RISCVVectorCC:
     D->addAttr(::new (S.Context) RISCVVectorCCAttr(S.Context, AL));
     return;
+  case ParsedAttr::AT_RISCVVLSCC: {
+    // If the riscv_abi_vlen doesn't have any argument, default ABI_VLEN is 128.
+    unsigned VectorLength = 128;
+    if (AL.getNumArgs() &&
+        !S.checkUInt32Argument(AL, AL.getArgAsExpr(0), VectorLength))
+      return;
+    if (VectorLength < 32 || VectorLength > 65536) {
+      S.Diag(AL.getLoc(), diag::err_argument_invalid_range)
+          << VectorLength << 32 << 65536;
+      return;
+    }
+    if (!llvm::isPowerOf2_64(VectorLength)) {
+      S.Diag(AL.getLoc(), diag::err_argument_not_power_of_2);
+      return;
+    }
+
+    D->addAttr(::new (S.Context) RISCVVLSCCAttr(S.Context, AL, VectorLength));
+    return;
+  }
   default:
     llvm_unreachable("unexpected attribute kind");
   }
@@ -5131,10 +5150,19 @@ bool Sema::CheckCallingConvAttr(const ParsedAttr &Attrs, CallingConv &CC,
     return false;
   }
 
-  unsigned ReqArgs = Attrs.getKind() == ParsedAttr::AT_Pcs ? 1 : 0;
-  if (!Attrs.checkExactlyNumArgs(*this, ReqArgs)) {
-    Attrs.setInvalid();
-    return true;
+  if (Attrs.getKind() == ParsedAttr::AT_RISCVVLSCC) {
+    // riscv_vls_cc only accepts 0 or 1 argument.
+    if (!Attrs.checkAtLeastNumArgs(*this, 0) ||
+        !Attrs.checkAtMostNumArgs(*this, 1)) {
+      Attrs.setInvalid();
+      return true;
+    }
+  } else {
+    unsigned ReqArgs = Attrs.getKind() == ParsedAttr::AT_Pcs ? 1 : 0;
+    if (!Attrs.checkExactlyNumArgs(*this, ReqArgs)) {
+      Attrs.setInvalid();
+      return true;
+    }
   }
 
   // TODO: diagnose uses of these conventions on the wrong target.
@@ -5218,6 +5246,9 @@ bool Sema::CheckCallingConvAttr(const ParsedAttr &Attrs, CallingConv &CC,
     break;
   case ParsedAttr::AT_RISCVVectorCC:
     CC = CC_RISCVVectorCall;
+    break;
+  case ParsedAttr::AT_RISCVVLSCC:
+    CC = CC_RISCVVLSCall;
     break;
   default: llvm_unreachable("unexpected attribute kind");
   }
@@ -7074,6 +7105,7 @@ ProcessDeclAttribute(Sema &S, Scope *scope, Decl *D, const ParsedAttr &AL,
   case ParsedAttr::AT_M68kRTD:
   case ParsedAttr::AT_PreserveNone:
   case ParsedAttr::AT_RISCVVectorCC:
+  case ParsedAttr::AT_RISCVVLSCC:
     handleCallConvAttr(S, D, AL);
     break;
   case ParsedAttr::AT_Suppress:
