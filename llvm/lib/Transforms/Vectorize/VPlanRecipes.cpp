@@ -65,6 +65,7 @@ bool VPRecipeBase::mayWriteToMemory() const {
     case VPInstruction::FirstOrderRecurrenceSplice:
     case VPInstruction::LogicalAnd:
     case VPInstruction::PtrAdd:
+    case VPInstruction::Splat:
       return false;
     default:
       return true;
@@ -86,7 +87,6 @@ bool VPRecipeBase::mayWriteToMemory() const {
   case VPBranchOnMaskSC:
   case VPScalarIVStepsSC:
   case VPPredInstPHISC:
-  case VPSplatSC:
   case VPStepVectorSC:
     return false;
   case VPBlendSC:
@@ -134,7 +134,6 @@ bool VPRecipeBase::mayReadFromMemory() const {
   case VPScalarIVStepsSC:
   case VPWidenStoreEVLSC:
   case VPWidenStoreSC:
-  case VPSplatSC:
   case VPStepVectorSC:
     return false;
   case VPBlendSC:
@@ -167,7 +166,6 @@ bool VPRecipeBase::mayHaveSideEffects() const {
   case VPPredInstPHISC:
   case VPScalarCastSC:
   case VPReverseVectorPointerSC:
-  case VPSplatSC:
   case VPStepVectorSC:
     return false;
   case VPInstructionSC:
@@ -651,6 +649,9 @@ Value *VPInstruction::generate(VPTransformState &State) {
     Value *A = State.get(getOperand(0));
     return Builder.CreateOrReduce(A);
   }
+  case VPInstruction::Splat:
+    return State.Builder.CreateVectorSplat(State.VF,
+                                           State.get(getOperand(0), true));
 
   default:
     llvm_unreachable("Unsupported opcode for instruction");
@@ -734,6 +735,7 @@ bool VPInstruction::onlyFirstLaneUsed(const VPValue *Op) const {
   case VPInstruction::BranchOnCount:
   case VPInstruction::BranchOnCond:
   case VPInstruction::ResumePhi:
+  case VPInstruction::Splat:
     return true;
   };
   llvm_unreachable("switch should return");
@@ -821,6 +823,9 @@ void VPInstruction::print(raw_ostream &O, const Twine &Indent,
     break;
   case VPInstruction::AnyOf:
     O << "any-of";
+    break;
+  case VPInstruction::Splat:
+    O << "splat";
     break;
   default:
     O << Instruction::getOpcodeName(getOpcode());
@@ -2216,22 +2221,6 @@ void VPScalarCastRecipe ::print(raw_ostream &O, const Twine &Indent,
   O << " = " << Instruction::getOpcodeName(Opcode) << " ";
   printOperands(O, SlotTracker);
   O << " to " << *ResultTy;
-}
-#endif
-
-void VPSplatRecipe::execute(VPTransformState &State) {
-  Value *Splat =
-      State.Builder.CreateVectorSplat(State.VF, State.get(getOperand(0), true));
-  State.set(this, Splat);
-}
-
-#if !defined(NDEBUG) || defined(LLVM_ENABLE_DUMP)
-void VPSplatRecipe::print(raw_ostream &O, const Twine &Indent,
-                          VPSlotTracker &SlotTracker) const {
-  O << Indent;
-  printAsOperand(O, SlotTracker);
-  O << " = SPLAT ";
-  printOperands(O, SlotTracker);
 }
 #endif
 
