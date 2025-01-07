@@ -324,7 +324,7 @@ static bool CheckAssignmentToCountAttrPtrWithIncompletePointeeTy(
   std::string Assignee = ComputeAssignee ? ComputeAssignee() : "";
   {
     auto D = S.Diag(Loc, diag::err_counted_by_on_incomplete_type_on_assign)
-             << (int)Action << Assignee << (Assignee.size() > 0)
+             << static_cast<int>(Action) << Assignee << (Assignee.size() > 0)
              << isa<ImplicitValueInitExpr>(RHSExpr) << LHSTy
              << CATy->getAttributeName(/*WithMacroPrefix=*/true) << PointeeTy
              << CATy->isOrNull();
