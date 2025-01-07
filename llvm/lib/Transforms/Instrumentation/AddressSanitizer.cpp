@@ -3431,10 +3431,21 @@ void FunctionStackPoisoner::processStaticAllocas() {
   SVD.reserve(AllocaVec.size());
   for (AllocaInst *AI : AllocaVec) {
     const char *Name = AI->getName().data();
-    if (AI->hasMetadata(LLVMContext::MD_unaltered_name)) {
-      MDTuple *tuple =
-          dyn_cast<MDTuple>(AI->getMetadata(LLVMContext::MD_unaltered_name));
-      Name = dyn_cast<MDString>(tuple->getOperand(0))->getString().data();
+    if (AI->hasMetadata(LLVMContext::MD_annotation)) {
+      MDTuple *Annotation = (MDTuple *)AI->getMetadata(LLVMContext::MD_annotation);
+      for (int i = 0; i < Annotation->getNumOperands(); i++) {
+        if (auto Tuple = dyn_cast<MDTuple>(Annotation->getOperand(i))) {
+          for (int i = 0; i < Tuple->getNumOperands(); i++) {
+            if (auto stringMetadata = dyn_cast<MDString>(Tuple->getOperand(i))) {
+              if (stringMetadata->getString() == "alloca_name_altered") {
+                Name = ((MDString *)Tuple->getOperand(i + 1).get())
+                          ->getString()
+                          .data();
+              }
+            }
+          }
+        }
+      }
     }
     ASanStackVariableDescription D = {
         Name, ASan.getAllocaSizeInBytes(*AI), 0, AI->getAlign().value(), AI, 0,
