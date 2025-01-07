@@ -671,7 +671,8 @@ void MSVCToolChain::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
   if (!DriverArgs.getLastArg(options::OPT__SLASH_vctoolsdir,
                              options::OPT__SLASH_winsysroot)) {
     bool Found = addSystemIncludesFromEnv(DriverArgs, CC1Args, "INCLUDE");
-    Found |= addSystemIncludesFromEnv(DriverArgs, CC1Args, "EXTERNAL_INCLUDE");
+    Found |= addExternalSystemIncludesFromEnv(DriverArgs, CC1Args,
+                                              "EXTERNAL_INCLUDE");
     if (Found)
       return;
   }

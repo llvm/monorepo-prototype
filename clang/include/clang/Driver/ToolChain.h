@@ -229,7 +229,7 @@ public:
   ///@{
   static void addSystemInclude(const llvm::opt::ArgList &DriverArgs,
                                llvm::opt::ArgStringList &CC1Args,
-                               const Twine &Path);
+                               const Twine &Path, bool Internal = true);
   static void addExternCSystemInclude(const llvm::opt::ArgList &DriverArgs,
                                       llvm::opt::ArgStringList &CC1Args,
                                       const Twine &Path);
@@ -239,16 +239,19 @@ public:
                                       const Twine &Path);
   static void addSystemIncludes(const llvm::opt::ArgList &DriverArgs,
                                 llvm::opt::ArgStringList &CC1Args,
-                                ArrayRef<StringRef> Paths);
+                                ArrayRef<StringRef> Paths,
+                                bool Internal = true);
   static bool addSystemIncludesFromEnv(const llvm::opt::ArgList &DriverArgs,
                                        llvm::opt::ArgStringList &CC1Args,
-                                       StringRef Var);
-  static void addExternalAfterIncludes(const llvm::opt::ArgList &DriverArgs,
-                                       llvm::opt::ArgStringList &CC1Args,
-                                       ArrayRef<StringRef> Paths);
-  static bool addExternalIncludesFromEnv(const llvm::opt::ArgList &DriverArgs,
-                                         llvm::opt::ArgStringList &CC1Args,
-                                         StringRef Var);
+                                       StringRef Var, bool Internal = true);
+  static void addExternalSystemIncludes(const llvm::opt::ArgList &DriverArgs,
+                                        llvm::opt::ArgStringList &CC1Args,
+                                        ArrayRef<StringRef> Paths,
+                                        bool Internal = true);
+  static bool
+  addExternalSystemIncludesFromEnv(const llvm::opt::ArgList &DriverArgs,
+                                   llvm::opt::ArgStringList &CC1Args,
+                                   StringRef Var, bool Internal = true);
 
   static std::string concat(StringRef Path, const Twine &A, const Twine &B = "",
                             const Twine &C = "", const Twine &D = "");

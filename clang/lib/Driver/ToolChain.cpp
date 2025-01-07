@@ -1264,8 +1264,11 @@ ToolChain::CXXStdlibType ToolChain::GetCXXStdlibType(const ArgList &Args) const{
 /// Utility function to add a system include directory to CC1 arguments.
 /*static*/ void ToolChain::addSystemInclude(const ArgList &DriverArgs,
                                             ArgStringList &CC1Args,
-                                            const Twine &Path) {
-  CC1Args.push_back("-internal-isystem");
+                                            const Twine &Path, bool Internal) {
+  if (Internal)
+    CC1Args.push_back("-internal-isystem");
+  else
+    CC1Args.push_back("-isystem");
   CC1Args.push_back(DriverArgs.MakeArgString(Path));
 }
 
@@ -1294,9 +1297,13 @@ void ToolChain::addExternCSystemIncludeIfExists(const ArgList &DriverArgs,
 /// Utility function to add a list of system include directories to CC1.
 /*static*/ void ToolChain::addSystemIncludes(const ArgList &DriverArgs,
                                              ArgStringList &CC1Args,
-                                             ArrayRef<StringRef> Paths) {
+                                             ArrayRef<StringRef> Paths,
+                                             bool Internal) {
   for (const auto &Path : Paths) {
-    CC1Args.push_back("-internal-isystem");
+    if (Internal)
+      CC1Args.push_back("-internal-isystem");
+    else
+      CC1Args.push_back("-isystem");
     CC1Args.push_back(DriverArgs.MakeArgString(Path));
   }
 }
@@ -1306,12 +1313,13 @@ void ToolChain::addExternCSystemIncludeIfExists(const ArgList &DriverArgs,
 /// true if the variable is set and not empty.
 /*static*/ bool ToolChain::addSystemIncludesFromEnv(const ArgList &DriverArgs,
                                                     ArgStringList &CC1Args,
-                                                    StringRef Var) {
+                                                    StringRef Var,
+                                                    bool Internal) {
   if (auto Val = llvm::sys::Process::GetEnv(Var)) {
     SmallVector<StringRef, 8> Dirs;
     StringRef(*Val).split(Dirs, ";", /*MaxSplit=*/-1, /*KeepEmpty=*/false);
     if (!Dirs.empty()) {
-      addSystemIncludes(DriverArgs, CC1Args, Dirs);
+      addSystemIncludes(DriverArgs, CC1Args, Dirs, Internal);
       return true;
     }
   }
@@ -1320,11 +1328,15 @@ void ToolChain::addExternCSystemIncludeIfExists(const ArgList &DriverArgs,
 
 /// Utility function to add a list of directories to the end of the external
 /// include path list for CC1.
-/*static*/ void ToolChain::addExternalAfterIncludes(const ArgList &DriverArgs,
-                                                    ArgStringList &CC1Args,
-                                                    ArrayRef<StringRef> Paths) {
+/*static*/ void ToolChain::addExternalSystemIncludes(const ArgList &DriverArgs,
+                                                     ArgStringList &CC1Args,
+                                                     ArrayRef<StringRef> Paths,
+                                                     bool Internal) {
   for (const auto &Path : Paths) {
-    CC1Args.push_back("-iexternal-after");
+    if (Internal)
+      CC1Args.push_back("-internal-iexternal-system");
+    else
+      CC1Args.push_back("-iexternal-system");
     CC1Args.push_back(DriverArgs.MakeArgString(Path));
   }
 }
@@ -1332,14 +1344,15 @@ void ToolChain::addExternCSystemIncludeIfExists(const ArgList &DriverArgs,
 /// Utility function to add a list of ';' delimited directories specified in
 /// an environment variable to the external include path list for CC1. Returns
 /// true if the variable is set and not empty.
-/*static*/ bool ToolChain::addExternalIncludesFromEnv(const ArgList &DriverArgs,
-                                                      ArgStringList &CC1Args,
-                                                      StringRef Var) {
+/*static*/ bool
+ToolChain::addExternalSystemIncludesFromEnv(const ArgList &DriverArgs,
+                                            ArgStringList &CC1Args,
+                                            StringRef Var, bool Internal) {
   if (auto Val = llvm::sys::Process::GetEnv(Var)) {
     SmallVector<StringRef, 8> Dirs;
     StringRef(*Val).split(Dirs, ";", /*MaxSplit=*/-1, /*KeepEmpty=*/false);
     if (!Dirs.empty()) {
-      addExternalAfterIncludes(DriverArgs, CC1Args, Dirs);
+      addExternalSystemIncludes(DriverArgs, CC1Args, Dirs, Internal);
       return true;
     }
   }

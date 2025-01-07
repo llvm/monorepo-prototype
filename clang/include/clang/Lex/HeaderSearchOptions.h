@@ -35,18 +35,18 @@ enum IncludeDirGroup {
   /// Paths for '\#include <>' added by '-I'.
   Angled,
 
-  /// Like Angled, but marks system directories while retaining relative order
-  /// with user directories. This group is intended to match the semantics of
-  /// the MSVC /external:I option.
+  /// Like Angled, but marks the directory as an external directory prefix.
+  /// This group is intended to match the semantics of the MSVC /external:I
+  /// option.
   External,
-
-  /// Like External, but searched after other external directories but before
-  /// system directories. This group is intended to match the semantics of the
-  /// MSVC /external:env option.
-  ExternalAfter,
 
   /// Like Angled, but marks system directories.
   System,
+
+  /// Like System, but marks the directory as an external directory prefix.
+  /// This group is intended to match the semantics of the MSVC
+  /// /external:env option.
+  ExternalSystem,
 
   /// Like System, but headers are implicitly wrapped in extern "C".
   ExternCSystem,

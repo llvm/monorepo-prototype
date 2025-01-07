@@ -151,7 +151,7 @@ bool InitHeaderSearch::AddUnmappedPath(const Twine &Path, IncludeDirGroup Group,
   } else if (Group == ExternCSystem) {
     Type = SrcMgr::C_ExternCSystem;
   } else {
-    // Group in External, ExternalAfter, System, (Obj)C(XX)System, After.
+    // Group in External, ExternalSystem, System, (Obj)C(XX)System, After.
     Type = SrcMgr::C_System;
   }
 
@@ -424,7 +424,7 @@ static unsigned RemoveDuplicates(const HeaderSearchOptions &HSOpts,
 
     // By default, a search path that follows a previous matching search path
     // is removed. Exceptions exist for paths from the External include group
-    // and for uesr paths that match a later system path.
+    // and for user paths that match a later system path.
     unsigned DirToRemove = i;
     if (CurGroup == frontend::External) {
       // A path that matches a later path specified by -iexternal is always
@@ -509,20 +509,16 @@ void InitHeaderSearch::Realize(const HeaderSearchOptions &HSOpts,
   for (auto &Include : IncludePath)
     if (Include.Group == Angled || Include.Group == External)
       SearchList.push_back(Include);
-  // Add external search paths that must come at the end of the angled
-  // inclusion list.
-  for (auto &Include : IncludePath)
-    if (Include.Group == ExternalAfter)
-      SearchList.push_back(Include);
   // Remove duplicate search paths within the angled inclusion list.
   // This may leave paths duplicated across the quoted and angled inclusion
   // sections.
   RemoveDuplicates(HSOpts, SearchList, EndQuoted, EndQuoted, Verbose);
   unsigned EndAngled = SearchList.size();
 
-  // Add search paths for language dependent system paths next.
+  // Add search paths for system paths next.
   for (auto &Include : IncludePath)
-    if (Include.Group == System || Include.Group == ExternCSystem ||
+    if (Include.Group == System || Include.Group == ExternalSystem ||
+        Include.Group == ExternCSystem ||
         (!Lang.ObjC && !Lang.CPlusPlus && Include.Group == CSystem) ||
         (/*FIXME !Lang.ObjC && */ Lang.CPlusPlus &&
          Include.Group == CXXSystem) ||
@@ -547,6 +543,12 @@ void InitHeaderSearch::Realize(const HeaderSearchOptions &HSOpts,
                          mapToUserEntries(SearchList));
 
   Headers.SetSystemHeaderPrefixes(SystemHeaderPrefixes);
+
+  std::vector<std::string> ExternalDirectoryPrefixes;
+  for (auto &Include : IncludePath)
+    if (Include.Group == External || Include.Group == ExternalSystem)
+      ExternalDirectoryPrefixes.push_back(Include.Lookup.getName().str());
+  Headers.SetExternalDirectoryPrefixes(ExternalDirectoryPrefixes);
 
   // If verbose, print the list of directories that will be searched.
   if (Verbose) {

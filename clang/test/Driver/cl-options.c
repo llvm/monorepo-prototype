@@ -43,8 +43,8 @@
 // EXTERNAL_I: "-iexternal" "path"
 
 // RUN: env EXTPATH="path1;path2" %clang_cl /external:env:EXTPATH -### -- %s 2>&1 | FileCheck -check-prefix=EXTERNAL_ENV %s
-// EXTERNAL_ENV: "-iexternal-after" "path1"
-// EXTERNAL_ENV: "-iexternal-after" "path2"
+// EXTERNAL_ENV: "-iexternal-system" "path1"
+// EXTERNAL_ENV: "-iexternal-system" "path2"
 
 // RUN: %clang_cl /fp:fast /fp:except -### -- %s 2>&1 | FileCheck -check-prefix=fpexcept %s
 // fpexcept-NOT: -funsafe-math-optimizations

@@ -4590,7 +4590,7 @@ def idirafter : JoinedOrSeparate<["-"], "idirafter">, Group<clang_i_Group>,
 def iexternal : Separate<["-"], "iexternal">, Group<clang_i_Group>,
   Visibility<[ClangOption, CC1Option]>,
   HelpText<"Add directory to include search path with warnings suppressed">, MetaVarName<"<dir>">;
-def iexternal_after : Separate<["-"], "iexternal-after">, Group<clang_i_Group>,
+def iexternal_system : Separate<["-"], "iexternal-system">, Group<clang_i_Group>,
   Visibility<[ClangOption, CC1Option]>,
   HelpText<"Add directory to include search path with warnings suppressed">, MetaVarName<"<dir>">;
 def iexternal_env_EQ : Joined<["-"], "iexternal-env=">, Group<clang_i_Group>,
@@ -4638,6 +4638,10 @@ def isysroot : JoinedOrSeparate<["-"], "isysroot">, Group<clang_i_Group>,
 def isystem : JoinedOrSeparate<["-"], "isystem">, Group<clang_i_Group>,
   Visibility<[ClangOption, CC1Option]>,
   HelpText<"Add directory to SYSTEM include search path">, MetaVarName<"<directory>">;
+def isystem_env_EQ : Joined<["-"], "isystem-env=">, Group<clang_i_Group>,
+  MetaVarName<"<var>">,
+  Visibility<[ClangOption]>,
+  HelpText<"Add directoires in env var <var> to SYSTEM include search path">;
 def isystem_after : JoinedOrSeparate<["-"], "isystem-after">,
   Group<clang_i_Group>, Flags<[NoXarchOption]>, MetaVarName<"<directory>">,
   HelpText<"Add directory to end of the SYSTEM include search path">;
@@ -8279,6 +8283,12 @@ def internal_isystem : Separate<["-"], "internal-isystem">,
   HelpText<"Add directory to the internal system include search path; these "
            "are assumed to not be user-provided and are used to model system "
            "and standard headers' paths.">;
+def internal_iexternal_system : Separate<["-"], "internal-iexternal-system">,
+  MetaVarName<"<directory>">,
+  HelpText<"Add directory to the internal system include search path with "
+           "external directory prefix semantics; these are assumed to not be "
+           "user-provided and are used to model system and standard headers' "
+           "paths.">;
 def internal_externc_isystem : Separate<["-"], "internal-externc-isystem">,
   MetaVarName<"<directory>">,
   HelpText<"Add directory to the internal system include search path with "

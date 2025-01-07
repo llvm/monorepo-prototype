@@ -1201,9 +1201,15 @@ void Clang::AddPreprocessingOptions(Compilation &C, const JobAction &JA,
     } else if (A->getOption().matches(options::OPT_iexternal)) {
       // This option has to retain relative order with other -I options.
       continue;
+    } else if (A->getOption().matches(options::OPT_isystem_env_EQ)) {
+      A->claim();
+      ToolChain::addSystemIncludesFromEnv(Args, CmdArgs, A->getValue(),
+                                          /*Internal*/ false);
+      continue;
     } else if (A->getOption().matches(options::OPT_iexternal_env_EQ)) {
       A->claim();
-      ToolChain::addExternalIncludesFromEnv(Args, CmdArgs, A->getValue());
+      ToolChain::addExternalSystemIncludesFromEnv(Args, CmdArgs, A->getValue(),
+                                                  /*Internal*/ false);
       continue;
     }
 

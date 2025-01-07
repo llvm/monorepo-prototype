@@ -276,6 +276,13 @@ class HeaderSearch {
   /// a system header.
   std::vector<std::pair<std::string, bool>> SystemHeaderPrefixes;
 
+  /// External directories are user specified directories that are to be treated
+  /// like system directories for the purposes of warning suppression. A header
+  /// file that has a path that matches one of these prefixes is promoted to a
+  /// system header regardless of which header search path was used to resolve
+  /// the \#include directive.
+  std::vector<std::string> ExternalDirectoryPrefixes;
+
   /// The hash used for module cache paths.
   std::string ModuleHash;
 
@@ -390,6 +397,11 @@ public:
   /// Set the list of system header prefixes.
   void SetSystemHeaderPrefixes(ArrayRef<std::pair<std::string, bool>> P) {
     SystemHeaderPrefixes.assign(P.begin(), P.end());
+  }
+
+  /// Set the list of external directory prefixes.
+  void SetExternalDirectoryPrefixes(ArrayRef<std::string> P) {
+    ExternalDirectoryPrefixes.assign(P.begin(), P.end());
   }
 
   /// Checks whether the map exists or not.

@@ -253,7 +253,7 @@
 // RUN:     -I%t/test5/include/u \
 // RUN:     -iexternal %t/test5/include/v \
 // RUN:     -iexternal-env=EXTRA_INCLUDE \
-// RUN:     -iexternal-env=INCLUDE \
+// RUN:     -isystem-env=INCLUDE \
 // RUN:     -iexternal-env=EXTERNAL_INCLUDE \
 // RUN:     %t/test5/t.c 2>&1 | FileCheck -DPWD=%t %t/test5/t.c
 // RUN: env EXTRA_INCLUDE="%t/test5/include/w" \
@@ -348,3 +348,264 @@
 #error 'test5/include/z/e.h' should not have been included!
 
 #--- test5/include/z/f.h
+
+
+// Test 6: Validate that warning suppression is goverened by external include
+// path matching regardless of include path order.
+//
+// RUN: env EXTRA_INCLUDE="%t/test6/include/x" \
+// RUN: env INCLUDE="%t/test6/include/y" \
+// RUN: env EXTERNAL_INCLUDE="%t/test6/include/z" \
+// RUN: %clang \
+// RUN:     -Xclang -verify \
+// RUN:     -target x86_64-pc-windows -v -fsyntax-only \
+// RUN:     -fheader-search=microsoft \
+// RUN:     -nostdinc \
+// RUN:     -Wall \
+// RUN:     -Wno-system-headers \
+// RUN:     -I%t/test6/include/v \
+// RUN:     -I%t/test6/include/w \
+// RUN:     -iexternal %t/test6/include/w \
+// RUN:     -I%t/test6/include/x \
+// RUN:     -I%t/test6/include/y \
+// RUN:     -I%t/test6/include/z \
+// RUN:     -iexternal-env=EXTRA_INCLUDE \
+// RUN:     -isystem-env=INCLUDE \
+// RUN:     -iexternal-env=EXTERNAL_INCLUDE \
+// RUN:     %t/test6/t.c 2>&1 | FileCheck -DPWD=%t %t/test6/t.c
+// RUN: env EXTRA_INCLUDE="%t/test6/include/x" \
+// RUN: env INCLUDE="%t/test6/include/y" \
+// RUN: env EXTERNAL_INCLUDE="%t/test6/include/z" \
+// RUN: %clang_cl \
+// RUN:     -Xclang -verify \
+// RUN:     -target x86_64-pc-windows -v -fsyntax-only \
+// RUN:     -nobuiltininc \
+// RUN:     /W4 \
+// RUN:     /external:W0 \
+// RUN:     /I%t/test6/include/v \
+// RUN:     /I%t/test6/include/w \
+// RUN:     /external:I %t/test6/include/w \
+// RUN:     /I%t/test6/include/x \
+// RUN:     /I%t/test6/include/y \
+// RUN:     /I%t/test6/include/z \
+// RUN:     /external:env:EXTRA_INCLUDE \
+// RUN:     %t/test6/t.c 2>&1 | FileCheck -DPWD=%t %t/test6/t.c
+
+#--- test6/t.c
+#include <a.h>
+#include <b.h>
+#include <c.h>
+#include <d.h>
+#include <e.h>
+
+// CHECK:      ignoring duplicate directory "[[PWD]]/test6/include/w"
+// CHECK-NEXT:  as it is a non-system directory that duplicates a system directory
+// CHECK-NEXT: ignoring duplicate directory "[[PWD]]/test6/include/x"
+// CHECK-NEXT: ignoring duplicate directory "[[PWD]]/test6/include/y"
+// CHECK-NEXT: ignoring duplicate directory "[[PWD]]/test6/include/z"
+// CHECK-NEXT: #include "..." search starts here:
+// CHECK-NEXT: #include <...> search starts here:
+// CHECK-NEXT: [[PWD]]/test6/include/v
+// CHECK-NEXT: [[PWD]]/test6/include/w
+// CHECK-NEXT: [[PWD]]/test6/include/x
+// CHECK-NEXT: [[PWD]]/test6/include/y
+// CHECK-NEXT: [[PWD]]/test6/include/z
+// CHECK-NEXT: End of search list.
+// CHECK-NOT:  diagnostics seen but not expected
+
+#--- test6/include/v/a.h
+// expected-warning@+1 {{shift count >= width of type}}
+int va = 1 << 1024;
+
+#--- test6/include/w/a.h
+#error 'test6/include/w/a.h' should not have been included!
+
+#--- test6/include/w/b.h
+int wb = 1 << 1024; // Warning should be suppressed.
+
+#--- test6/include/x/a.h
+#error 'test6/include/x/a.h' should not have been included!
+
+#--- test6/include/x/b.h
+#error 'test6/include/x/b.h' should not have been included!
+
+#--- test6/include/x/c.h
+int xc = 1 << 1024; // Warning should be suppressed.
+
+#--- test6/include/y/a.h
+#error 'test6/include/y/a.h' should not have been included!
+
+#--- test6/include/y/b.h
+#error 'test6/include/y/b.h' should not have been included!
+
+#--- test6/include/y/c.h
+#error 'test6/include/y/c.h' should not have been included!
+
+#--- test6/include/y/d.h
+// expected-warning@+1 {{shift count >= width of type}}
+int yd = 1 << 1024; // Warning should NOT be suppressed.
+
+#--- test6/include/z/a.h
+#error 'test6/include/z/a.h' should not have been included!
+
+#--- test6/include/z/b.h
+#error 'test6/include/z/b.h' should not have been included!
+
+#--- test6/include/z/c.h
+#error 'test6/include/z/c.h' should not have been included!
+
+#--- test6/include/z/d.h
+#error 'test6/include/z/d.h' should not have been included!
+
+#--- test6/include/z/e.h
+int ze = 1 << 1024; // Warning should be suppressed.
+
+
+// Test 7: Validate that warning suppression for a header file included via a
+// -I specified path is goverened by an external include path that is a partial
+// match for the resolved header file path (even if the #include directive would
+// not have matched relative to the external path). Note that partial matching
+// includes matching portions of the final path component even if the paths
+// would otherwise select distinct files or directories.
+//
+// RUN: %clang \
+// RUN:     -Xclang -verify \
+// RUN:     -target x86_64-pc-windows -v -fsyntax-only \
+// RUN:     -fheader-search=microsoft \
+// RUN:     -nostdinc \
+// RUN:     -Wall \
+// RUN:     -Wno-system-headers \
+// RUN:     -I%t/test7/include/w \
+// RUN:     -I%t/test7/include/x \
+// RUN:     -I%t/test7/include/y \
+// RUN:     -I%t/test7/include/z \
+// RUN:     -iexternal %t/test7/include/x/foo \
+// RUN:     -iexternal %t/test7/include/y/fo \
+// RUN:     -iexternal %t/test7/include/z/f \
+// RUN:     %t/test7/t.c 2>&1 | FileCheck -DPWD=%t %t/test7/t.c
+// RUN: %clang_cl \
+// RUN:     -Xclang -verify \
+// RUN:     -target x86_64-pc-windows -v -fsyntax-only \
+// RUN:     -nobuiltininc \
+// RUN:     /W4 \
+// RUN:     /external:W0 \
+// RUN:     /I%t/test7/include/w \
+// RUN:     /I%t/test7/include/x \
+// RUN:     /I%t/test7/include/y \
+// RUN:     /I%t/test7/include/z \
+// RUN:     /external:I %t/test7/include/x/foo \
+// RUN:     /external:I %t/test7/include/y/fo \
+// RUN:     /external:I %t/test7/include/z/f \
+// RUN:     %t/test7/t.c 2>&1 | FileCheck -DPWD=%t %t/test7/t.c
+
+#--- test7/t.c
+#include <foo/a.h>
+#include <foo/b.h>
+#include <foo/c.h>
+#include <foo/d.h>
+
+// CHECK:      #include "..." search starts here:
+// CHECK-NEXT: #include <...> search starts here:
+// CHECK-NEXT: [[PWD]]/test7/include/w
+// CHECK-NEXT: [[PWD]]/test7/include/x
+// CHECK-NEXT: [[PWD]]/test7/include/y
+// CHECK-NEXT: [[PWD]]/test7/include/z
+// CHECK-NEXT: [[PWD]]/test7/include/x/foo
+// CHECK-NEXT: [[PWD]]/test7/include/y/fo
+// CHECK-NEXT: End of search list.
+// CHECK-NOT:  diagnostics seen but not expected
+// CHECK-NOT:  diagnostics expected but not seen
+
+#--- test7/include/w/foo/a.h
+// expected-warning@+1 {{shift count >= width of type}}
+int wa = 1 << 1024;
+
+#--- test7/include/x/foo/a.h
+#error 'test7/include/x/foo/a.h' should not have been included!
+
+#--- test7/include/x/foo/b.h
+int xb = 1 << 1024; // Warning should be suppressed.
+
+#--- test7/include/y/foo/a.h
+#error 'test7/include/y/foo/a.h' should not have been included!
+
+#--- test7/include/y/foo/b.h
+#error 'test7/include/y/foo/b.h' should not have been included!
+
+#--- test7/include/y/fo/unused
+
+#--- test7/include/y/foo/c.h
+int yc = 1 << 1024; // Warning should be suppressed.
+
+#--- test7/include/z/foo/a.h
+#error 'test7/include/z/foo/a.h' should not have been included!
+
+#--- test7/include/z/foo/b.h
+#error 'test7/include/z/foo/b.h' should not have been included!
+
+#--- test7/include/z/foo/c.h
+#error 'test7/include/z/foo/c.h' should not have been included!
+
+#--- test7/include/z/foo/d.h
+// FIXME: MSVC retains external directory prefixes that don't match an actual
+// FIXME: file or directory in the filesystem. Clang discards such paths.
+// expected-warning@+1 {{shift count >= width of type}}
+int zd = 1 << 1024; // Warning should be suppressed.
+
+
+// Test 8: Validate that an external directory path with a trailing path
+// separator is not considered a partial match for an include path where
+// the path component before the trailing path separator is a prefix match
+// for a longer name.
+//
+// RUN: %clang \
+// RUN:     -Xclang -verify \
+// RUN:     -target x86_64-pc-windows -v -fsyntax-only \
+// RUN:     -fheader-search=microsoft \
+// RUN:     -nostdinc \
+// RUN:     -Wall \
+// RUN:     -Wno-system-headers \
+// RUN:     -I%t/test8/include/y \
+// RUN:     -I%t/test8/include/z \
+// RUN:     -iexternal %t/test8/include/z/fo \
+// RUN:     %t/test8/t.c 2>&1 | FileCheck -DPWD=%t %t/test8/t.c
+// RUN: %clang_cl \
+// RUN:     -Xclang -verify \
+// RUN:     -target x86_64-pc-windows -v -fsyntax-only \
+// RUN:     -nobuiltininc \
+// RUN:     /W4 \
+// RUN:     /external:W0 \
+// RUN:     /I%t/test8/include/y \
+// RUN:     /I%t/test8/include/z \
+// RUN:     /external:I %t/test8/include/z/fo/ \
+// RUN:     %t/test8/t.c 2>&1 | FileCheck -DPWD=%t %t/test8/t.c
+
+#--- test8/t.c
+#include <foo/a.h>
+#include <foo/b.h>
+
+// CHECK:      #include "..." search starts here:
+// CHECK-NEXT: #include <...> search starts here:
+// CHECK-NEXT: [[PWD]]/test8/include/y
+// CHECK-NEXT: [[PWD]]/test8/include/z
+// CHECK-NEXT: [[PWD]]/test8/include/z/fo
+// CHECK-NEXT: End of search list.
+// CHECK-NOT:  diagnostics seen but not expected
+// CHECK-NOT:  diagnostics expected but not seen
+
+#--- test8/include/y/foo/a.h
+// expected-warning@+1 {{shift count >= width of type}}
+int wa = 1 << 1024;
+
+#--- test8/include/z/foo/a.h
+#error 'test8/include/z/foo/a.h' should not have been included!
+
+#--- test8/include/z/fo/unused
+
+#--- test8/include/z/foo/b.h
+// FIXME: MSVC retains trailing path separators on external directory prefixes
+// FIXME: and will only match the final path component against a complete name
+// FIXME: Clang discards trailing path separators thereby allowing a prefix
+// FIXME: match for the final path component.
+// FIXME-expected-warning@+1 {{shift count >= width of type}}
+int zd = 1 << 1024; // Warning should NOT be suppressed.

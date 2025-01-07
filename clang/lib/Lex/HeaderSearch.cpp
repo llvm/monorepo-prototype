@@ -1117,6 +1117,12 @@ OptionalFileEntryRef HeaderSearch::LookupFile(
       }
     }
 
+    // If an external directory prefix matches the file, override the file
+    // characteristic.
+    for (const auto &ExtDir : ExternalDirectoryPrefixes)
+      if (File->getName().starts_with(ExtDir))
+        HFI.DirInfo = SrcMgr::C_System;
+
     if (checkMSVCHeaderSearch(Diags, MSFE, &File->getFileEntry(), IncludeLoc)) {
       if (SuggestedModule)
         *SuggestedModule = MSSuggestedModule;
