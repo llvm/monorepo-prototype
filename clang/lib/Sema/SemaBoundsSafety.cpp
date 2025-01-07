@@ -218,15 +218,6 @@ bool Sema::CheckCountedByAttrOnField(FieldDecl *FD, Expr *E, bool CountInBytes,
   return false;
 }
 
-SourceRange Sema::BoundsSafetySourceRangeFor(const CountAttributedType *CATy) {
-  // This is an approximation that's not quite right. This points to the
-  // the expression inside the attribute rather than the attribute itself.
-  //
-  // TODO: Implement logic to find the relevant TypeLoc for the attribute and
-  // get the SourceRange from that (#113582).
-  return CATy->getCountExpr()->getSourceRange();
-}
-
 static void EmitIncompleteCountedByPointeeNotes(Sema &S,
                                                 const CountAttributedType *CATy,
                                                 NamedDecl *IncompleteTyDecl,
@@ -235,7 +226,12 @@ static void EmitIncompleteCountedByPointeeNotes(Sema &S,
 
   if (NoteAttrLocation) {
     // Note where the attribute is declared
-    auto AttrSrcRange = S.BoundsSafetySourceRangeFor(CATy);
+    // This is an approximation that's not quite right. This points to the
+    // the expression inside the attribute rather than the attribute itself.
+    //
+    // TODO: Implement logic to find the relevant TypeLoc for the attribute and
+    // get the SourceRange from that (#113582).
+    auto AttrSrcRange = CATy->getCountExpr()->getSourceRange();
     S.Diag(AttrSrcRange.getBegin(), diag::note_named_attribute)
         << CATy->getAttributeName(/*WithMacroPrefix=*/true) << AttrSrcRange;
   }

@@ -2110,22 +2110,13 @@ public:
   ///
   /// \returns True iff no diagnostic where emitted, false otherwise.
   bool BoundsSafetyCheckUseOfCountAttrPtr(Expr *E);
-
-  /// \returns A SourceRange for \param CATy.
-  ///
-  /// This method tries to compute the most useful SourceRange for diagnostics.
-  /// If this fails the returned SourceRange will be the same as
-  /// `CATy->getCountExpr()->getSourceRange()`.
-  ///
-  SourceRange BoundsSafetySourceRangeFor(const CountAttributedType *CATy);
-
   ///@}
 
   //
   //
   // -------------------------------------------------------------------------
   //
-  //
+  //  
 
   /// \name Casts
   /// Implementations are in SemaCast.cpp
