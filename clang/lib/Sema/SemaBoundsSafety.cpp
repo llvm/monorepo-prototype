@@ -304,14 +304,6 @@ static bool CheckAssignmentToCountAttrPtrWithIncompletePointeeTy(
     return true;
   assert(!CATy->isCountInBytes() && !PointeeTy.isNull());
 
-  // It's not expected that the diagnostic be emitted in these cases.
-  // It's not necessarily a problem but we should catch when this starts
-  // to happen.
-  assert(Action != AssignmentAction::Converting &&
-         Action != AssignmentAction::Sending &&
-         Action != AssignmentAction::Casting &&
-         Action != AssignmentAction::Passing_CFAudited);
-
   // By having users provide a function we only pay the cost of allocation the
   // string and computing when a diagnostic is emitted.
   std::string Assignee = ComputeAssignee ? ComputeAssignee() : "";
