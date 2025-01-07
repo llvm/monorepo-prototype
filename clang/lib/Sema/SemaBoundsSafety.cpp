@@ -231,7 +231,7 @@ static void EmitIncompleteCountedByPointeeNotes(Sema &S,
     //
     // TODO: Implement logic to find the relevant TypeLoc for the attribute and
     // get the SourceRange from that (#113582).
-    auto AttrSrcRange = CATy->getCountExpr()->getSourceRange();
+    SourceRange AttrSrcRange = CATy->getCountExpr()->getSourceRange();
     S.Diag(AttrSrcRange.getBegin(), diag::note_named_attribute)
         << CATy->getAttributeName(/*WithMacroPrefix=*/true) << AttrSrcRange;
   }
