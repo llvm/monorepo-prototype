@@ -129,6 +129,7 @@ void DAGTypeLegalizer::ScalarizeVectorResult(SDNode *N, unsigned ResNo) {
   case ISD::ADDRSPACECAST:
     R = ScalarizeVecRes_ADDRSPACECAST(N);
     break;
+  case ISD::FMODF:
   case ISD::FFREXP:
   case ISD::FSINCOS:
     R = ScalarizeVecRes_UnaryOpWithTwoResults(N, ResNo);
@@ -1257,6 +1258,7 @@ void DAGTypeLegalizer::SplitVectorResult(SDNode *N, unsigned ResNo) {
   case ISD::ADDRSPACECAST:
     SplitVecRes_ADDRSPACECAST(N, Lo, Hi);
     break;
+  case ISD::FMODF:
   case ISD::FFREXP:
   case ISD::FSINCOS:
     SplitVecRes_UnaryOpWithTwoResults(N, ResNo, Lo, Hi);
@@ -4779,6 +4781,7 @@ void DAGTypeLegalizer::WidenVectorResult(SDNode *N, unsigned ResNo) {
   case ISD::VP_FSHR:
     Res = WidenVecRes_Ternary(N);
     break;
+  case ISD::FMODF:
   case ISD::FFREXP:
   case ISD::FSINCOS: {
     if (!unrollExpandedOp())
