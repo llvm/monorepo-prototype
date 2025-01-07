@@ -257,31 +257,25 @@ static void EmitIncompleteCountedByPointeeNotes(Sema &S,
       << CATy->getPointeeType();
 }
 
-static bool
-HasCountedByAttrOnIncompletePointee(QualType Ty, NamedDecl **ND,
-                                    const CountAttributedType **CATyOut,
-                                    QualType *PointeeTyOut) {
+static std::tuple<bool, const CountAttributedType *, QualType>
+HasCountedByAttrOnIncompletePointee(QualType Ty, NamedDecl **ND) {
   auto *CATy = Ty->getAs<CountAttributedType>();
   if (!CATy)
-    return false;
+    return {};
 
   // Incomplete pointee type is only a problem for
   // counted_by/counted_by_or_null
   if (CATy->isCountInBytes())
-    return false;
+    return {};
 
   auto PointeeTy = CATy->getPointeeType();
   if (PointeeTy.isNull())
-    return false; // Reachable?
+    return {}; // Reachable?
 
   if (!PointeeTy->isIncompleteType(ND))
-    return false;
+    return {};
 
-  if (CATyOut)
-    *CATyOut = CATy;
-  if (PointeeTyOut)
-    *PointeeTyOut = PointeeTy;
-  return true;
+  return {true, CATy, PointeeTy};
 }
 
 /// Perform Checks for assigning to a `__counted_by` or
@@ -304,10 +298,9 @@ static bool CheckAssignmentToCountAttrPtrWithIncompletePointeeTy(
     Sema &S, QualType LHSTy, Expr *RHSExpr, AssignmentAction Action,
     SourceLocation Loc, llvm::function_ref<std::string()> ComputeAssignee) {
   NamedDecl *IncompleteTyDecl = nullptr;
-  const CountAttributedType *CATy = nullptr;
-  QualType PointeeTy;
-  if (!HasCountedByAttrOnIncompletePointee(LHSTy, &IncompleteTyDecl, &CATy,
-                                           &PointeeTy))
+  auto [Result, CATy, PointeeTy] =
+      HasCountedByAttrOnIncompletePointee(LHSTy, &IncompleteTyDecl);
+  if (!Result)
     return true;
   assert(CATy && !CATy->isCountInBytes() && !PointeeTy.isNull());
 
@@ -386,11 +379,10 @@ bool Sema::BoundsSafetyCheckUseOfCountAttrPtr(Expr *E) {
   if (!T->isPointerType())
     return true;
 
-  const CountAttributedType *CATy = nullptr;
-  QualType PointeeTy;
   NamedDecl *IncompleteTyDecl = nullptr;
-  if (!HasCountedByAttrOnIncompletePointee(T, &IncompleteTyDecl, &CATy,
-                                           &PointeeTy))
+  auto [Result, CATy, PointeeTy] =
+      HasCountedByAttrOnIncompletePointee(T, &IncompleteTyDecl);
+  if (!Result)
     return true;
   assert(CATy && !CATy->isCountInBytes() && !PointeeTy.isNull());
 
