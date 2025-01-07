@@ -302,7 +302,6 @@ static bool CheckAssignmentToCountAttrPtrWithIncompletePointeeTy(
       HasCountedByAttrOnIncompletePointee(LHSTy, &IncompleteTyDecl);
   if (!CATy)
     return true;
-  assert(!CATy->isCountInBytes() && !PointeeTy.isNull());
 
   // By having users provide a function we only pay the cost of allocation the
   // string and computing when a diagnostic is emitted.
@@ -371,7 +370,6 @@ bool Sema::BoundsSafetyCheckUseOfCountAttrPtr(Expr *E) {
       HasCountedByAttrOnIncompletePointee(T, &IncompleteTyDecl);
   if (!CATy)
     return true;
-  assert(!CATy->isCountInBytes() && !PointeeTy.isNull());
 
   // Generate a string for the diagnostic that describes the "use".
   // The string is specialized for direct calls to produce a better
