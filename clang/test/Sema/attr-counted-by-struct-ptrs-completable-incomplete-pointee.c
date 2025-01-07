@@ -562,6 +562,44 @@ void use_CBBufEnumTyPos_completed(struct CBBufEnumTyPos* ptr) {
   void* addr_typedef = ((char*) ptr->buf_typedef) + 1;
 }
 
+// Make a complete enum by providing an underlying type
+enum CompleteEnumTy : unsigned;
+typedef enum CompleteEnumTy CompleteEnum_ty;
+struct CBBufEnumTyPos2 {
+  int count;
+  enum CompleteEnumTy* __counted_by(count) buf;
+  CompleteEnum_ty *__counted_by(count) buf_typedef;
+};
+
+void use_CBBufEnumTyPos2(struct CBBufEnumTyPos2* ptr) {
+  struct CBBufEnumTyPos2 explicit_desig_init = {
+    .count = 0,
+    .buf = 0x0, // OK
+    .buf_typedef = 0x0 // OK
+  };
+}
+
+// Make a complete enum by providing a concrete declaration
+enum CompleteEnumTy2 {
+  VALUE_ONE,
+  VALUE_TWO
+};
+typedef enum CompleteEnumTy2 CompleteEnum_ty2;
+struct CBBufEnumTyPos3 {
+  int count;
+  enum CompleteEnumTy2* __counted_by(count) buf;
+  CompleteEnum_ty2 *__counted_by(count) buf_typedef;
+};
+
+void use_CBBufEnumTyPos3(struct CBBufEnumTyPos3* ptr) {
+  struct CBBufEnumTyPos3 explicit_desig_init = {
+    .count = 0,
+    .buf = 0x0, // OK
+    .buf_typedef = 0x0 // OK
+  };
+}
+
+
 // =============================================================================
 // # Array of __counted_by pointers
 // =============================================================================
