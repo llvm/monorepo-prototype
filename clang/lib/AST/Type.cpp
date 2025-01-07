@@ -2472,7 +2472,7 @@ bool Type::isIncompleteType(NamedDecl **Def) const {
   }
 }
 
-bool Type::isIncompletableIncompleteType() const {
+bool Type::isAlwaysIncompleteType() const {
   if (!isIncompleteType())
     return false;
 

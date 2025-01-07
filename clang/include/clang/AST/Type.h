@@ -2460,7 +2460,7 @@ public:
   /// // This decl now has complete type 'char[5]'.
   /// char foo[5]; // foo has a complete type
   /// \endcode
-  bool isIncompletableIncompleteType() const;
+  bool isAlwaysIncompleteType() const;
 
   /// Determine whether this type is an object type.
   bool isObjectType() const {

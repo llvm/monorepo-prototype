@@ -105,7 +105,7 @@ bool Sema::CheckCountedByAttrOnField(FieldDecl *FD, Expr *E, bool CountInBytes,
   // only `PointeeTy->isStructureTypeWithFlexibleArrayMember()` is reachable
   // when `FieldTy->isArrayType()`.
   bool ShouldWarn = false;
-  if (PointeeTy->isIncompletableIncompleteType() && !CountInBytes) {
+  if (PointeeTy->isAlwaysIncompleteType() && !CountInBytes) {
     // In general using `counted_by` or `counted_by_or_null` on
     // pointers where the pointee is an incomplete type are problematic. This is
     // because it isn't possible to compute the pointer's bounds without knowing
@@ -124,7 +124,7 @@ bool Sema::CheckCountedByAttrOnField(FieldDecl *FD, Expr *E, bool CountInBytes,
     // being incomplete in places where bounds checks are needed the following
     // scheme is used:
     //
-    // * When the pointee type is a "completable incomplete" type (i.e.
+    // * When the pointee type might not always be an incomplete type (i.e.
     // a type that is currently incomplete but might be completed later
     // on in the translation unit) the attribute is allowed by this method
     // but later uses of the FieldDecl are checked that the pointee type
@@ -132,7 +132,7 @@ bool Sema::CheckCountedByAttrOnField(FieldDecl *FD, Expr *E, bool CountInBytes,
     // `BoundsSafetyCheckInitialization`, and
     // `BoundsSafetyCheckUseOfCountAttrPtr`
     //
-    // * When the pointee type is a "incompletable incomplete" type (e.g.
+    // * When the pointee type is always an incomplete type (e.g.
     // `void`) the attribute is disallowed by this method because we know the
     // type can never be completed so there's no reason to allow it.
     InvalidTypeKind = CountedByInvalidPointeeTypeKind::INCOMPLETE;
