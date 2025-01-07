@@ -257,7 +257,7 @@ static void EmitIncompleteCountedByPointeeNotes(Sema &S,
       << CATy->getPointeeType();
 }
 
-static std::tuple<bool, const CountAttributedType *, QualType>
+static std::tuple<const CountAttributedType *, QualType>
 HasCountedByAttrOnIncompletePointee(QualType Ty, NamedDecl **ND) {
   auto *CATy = Ty->getAs<CountAttributedType>();
   if (!CATy)
@@ -275,7 +275,7 @@ HasCountedByAttrOnIncompletePointee(QualType Ty, NamedDecl **ND) {
   if (!PointeeTy->isIncompleteType(ND))
     return {};
 
-  return {true, CATy, PointeeTy};
+  return {CATy, PointeeTy};
 }
 
 /// Perform Checks for assigning to a `__counted_by` or
@@ -298,11 +298,11 @@ static bool CheckAssignmentToCountAttrPtrWithIncompletePointeeTy(
     Sema &S, QualType LHSTy, Expr *RHSExpr, AssignmentAction Action,
     SourceLocation Loc, llvm::function_ref<std::string()> ComputeAssignee) {
   NamedDecl *IncompleteTyDecl = nullptr;
-  auto [Result, CATy, PointeeTy] =
+  auto [CATy, PointeeTy] =
       HasCountedByAttrOnIncompletePointee(LHSTy, &IncompleteTyDecl);
-  if (!Result)
+  if (!CATy)
     return true;
-  assert(CATy && !CATy->isCountInBytes() && !PointeeTy.isNull());
+  assert(!CATy->isCountInBytes() && !PointeeTy.isNull());
 
   // It's not expected that the diagnostic be emitted in these cases.
   // It's not necessarily a problem but we should catch when this starts
@@ -380,11 +380,11 @@ bool Sema::BoundsSafetyCheckUseOfCountAttrPtr(Expr *E) {
     return true;
 
   NamedDecl *IncompleteTyDecl = nullptr;
-  auto [Result, CATy, PointeeTy] =
+  auto [CATy, PointeeTy] =
       HasCountedByAttrOnIncompletePointee(T, &IncompleteTyDecl);
-  if (!Result)
+  if (!CATy)
     return true;
-  assert(CATy && !CATy->isCountInBytes() && !PointeeTy.isNull());
+  assert(!CATy->isCountInBytes() && !PointeeTy.isNull());
 
   // Generate a string for the diagnostic that describes the "use".
   // The string is specialized for direct calls to produce a better
