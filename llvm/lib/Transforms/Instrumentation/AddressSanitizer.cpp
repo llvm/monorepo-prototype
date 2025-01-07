@@ -3430,7 +3430,7 @@ void FunctionStackPoisoner::processStaticAllocas() {
   SmallVector<ASanStackVariableDescription, 16> SVD;
   SVD.reserve(AllocaVec.size());
   for (AllocaInst *AI : AllocaVec) {
-    const char *Name = AI->getName().data();
+    StringRef Name = AI->getName();
     if (AI->hasMetadata(LLVMContext::MD_annotation)) {
       MDTuple *Annotation = (MDTuple *)AI->getMetadata(LLVMContext::MD_annotation);
       for (int i = 0; i < Annotation->getNumOperands(); i++) {
@@ -3439,8 +3439,7 @@ void FunctionStackPoisoner::processStaticAllocas() {
             if (auto stringMetadata = dyn_cast<MDString>(Tuple->getOperand(i))) {
               if (stringMetadata->getString() == "alloca_name_altered") {
                 Name = ((MDString *)Tuple->getOperand(i + 1).get())
-                          ->getString()
-                          .data();
+                          ->getString();
               }
             }
           }
@@ -3448,7 +3447,7 @@ void FunctionStackPoisoner::processStaticAllocas() {
       }
     }
     ASanStackVariableDescription D = {
-        Name, ASan.getAllocaSizeInBytes(*AI), 0, AI->getAlign().value(), AI, 0,
+        Name.data(), ASan.getAllocaSizeInBytes(*AI), 0, AI->getAlign().value(), AI, 0,
         0};
     SVD.push_back(D);
   }
