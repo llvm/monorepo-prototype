@@ -288,30 +288,38 @@ HasCountedByAttrOnIncompletePointee(QualType Ty, NamedDecl **ND) {
 /// \param RHSExpr The expression being assigned from.
 /// \param Action The type assignment being performed
 /// \param Loc The SourceLocation to use for error diagnostics
-/// \param ComputeAssignee If provided this function will be called before
-///        emitting a diagnostic. The function should return the name of
-///        entity being assigned to or an empty string if this cannot be
-///        determined.
+/// \param Assignee The ValueDecl being assigned. This is used to compute
+///        the name of the assignee. If the assignee isn't known this can
+///        be set to nullptr.
+/// \param ShowFullyQualifiedAssigneeName If set to true when using \p
+///        Assignee to compute the name of the assignee use the fully
+///        qualified name, otherwise use the unqualified name.
 ///
 /// \returns True iff no diagnostic where emitted, false otherwise.
 static bool CheckAssignmentToCountAttrPtrWithIncompletePointeeTy(
     Sema &S, QualType LHSTy, Expr *RHSExpr, AssignmentAction Action,
-    SourceLocation Loc, llvm::function_ref<std::string()> ComputeAssignee) {
+    SourceLocation Loc, const ValueDecl *Assignee,
+    bool ShowFullyQualifiedAssigneeName) {
   NamedDecl *IncompleteTyDecl = nullptr;
   auto [CATy, PointeeTy] =
       HasCountedByAttrOnIncompletePointee(LHSTy, &IncompleteTyDecl);
   if (!CATy)
     return true;
 
-  // By having users provide a function we only pay the cost of allocation the
-  // string and computing when a diagnostic is emitted.
-  std::string Assignee = ComputeAssignee ? ComputeAssignee() : "";
+  std::string AssigneeStr;
+  if (Assignee) {
+    if (ShowFullyQualifiedAssigneeName) {
+      AssigneeStr = Assignee->getQualifiedNameAsString();
+    } else {
+      AssigneeStr = Assignee->getNameAsString();
+    }
+  }
   {
     auto D = S.Diag(Loc, diag::err_counted_by_on_incomplete_type_on_assign)
-             << static_cast<int>(Action) << Assignee << (Assignee.size() > 0)
-             << isa<ImplicitValueInitExpr>(RHSExpr) << LHSTy
-             << CATy->getAttributeName(/*WithMacroPrefix=*/true) << PointeeTy
-             << CATy->isOrNull();
+             << static_cast<int>(Action) << AssigneeStr
+             << (AssigneeStr.size() > 0) << isa<ImplicitValueInitExpr>(RHSExpr)
+             << LHSTy << CATy->getAttributeName(/*WithMacroPrefix=*/true)
+             << PointeeTy << CATy->isOrNull();
 
     if (RHSExpr->getSourceRange().isValid())
       D << RHSExpr->getSourceRange();
@@ -323,9 +331,10 @@ static bool CheckAssignmentToCountAttrPtrWithIncompletePointeeTy(
 
 bool Sema::BoundsSafetyCheckAssignmentToCountAttrPtr(
     QualType LHSTy, Expr *RHSExpr, AssignmentAction Action, SourceLocation Loc,
-    llvm::function_ref<std::string()> ComputeAssignee) {
+    const ValueDecl *Assignee, bool ShowFullyQualifiedAssigneeName) {
   return CheckAssignmentToCountAttrPtrWithIncompletePointeeTy(
-      *this, LHSTy, RHSExpr, Action, Loc, ComputeAssignee);
+      *this, LHSTy, RHSExpr, Action, Loc, Assignee,
+      ShowFullyQualifiedAssigneeName);
 }
 
 bool Sema::BoundsSafetyCheckInitialization(const InitializedEntity &Entity,
@@ -346,13 +355,9 @@ bool Sema::BoundsSafetyCheckInitialization(const InitializedEntity &Entity,
       Entity.getKind() != InitializedEntity::EK_Variable) {
 
     if (!CheckAssignmentToCountAttrPtrWithIncompletePointeeTy(
-            *this, LHSType, RHSExpr, Action, SL, [&Entity]() -> std::string {
-              if (const auto *VD =
-                      dyn_cast_or_null<ValueDecl>(Entity.getDecl())) {
-                return VD->getQualifiedNameAsString();
-              }
-              return "";
-            })) {
+            *this, LHSType, RHSExpr, Action, SL,
+            dyn_cast_or_null<ValueDecl>(Entity.getDecl()),
+            /*ShowFullQualifiedAssigneeName=*/true)) {
       return false;
     }
   }

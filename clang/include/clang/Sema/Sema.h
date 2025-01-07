@@ -2076,16 +2076,18 @@ public:
   /// \param RHSExpr The expression being assigned from.
   /// \param Action The type assignment being performed
   /// \param Loc The SourceLocation to use for error diagnostics
-  /// \param ComputeAssignee If provided this function will be called before
-  ///        emitting a diagnostic. The function should return the name of
-  ///        entity being assigned to or an empty string if this cannot be
-  ///        determined.
+  /// \param Assignee The ValueDecl being assigned. This is used to compute
+  ///        the name of the assignee. If the assignee isn't known this can
+  ///        be set to nullptr.
+  /// \param ShowFullyQualifiedAssigneeName If set to true when using \p
+  ///        Assignee to compute the name of the assignee use the fully
+  ///        qualified name, otherwise use the unqualified name.
   ///
   /// \returns True iff no diagnostic where emitted, false otherwise.
   bool BoundsSafetyCheckAssignmentToCountAttrPtr(
       QualType LHSTy, Expr *RHSExpr, AssignmentAction Action,
-      SourceLocation Loc,
-      llvm::function_ref<std::string()> ComputeAssignee = nullptr);
+      SourceLocation Loc, const ValueDecl *Assignee,
+      bool ShowFullyQualifiedAssigneeName);
 
   /// Perform Bounds Safety Semantic checks for initializing a Bounds Safety
   /// pointer.
