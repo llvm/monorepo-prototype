@@ -333,7 +333,6 @@ bool Sema::BoundsSafetyCheckInitialization(const InitializedEntity &Entity,
                                            const InitializationKind &Kind,
                                            AssignmentAction Action,
                                            QualType LHSType, Expr *RHSExpr) {
-  bool ChecksPassed = true;
   auto SL = Kind.getLocation();
 
   // Note: We don't call `BoundsSafetyCheckAssignmentToCountAttrPtr` here
@@ -355,15 +354,11 @@ bool Sema::BoundsSafetyCheckInitialization(const InitializedEntity &Entity,
               }
               return "";
             })) {
-      ChecksPassed = false;
-
-      // It's not necessarily bad if this assert fails but we should catch
-      // if this happens.
-      assert(Entity.getKind() == InitializedEntity::EK_Member);
+      return false;
     }
   }
 
-  return ChecksPassed;
+  return true;
 }
 
 bool Sema::BoundsSafetyCheckUseOfCountAttrPtr(Expr *E) {
