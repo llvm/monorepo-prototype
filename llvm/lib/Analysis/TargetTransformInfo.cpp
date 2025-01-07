@@ -1176,6 +1176,10 @@ unsigned TargetTransformInfo::getNumberOfParts(Type *Tp) const {
   return TTIImpl->getNumberOfParts(Tp);
 }
 
+bool TargetTransformInfo::isFullSingleRegisterType(Type *Tp) const {
+  return TTIImpl->isFullSingleRegisterType(Tp);
+}
+
 InstructionCost
 TargetTransformInfo::getAddressComputationCost(Type *Tp, ScalarEvolution *SE,
                                                const SCEV *Ptr) const {
