@@ -141,9 +141,11 @@ void test_should_not_match() {
   // No match: substr used for prefix or mid-view
   sv = sv.substr(1, sv.length() - 3); // No warning
 
-  // No match: Different string_views
-  sv = sv2.substr(0, sv2.length() - 3); // No warning
-  
+  // Should match: Different string_views with remove_suffix pattern
+  sv = sv2.substr(0, sv2.length() - 3);
+  // CHECK-MESSAGES: :[[@LINE-1]]:3: warning: prefer assignment and remove_suffix over substr [readability-stringview-substr]
+  // CHECK-FIXES: sv = sv2;
+  // CHECK-FIXES: sv.remove_suffix(3)
 }
 
 void f(std::string_view) {}

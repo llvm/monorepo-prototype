@@ -18,26 +18,25 @@ namespace clang::tidy::readability {
 void StringViewSubstrCheck::registerMatchers(MatchFinder *Finder) {
   // Match string_view type
   const auto StringViewDecl = recordDecl(hasName("::std::basic_string_view"));
-  const auto IsStringView = qualType(hasUnqualifiedDesugaredType(
-      recordType(hasDeclaration(StringViewDecl))));
+  const auto IsStringView = qualType(
+      hasUnqualifiedDesugaredType(recordType(hasDeclaration(StringViewDecl))));
 
   // Match substr() call on string_views
   const auto SubstrCall = cxxMemberCallExpr(
       callee(memberExpr(hasDeclaration(cxxMethodDecl(hasName("substr"))))),
       on(expr(hasType(IsStringView)).bind("source")));
 
-  // Match assignment to string_view's substr, but exclude assignments in expressions
+  // Match assignment to string_view's substr, but exclude assignments in
+  // expressions
   Finder->addMatcher(
-      stmt(
-          cxxOperatorCallExpr(
-              unless(isInTemplateInstantiation()),
-              hasOverloadedOperatorName("="),
-              hasArgument(0, expr(hasType(IsStringView)).bind("target")),
-              hasArgument(1, SubstrCall.bind("substr_call")))
-              .bind("assignment"),
-          // Exclude assignments used in larger expressions
-          unless(hasAncestor(varDecl())),
-          unless(hasAncestor(callExpr()))),
+      stmt(cxxOperatorCallExpr(
+               unless(isInTemplateInstantiation()),
+               hasOverloadedOperatorName("="),
+               hasArgument(0, expr(hasType(IsStringView)).bind("target")),
+               hasArgument(1, SubstrCall.bind("substr_call")))
+               .bind("assignment"),
+           // Exclude assignments used in larger expressions
+           unless(hasAncestor(varDecl())), unless(hasAncestor(callExpr()))),
       this);
 }
 
@@ -52,8 +51,6 @@ void StringViewSubstrCheck::check(const MatchFinder::MatchResult &Result) {
   if (!Assignment || !Target || !Source || !SubstrCall) {
     return;
   }
-
-
 
   // Get the DeclRefExpr for the target and source
   const auto *TargetDRE = dyn_cast<DeclRefExpr>(Target->IgnoreParenImpCasts());
@@ -138,20 +135,28 @@ void StringViewSubstrCheck::check(const MatchFinder::MatchResult &Result) {
 
               if (IsZero) {
                 isFullCopy = true;
-              } else if (IsSameVar) {
-                // remove_suffix case (only for self-assignment)
+              } else {
+                // remove_suffix case (works for both self and different vars)
                 std::string RHSText =
                     Lexer::getSourceText(
                         CharSourceRange::getTokenRange(RHS->getSourceRange()),
                         *Result.SourceManager, Result.Context->getLangOpts())
                         .str();
 
+                std::string TargetName = TargetDRE->getNameInfo().getAsString();
+                std::string SourceName = SourceDRE->getNameInfo().getAsString();
+
                 std::string Replacement =
-                    TargetDRE->getNameInfo().getAsString() + ".remove_suffix(" +
-                    RHSText + ")";
+                    IsSameVar
+                        ? (TargetName + ".remove_suffix(" + RHSText + ")")
+                        : (TargetName + " = " + SourceName + ";\n" +
+                           TargetName + ".remove_suffix(" + RHSText + ")");
+
                 diag(Assignment->getBeginLoc(),
-                     "prefer 'remove_suffix' over 'substr' for removing "
-                     "characters from the end")
+                     IsSameVar
+                         ? "prefer 'remove_suffix' over 'substr' for removing "
+                           "characters from the end"
+                         : "prefer assignment and remove_suffix over substr")
                     << FixItHint::CreateReplacement(
                            Assignment->getSourceRange(), Replacement);
                 return;
@@ -204,7 +209,6 @@ void StringViewSubstrCheck::check(const MatchFinder::MatchResult &Result) {
             << FixItHint::CreateReplacement(Assignment->getSourceRange(),
                                             Replacement);
       }
-
       return;
     }
   }

@@ -25,6 +25,7 @@ namespace clang::tidy::readability {
 ///   sv = sv.substr(0, sv.length() - N) -> sv.remove_suffix(N)
 ///   sv = sv.substr(0, sv.length()) -> // Remove redundant self-copy
 ///   sv1 = sv2.substr(0, sv2.length()) -> sv1 = sv2
+///   sv1 = sv2.substr(0, sv2.length() - N) -> sv1 = sv2; sv1.remove_suffix(N)
 ///
 /// These replacements make the intent clearer and are more efficient as they
 /// modify the string_view in place rather than creating a new one.
