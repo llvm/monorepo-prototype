@@ -151,3 +151,17 @@ define void @pointer_cmpxchg_expand6(ptr addrspace(1) %ptr,
   ret void
 }
 
+define <2 x ptr> @atomic_vec2_ptr_align(ptr %x) nounwind {
+; CHECK-LABEL: @atomic_vec2_ptr_align(
+; CHECK-NEXT:    [[TMP1:%.*]] = call i128 @__atomic_load_16(ptr [[X:%.*]], i32 2)
+; CHECK-NEXT:    [[TMP2:%.*]] = trunc i128 [[TMP1]] to i64
+; CHECK-NEXT:    [[TMP3:%.*]] = lshr i128 [[TMP1]], 64
+; CHECK-NEXT:    [[TMP4:%.*]] = trunc i128 [[TMP3]] to i64
+; CHECK-NEXT:    [[TMP5:%.*]] = insertelement <2 x i64> poison, i64 [[TMP2]], i32 0
+; CHECK-NEXT:    [[TMP6:%.*]] = insertelement <2 x i64> [[TMP5]], i64 [[TMP4]], i32 1
+; CHECK-NEXT:    [[TMP7:%.*]] = inttoptr <2 x i64> [[TMP6]] to <2 x ptr>
+; CHECK-NEXT:    ret <2 x ptr> [[TMP7]]
+;
+  %ret = load atomic <2 x ptr>, ptr %x acquire, align 16
+  ret <2 x ptr> %ret
+}

@@ -2060,9 +2060,28 @@ bool AtomicExpandImpl::expandAtomicOpToLibcall(
     I->replaceAllUsesWith(V);
   } else if (HasResult) {
     Value *V;
-    if (UseSizedLibcall)
-      V = Builder.CreateBitOrPointerCast(Result, I->getType());
-    else {
+    if (UseSizedLibcall) {
+      // Add bitcasts from Result's T scalar type to I's <2 x T/2> vector type
+      if (I->getType()->getScalarType()->isIntOrPtrTy() &&
+          I->getType()->isVectorTy() && !Result->getType()->isVectorTy()) {
+        TypeSize Size = Result->getType()->getPrimitiveSizeInBits();
+        assert((unsigned)Size % 2 == 0);
+        unsigned HalfSize = (unsigned)Size / 2;
+        Value *Lo =
+            Builder.CreateTrunc(Result, IntegerType::get(Ctx, HalfSize));
+        Value *RS = Builder.CreateLShr(
+            Result, ConstantInt::get(IntegerType::get(Ctx, Size), HalfSize));
+        Value *Hi = Builder.CreateTrunc(RS, IntegerType::get(Ctx, HalfSize));
+        Value *Vec = Builder.CreateInsertElement(
+            VectorType::get(IntegerType::get(Ctx, HalfSize),
+                            cast<VectorType>(I->getType())->getElementCount()),
+            Lo, ConstantInt::get(IntegerType::get(Ctx, 32), 0));
+        Vec = Builder.CreateInsertElement(
+            Vec, Hi, ConstantInt::get(IntegerType::get(Ctx, 32), 1));
+        V = Builder.CreateBitOrPointerCast(Vec, I->getType());
+      } else
+        V = Builder.CreateBitOrPointerCast(Result, I->getType());
+    } else {
       V = Builder.CreateAlignedLoad(I->getType(), AllocaResult,
                                     AllocaAlignment);
       Builder.CreateLifetimeEnd(AllocaResult, SizeVal64);
