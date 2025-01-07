@@ -397,24 +397,22 @@ bool Sema::BoundsSafetyCheckUseOfCountAttrPtr(Expr *E) {
   // Generate a string for the diagnostic that describes the "use".
   // The string is specialized for direct calls to produce a better
   // diagnostic.
-  StringRef DirectCallFn;
-  std::string UseStr;
+  SmallString<64> UseStr;
+  bool IsDirectCall = false;
   if (const auto *CE = dyn_cast<CallExpr>(E->IgnoreParens())) {
     if (const auto *FD = CE->getDirectCallee()) {
-      DirectCallFn = FD->getName();
+      UseStr = FD->getName();
+      IsDirectCall = true;
     }
   }
-  int SelectExprKind = DirectCallFn.size() > 0 ? 1 : 0;
-  if (SelectExprKind) {
-    UseStr = DirectCallFn;
-  } else {
-    llvm::raw_string_ostream SS(UseStr);
-    E->printPretty(SS, nullptr, PrintingPolicy(getPrintingPolicy()));
+
+  if (!IsDirectCall) {
+    llvm::raw_svector_ostream SS(UseStr);
+    E->printPretty(SS, nullptr, getPrintingPolicy());
   }
-  assert(UseStr.size() > 0);
 
   Diag(E->getBeginLoc(), diag::err_counted_by_on_incomplete_type_on_use)
-      << SelectExprKind << UseStr << T << PointeeTy
+      << IsDirectCall << UseStr << T << PointeeTy
       << CATy->getAttributeName(/*WithMacroPrefix=*/true) << CATy->isOrNull()
       << E->getSourceRange();
 
