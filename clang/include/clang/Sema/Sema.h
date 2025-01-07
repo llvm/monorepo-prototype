@@ -2109,7 +2109,7 @@ public:
   /// \param E the expression to check
   ///
   /// \returns True iff no diagnostic where emitted, false otherwise.
-  bool BoundsSafetyCheckUseOfCountAttrPtr(Expr *E);
+  bool BoundsSafetyCheckUseOfCountAttrPtr(const Expr *E);
   ///@}
 
   //

@@ -360,7 +360,7 @@ bool Sema::BoundsSafetyCheckInitialization(const InitializedEntity &Entity,
   return true;
 }
 
-bool Sema::BoundsSafetyCheckUseOfCountAttrPtr(Expr *E) {
+bool Sema::BoundsSafetyCheckUseOfCountAttrPtr(const Expr *E) {
   QualType T = E->getType();
   if (!T->isPointerType())
     return true;
