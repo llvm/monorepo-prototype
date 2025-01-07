@@ -2457,7 +2457,7 @@ public:
   /// // This decl has type 'char[]' which is incomplete and cannot be later
   /// // completed by another by another type declaration.
   /// extern char foo[];
-  /// // This decl how has complete type 'char[5]'.
+  /// // This decl now has complete type 'char[5]'.
   /// char foo[5]; // foo has a complete type
   /// \endcode
   bool isIncompletableIncompleteType() const;
