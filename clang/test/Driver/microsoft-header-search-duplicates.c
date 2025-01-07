@@ -486,7 +486,7 @@ int ze = 1 << 1024; // Warning should be suppressed.
 // RUN: %clang_cl \
 // RUN:     -Xclang -verify \
 // RUN:     -target x86_64-pc-windows -v -fsyntax-only \
-// RUN:     -nobuiltininc \
+// RUN:     -nobuiltininc /X \
 // RUN:     /W4 \
 // RUN:     /external:W0 \
 // RUN:     /I%t/test7/include/w \
@@ -572,7 +572,7 @@ int zd = 1 << 1024; // Warning should be suppressed.
 // RUN: %clang_cl \
 // RUN:     -Xclang -verify \
 // RUN:     -target x86_64-pc-windows -v -fsyntax-only \
-// RUN:     -nobuiltininc \
+// RUN:     -nobuiltininc /X \
 // RUN:     /W4 \
 // RUN:     /external:W0 \
 // RUN:     /I%t/test8/include/y \

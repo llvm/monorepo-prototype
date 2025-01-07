@@ -1117,11 +1117,26 @@ OptionalFileEntryRef HeaderSearch::LookupFile(
       }
     }
 
-    // If an external directory prefix matches the file, override the file
-    // characteristic.
-    for (const auto &ExtDir : ExternalDirectoryPrefixes)
-      if (File->getName().starts_with(ExtDir))
-        HFI.DirInfo = SrcMgr::C_System;
+    // If the file is not already recognized as a system header, check if it
+    // matches an external directory prefix and override the file characteristic
+    // accordingly.
+    if (HFI.DirInfo == SrcMgr::C_User) {
+      // Canonicalize the file path.
+      SmallString<256> FilePath = File->getName();
+      llvm::sys::path::remove_dots(FilePath, /*remove_dot_dot*/ true);
+      for (const auto &ExtDir : ExternalDirectoryPrefixes) {
+        // Canonicalize the external directory prefix.
+        SmallString<256> ExtDirPath = StringRef(ExtDir);
+        llvm::sys::path::remove_dots(ExtDirPath, /*remove_dot_dot*/ true);
+        // If the external directory prefix is a match, override the file
+        // characteristic and break out of the loop. Note that this operation
+        // is destructive to FilePath if the prefix matches.
+        if (llvm::sys::path::replace_path_prefix(FilePath, ExtDirPath, "")) {
+          HFI.DirInfo = SrcMgr::C_System;
+          break;
+        }
+      }
+    }
 
     if (checkMSVCHeaderSearch(Diags, MSFE, &File->getFileEntry(), IncludeLoc)) {
       if (SuggestedModule)
