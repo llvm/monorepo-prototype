@@ -257,10 +257,6 @@ static void EmitIncompleteCountedByPointeeNotes(Sema &S,
   //
   // `forward declaration of 'Incomplete_Struct_t'
   //  (aka 'struct IncompleteStructTy')`
-  //
-  // If this ends up being confusing we could emit a second diagnostic (one
-  // explaining where the typedef is) but that seems overly verbose.
-
   S.Diag(IncompleteTyDecl->getBeginLoc(), diag::note_forward_declaration)
       << CATy->getPointeeType();
 }
