@@ -48,7 +48,7 @@ CGBlockInfo::CGBlockInfo(const BlockDecl *block, StringRef name)
 BlockByrefHelpers::~BlockByrefHelpers() {}
 
 /// Build the given block as a global block.
-static llvm::Constant *buildGlobalBlock(CodeGenModule &CGM,
+static llvm::Constant *buildGlobalBlock(CodeGenModule &CGM, GlobalDecl GD,
                                         const CGBlockInfo &blockInfo,
                                         llvm::Constant *blockFn);
 
@@ -1085,8 +1085,10 @@ llvm::Value *CodeGenFunction::EmitBlockLiteral(const CGBlockInfo &blockInfo) {
       blockAddr.getPointer(), ConvertType(blockInfo.getBlockExpr()->getType()));
 
   if (IsOpenCL) {
-    CGM.getOpenCLRuntime().recordBlockInfo(blockInfo.BlockExpression, InvokeFn,
-                                           result, blockInfo.StructureType);
+    CGM.getOpenCLRuntime().recordBlockInfo(
+        blockInfo.BlockExpression, InvokeFn, result, blockInfo.StructureType,
+        CurGD && CurGD.isDeclOpenCLKernel() &&
+            (CurGD.getKernelReferenceKind() == KernelReferenceKind::Kernel));
   }
 
   return result;
@@ -1285,7 +1287,7 @@ CodeGenModule::GetAddrOfGlobalBlock(const BlockExpr *BE,
   return getAddrOfGlobalBlockIfEmitted(BE);
 }
 
-static llvm::Constant *buildGlobalBlock(CodeGenModule &CGM,
+static llvm::Constant *buildGlobalBlock(CodeGenModule &CGM, GlobalDecl GD,
                                         const CGBlockInfo &blockInfo,
                                         llvm::Constant *blockFn) {
   assert(blockInfo.CanBeGlobal);
@@ -1378,7 +1380,9 @@ static llvm::Constant *buildGlobalBlock(CodeGenModule &CGM,
     CGM.getOpenCLRuntime().recordBlockInfo(
         blockInfo.BlockExpression,
         cast<llvm::Function>(blockFn->stripPointerCasts()), Result,
-        literal->getValueType());
+        literal->getValueType(),
+        GD && GD.isDeclOpenCLKernel() &&
+            (GD.getKernelReferenceKind() == KernelReferenceKind::Kernel));
   return Result;
 }
 
@@ -1487,7 +1491,7 @@ llvm::Function *CodeGenFunction::GenerateBlockFunction(
     auto GenVoidPtrTy = getContext().getLangOpts().OpenCL
                             ? CGM.getOpenCLRuntime().getGenericVoidPointerType()
                             : VoidPtrTy;
-    buildGlobalBlock(CGM, blockInfo,
+    buildGlobalBlock(CGM, CurGD, blockInfo,
                      llvm::ConstantExpr::getPointerCast(fn, GenVoidPtrTy));
   }
 

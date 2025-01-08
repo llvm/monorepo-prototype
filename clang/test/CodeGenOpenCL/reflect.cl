@@ -13,7 +13,7 @@ bool device_function() {
 }
 
 // CHECK-LABEL: define dso_local spir_kernel void @kernel_function(
-// CHECK-SAME: ptr addrspace(1) noundef align 4 [[I:%.*]]) #[[ATTR2:[0-9]+]] !kernel_arg_addr_space !4 !kernel_arg_access_qual !5 !kernel_arg_type !6 !kernel_arg_base_type !6 !kernel_arg_type_qual !7 {
+// CHECK-SAME: ptr addrspace(1) noundef align 4 [[I:%.*]]) #[[ATTR2:[0-9]+]] !kernel_arg_addr_space !5 !kernel_arg_access_qual !6 !kernel_arg_type !7 !kernel_arg_base_type !7 !kernel_arg_type_qual !8 {
 // CHECK-NEXT:  entry:
 // CHECK-NEXT:    [[I_ADDR:%.*]] = alloca ptr addrspace(1), align 4
 // CHECK-NEXT:    store ptr addrspace(1) [[I]], ptr [[I_ADDR]], align 4
