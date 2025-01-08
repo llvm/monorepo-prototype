@@ -9,9 +9,10 @@ define i32 @global_agent_monotonic_idempotent_or(ptr addrspace(1) %in) {
 ; GFX940-NEXT:    global_load_dword v0, v[0:1], off sc1
 ; GFX940-NEXT:    s_waitcnt vmcnt(0)
 ; GFX940-NEXT:    s_setpc_b64 s[30:31]
-; OPT-LABEL: @global_agent_monotonic_idempotent_or(
+; OPT-LABEL: define i32 @global_agent_monotonic_idempotent_or(
+; OPT-SAME: ptr addrspace(1) [[IN:%.*]]) {
 ; OPT-NEXT:  entry:
-; OPT-NEXT:    [[VAL:%.*]] = load atomic i32, ptr addrspace(1) [[IN:%.*]] syncscope("agent-one-as") monotonic, align 4
+; OPT-NEXT:    [[VAL:%.*]] = load atomic i32, ptr addrspace(1) [[IN]] syncscope("agent-one-as") monotonic, align 4
 ; OPT-NEXT:    ret i32 [[VAL]]
 ;
 entry:
@@ -27,9 +28,10 @@ define i32 @global_agent_acquire_idempotent_or(ptr addrspace(1) %in) {
 ; GFX940-NEXT:    s_waitcnt vmcnt(0)
 ; GFX940-NEXT:    buffer_inv sc1
 ; GFX940-NEXT:    s_setpc_b64 s[30:31]
-; OPT-LABEL: @global_agent_acquire_idempotent_or(
+; OPT-LABEL: define i32 @global_agent_acquire_idempotent_or(
+; OPT-SAME: ptr addrspace(1) [[IN:%.*]]) {
 ; OPT-NEXT:  entry:
-; OPT-NEXT:    [[VAL:%.*]] = load atomic i32, ptr addrspace(1) [[IN:%.*]] syncscope("agent-one-as") acquire, align 4
+; OPT-NEXT:    [[VAL:%.*]] = load atomic i32, ptr addrspace(1) [[IN]] syncscope("agent-one-as") acquire, align 4
 ; OPT-NEXT:    ret i32 [[VAL]]
 ;
 entry:
@@ -46,9 +48,10 @@ define i32 @global_agent_release_idempotent_or(ptr addrspace(1) %in) {
 ; GFX940-NEXT:    global_atomic_or v0, v[0:1], v2, off sc0
 ; GFX940-NEXT:    s_waitcnt vmcnt(0)
 ; GFX940-NEXT:    s_setpc_b64 s[30:31]
-; OPT-LABEL: @global_agent_release_idempotent_or(
+; OPT-LABEL: define i32 @global_agent_release_idempotent_or(
+; OPT-SAME: ptr addrspace(1) [[IN:%.*]]) {
 ; OPT-NEXT:  entry:
-; OPT-NEXT:    [[VAL:%.*]] = atomicrmw or ptr addrspace(1) [[IN:%.*]], i32 0 syncscope("agent-one-as") release, align 4
+; OPT-NEXT:    [[VAL:%.*]] = atomicrmw add ptr addrspace(1) [[IN]], i32 0 syncscope("agent-one-as") release, align 4
 ; OPT-NEXT:    ret i32 [[VAL]]
 ;
 entry:
@@ -66,9 +69,10 @@ define i32 @global_agent_acquire_release_idempotent_or(ptr addrspace(1) %in) {
 ; GFX940-NEXT:    s_waitcnt vmcnt(0)
 ; GFX940-NEXT:    buffer_inv sc1
 ; GFX940-NEXT:    s_setpc_b64 s[30:31]
-; OPT-LABEL: @global_agent_acquire_release_idempotent_or(
+; OPT-LABEL: define i32 @global_agent_acquire_release_idempotent_or(
+; OPT-SAME: ptr addrspace(1) [[IN:%.*]]) {
 ; OPT-NEXT:  entry:
-; OPT-NEXT:    [[VAL:%.*]] = atomicrmw or ptr addrspace(1) [[IN:%.*]], i32 0 syncscope("agent-one-as") acq_rel, align 4
+; OPT-NEXT:    [[VAL:%.*]] = atomicrmw add ptr addrspace(1) [[IN]], i32 0 syncscope("agent-one-as") acq_rel, align 4
 ; OPT-NEXT:    ret i32 [[VAL]]
 ;
 entry:
@@ -86,9 +90,10 @@ define i32 @global_agent_acquire_release_idempotent_or__no_fine_grained(ptr addr
 ; GFX940-NEXT:    s_waitcnt vmcnt(0)
 ; GFX940-NEXT:    buffer_inv sc1
 ; GFX940-NEXT:    s_setpc_b64 s[30:31]
-; OPT-LABEL: @global_agent_acquire_release_idempotent_or__no_fine_grained(
+; OPT-LABEL: define i32 @global_agent_acquire_release_idempotent_or__no_fine_grained(
+; OPT-SAME: ptr addrspace(1) [[IN:%.*]]) {
 ; OPT-NEXT:  entry:
-; OPT-NEXT:    [[VAL:%.*]] = atomicrmw or ptr addrspace(1) [[IN:%.*]], i32 0 syncscope("agent-one-as") acq_rel, align 4, !amdgpu.no.fine.grained.memory [[META0:![0-9]+]]
+; OPT-NEXT:    [[VAL:%.*]] = atomicrmw or ptr addrspace(1) [[IN]], i32 0 syncscope("agent-one-as") acq_rel, align 4, !amdgpu.no.fine.grained.memory [[META0:![0-9]+]]
 ; OPT-NEXT:    ret i32 [[VAL]]
 ;
 entry:
@@ -106,9 +111,10 @@ define i32 @global_agent_seq_cst_idempotent_or(ptr addrspace(1) %in) {
 ; GFX940-NEXT:    s_waitcnt vmcnt(0)
 ; GFX940-NEXT:    buffer_inv sc1
 ; GFX940-NEXT:    s_setpc_b64 s[30:31]
-; OPT-LABEL: @global_agent_seq_cst_idempotent_or(
+; OPT-LABEL: define i32 @global_agent_seq_cst_idempotent_or(
+; OPT-SAME: ptr addrspace(1) [[IN:%.*]]) {
 ; OPT-NEXT:  entry:
-; OPT-NEXT:    [[VAL:%.*]] = atomicrmw or ptr addrspace(1) [[IN:%.*]], i32 0 syncscope("agent-one-as") seq_cst, align 4
+; OPT-NEXT:    [[VAL:%.*]] = atomicrmw add ptr addrspace(1) [[IN]], i32 0 syncscope("agent-one-as") seq_cst, align 4
 ; OPT-NEXT:    ret i32 [[VAL]]
 ;
 entry:
@@ -123,9 +129,10 @@ define i32 @global_agent_monotonic_idempotent_add(ptr addrspace(1) %in) {
 ; GFX940-NEXT:    global_load_dword v0, v[0:1], off sc0
 ; GFX940-NEXT:    s_waitcnt vmcnt(0)
 ; GFX940-NEXT:    s_setpc_b64 s[30:31]
-; OPT-LABEL: @global_agent_monotonic_idempotent_add(
+; OPT-LABEL: define i32 @global_agent_monotonic_idempotent_add(
+; OPT-SAME: ptr addrspace(1) [[IN:%.*]]) {
 ; OPT-NEXT:  entry:
-; OPT-NEXT:    [[VAL:%.*]] = load atomic i32, ptr addrspace(1) [[IN:%.*]] syncscope("workgroup") monotonic, align 4
+; OPT-NEXT:    [[VAL:%.*]] = load atomic i32, ptr addrspace(1) [[IN]] syncscope("workgroup") monotonic, align 4
 ; OPT-NEXT:    ret i32 [[VAL]]
 ;
 entry:
@@ -140,9 +147,10 @@ define i32 @global_agent_monotonic_idempotent_add__no_fine_grained(ptr addrspace
 ; GFX940-NEXT:    global_load_dword v0, v[0:1], off sc0
 ; GFX940-NEXT:    s_waitcnt vmcnt(0)
 ; GFX940-NEXT:    s_setpc_b64 s[30:31]
-; OPT-LABEL: @global_agent_monotonic_idempotent_add__no_fine_grained(
+; OPT-LABEL: define i32 @global_agent_monotonic_idempotent_add__no_fine_grained(
+; OPT-SAME: ptr addrspace(1) [[IN:%.*]]) {
 ; OPT-NEXT:  entry:
-; OPT-NEXT:    [[VAL:%.*]] = load atomic i32, ptr addrspace(1) [[IN:%.*]] syncscope("workgroup") monotonic, align 4, !amdgpu.no.fine.grained.memory [[META0]]
+; OPT-NEXT:    [[VAL:%.*]] = load atomic i32, ptr addrspace(1) [[IN]] syncscope("workgroup") monotonic, align 4, !amdgpu.no.fine.grained.memory [[META0]]
 ; OPT-NEXT:    ret i32 [[VAL]]
 ;
 entry:
@@ -157,9 +165,10 @@ define i32 @global_agent_monotonic_idempotent_sub(ptr addrspace(1) %in) {
 ; GFX940-NEXT:    global_load_dword v0, v[0:1], off
 ; GFX940-NEXT:    s_waitcnt vmcnt(0)
 ; GFX940-NEXT:    s_setpc_b64 s[30:31]
-; OPT-LABEL: @global_agent_monotonic_idempotent_sub(
+; OPT-LABEL: define i32 @global_agent_monotonic_idempotent_sub(
+; OPT-SAME: ptr addrspace(1) [[IN:%.*]]) {
 ; OPT-NEXT:  entry:
-; OPT-NEXT:    [[VAL:%.*]] = load atomic i32, ptr addrspace(1) [[IN:%.*]] syncscope("wavefront") monotonic, align 4
+; OPT-NEXT:    [[VAL:%.*]] = load atomic i32, ptr addrspace(1) [[IN]] syncscope("wavefront") monotonic, align 4
 ; OPT-NEXT:    ret i32 [[VAL]]
 ;
 entry:
@@ -174,9 +183,10 @@ define i32 @global_agent_monotonic_idempotent_sub__no_fine_grained(ptr addrspace
 ; GFX940-NEXT:    global_load_dword v0, v[0:1], off
 ; GFX940-NEXT:    s_waitcnt vmcnt(0)
 ; GFX940-NEXT:    s_setpc_b64 s[30:31]
-; OPT-LABEL: @global_agent_monotonic_idempotent_sub__no_fine_grained(
+; OPT-LABEL: define i32 @global_agent_monotonic_idempotent_sub__no_fine_grained(
+; OPT-SAME: ptr addrspace(1) [[IN:%.*]]) {
 ; OPT-NEXT:  entry:
-; OPT-NEXT:    [[VAL:%.*]] = load atomic i32, ptr addrspace(1) [[IN:%.*]] syncscope("wavefront") monotonic, align 4, !amdgpu.no.fine.grained.memory [[META0]]
+; OPT-NEXT:    [[VAL:%.*]] = load atomic i32, ptr addrspace(1) [[IN]] syncscope("wavefront") monotonic, align 4, !amdgpu.no.fine.grained.memory [[META0]]
 ; OPT-NEXT:    ret i32 [[VAL]]
 ;
 entry:
@@ -191,9 +201,10 @@ define i32 @global_system_monotonic_idempotent_xor(ptr addrspace(1) %in) {
 ; GFX940-NEXT:    global_load_dword v0, v[0:1], off sc0 sc1
 ; GFX940-NEXT:    s_waitcnt vmcnt(0)
 ; GFX940-NEXT:    s_setpc_b64 s[30:31]
-; OPT-LABEL: @global_system_monotonic_idempotent_xor(
+; OPT-LABEL: define i32 @global_system_monotonic_idempotent_xor(
+; OPT-SAME: ptr addrspace(1) [[IN:%.*]]) {
 ; OPT-NEXT:  entry:
-; OPT-NEXT:    [[VAL:%.*]] = load atomic i32, ptr addrspace(1) [[IN:%.*]] monotonic, align 4
+; OPT-NEXT:    [[VAL:%.*]] = load atomic i32, ptr addrspace(1) [[IN]] monotonic, align 4
 ; OPT-NEXT:    ret i32 [[VAL]]
 ;
 entry:
@@ -208,9 +219,10 @@ define i32 @global_system_monotonic_idempotent_xor__no_fine_grained(ptr addrspac
 ; GFX940-NEXT:    global_load_dword v0, v[0:1], off sc0 sc1
 ; GFX940-NEXT:    s_waitcnt vmcnt(0)
 ; GFX940-NEXT:    s_setpc_b64 s[30:31]
-; OPT-LABEL: @global_system_monotonic_idempotent_xor__no_fine_grained(
+; OPT-LABEL: define i32 @global_system_monotonic_idempotent_xor__no_fine_grained(
+; OPT-SAME: ptr addrspace(1) [[IN:%.*]]) {
 ; OPT-NEXT:  entry:
-; OPT-NEXT:    [[VAL:%.*]] = load atomic i32, ptr addrspace(1) [[IN:%.*]] monotonic, align 4, !amdgpu.no.fine.grained.memory [[META0]]
+; OPT-NEXT:    [[VAL:%.*]] = load atomic i32, ptr addrspace(1) [[IN]] monotonic, align 4, !amdgpu.no.fine.grained.memory [[META0]]
 ; OPT-NEXT:    ret i32 [[VAL]]
 ;
 entry:
@@ -225,9 +237,10 @@ define i32 @global_agent_monotonic_idempotent_and(ptr addrspace(1) %in) {
 ; GFX940-NEXT:    global_load_dword v0, v[0:1], off
 ; GFX940-NEXT:    s_waitcnt vmcnt(0)
 ; GFX940-NEXT:    s_setpc_b64 s[30:31]
-; OPT-LABEL: @global_agent_monotonic_idempotent_and(
+; OPT-LABEL: define i32 @global_agent_monotonic_idempotent_and(
+; OPT-SAME: ptr addrspace(1) [[IN:%.*]]) {
 ; OPT-NEXT:  entry:
-; OPT-NEXT:    [[VAL:%.*]] = load atomic i32, ptr addrspace(1) [[IN:%.*]] syncscope("singlethread") monotonic, align 4
+; OPT-NEXT:    [[VAL:%.*]] = load atomic i32, ptr addrspace(1) [[IN]] syncscope("singlethread") monotonic, align 4
 ; OPT-NEXT:    ret i32 [[VAL]]
 ;
 entry:
@@ -242,9 +255,10 @@ define i32 @global_agent_monotonic_idempotent_and_no_fined_grain(ptr addrspace(1
 ; GFX940-NEXT:    global_load_dword v0, v[0:1], off
 ; GFX940-NEXT:    s_waitcnt vmcnt(0)
 ; GFX940-NEXT:    s_setpc_b64 s[30:31]
-; OPT-LABEL: @global_agent_monotonic_idempotent_and_no_fined_grain(
+; OPT-LABEL: define i32 @global_agent_monotonic_idempotent_and_no_fined_grain(
+; OPT-SAME: ptr addrspace(1) [[IN:%.*]]) {
 ; OPT-NEXT:  entry:
-; OPT-NEXT:    [[VAL:%.*]] = load atomic i32, ptr addrspace(1) [[IN:%.*]] syncscope("singlethread") monotonic, align 4, !amdgpu.no.fine.grained.memory [[META0]]
+; OPT-NEXT:    [[VAL:%.*]] = load atomic i32, ptr addrspace(1) [[IN]] syncscope("singlethread") monotonic, align 4, !amdgpu.no.fine.grained.memory [[META0]]
 ; OPT-NEXT:    ret i32 [[VAL]]
 ;
 entry:
