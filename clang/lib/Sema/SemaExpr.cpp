@@ -13746,7 +13746,7 @@ QualType Sema::CheckAssignmentOperands(Expr *LHSExpr, ExprResult &RHS,
       ShowFullyQualifiedAssigneeName = true;
     }
 
-    (void)BoundsSafetyCheckAssignmentToCountAttrPtr(
+    BoundsSafetyCheckAssignmentToCountAttrPtr(
         LHSType, RHS.get(), AssignmentAction::Assigning, Loc, Assignee,
         ShowFullyQualifiedAssigneeName);
   }
