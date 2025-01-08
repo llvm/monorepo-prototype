@@ -10,6 +10,7 @@
 #define MLIR_TOOLS_MLIRQUERY_QUERY_H
 
 #include "Matcher/VariantValue.h"
+#include "mlir/Analysis/SliceAnalysis.h"
 #include "llvm/ADT/IntrusiveRefCntPtr.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/LineEditor/LineEditor.h"
@@ -17,7 +18,13 @@
 
 namespace mlir::query {
 
-enum class QueryKind { Invalid, NoOp, Help, Match, Quit };
+struct QueryOptions {
+  bool omitBlockArguments = false;
+  bool omitUsesFromAbove = true;
+  bool inclusive = true;
+};
+
+enum class QueryKind { Invalid, NoOp, Help, Match, Quit, Let, SetBool };
 
 class QuerySession;
 
@@ -101,6 +108,47 @@ struct MatchQuery : Query {
   static bool classof(const Query *query) {
     return query->kind == QueryKind::Match;
   }
+};
+
+struct LetQuery : Query {
+  LetQuery(llvm::StringRef name, const matcher::VariantValue &value)
+      : Query(QueryKind::Let), name(name), value(value) {}
+
+  llvm::LogicalResult run(llvm::raw_ostream &os,
+                          QuerySession &qs) const override;
+
+  std::string name;
+  matcher::VariantValue value;
+
+  static bool classof(const Query *query) {
+    return query->kind == QueryKind::Let;
+  }
+};
+
+template <typename T>
+struct SetQueryKind {};
+
+template <>
+struct SetQueryKind<bool> {
+  static const QueryKind value = QueryKind::SetBool;
+};
+template <typename T>
+struct SetQuery : Query {
+  SetQuery(T QuerySession::*var, T value)
+      : Query(SetQueryKind<T>::value), var(var), value(value) {}
+
+  llvm::LogicalResult run(llvm::raw_ostream &os,
+                          QuerySession &qs) const override {
+    qs.*var = value;
+    return mlir::success();
+  }
+
+  static bool classof(const Query *query) {
+    return query->kind == SetQueryKind<T>::value;
+  }
+
+  T QuerySession::*var;
+  T value;
 };
 
 } // namespace mlir::query

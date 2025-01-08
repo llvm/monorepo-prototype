@@ -17,59 +17,13 @@
 #include <unordered_set>
 #include <vector>
 
+namespace mlir {
+namespace query {
+struct QueryOptions;
+}
+} // namespace mlir
+
 namespace mlir::query::matcher {
-
-struct BoundOperationNode {
-  Operation *op;
-  std::vector<BoundOperationNode *> Parents;
-  std::vector<BoundOperationNode *> Children;
-
-  bool IsRootNode;
-  bool DetailedPrinting;
-
-  BoundOperationNode(Operation *op, bool IsRootNode = false,
-                     bool DetailedPrinting = false)
-      : op(op), IsRootNode(IsRootNode), DetailedPrinting(DetailedPrinting) {}
-};
-
-class BoundOperationsGraphBuilder {
-public:
-  BoundOperationNode *addNode(Operation *op, bool IsRootNode = false,
-                              bool DetailedPrinting = false) {
-    auto It = Nodes.find(op);
-    if (It != Nodes.end()) {
-      return It->second.get();
-    }
-    auto Node =
-        std::make_unique<BoundOperationNode>(op, IsRootNode, DetailedPrinting);
-    BoundOperationNode *NodePtr = Node.get();
-    Nodes[op] = std::move(Node);
-    return NodePtr;
-  }
-
-  void addEdge(Operation *parentOp, Operation *childOp) {
-    BoundOperationNode *ParentNode = addNode(parentOp, false, false);
-    BoundOperationNode *ChildNode = addNode(childOp, false, false);
-
-    ParentNode->Children.push_back(ChildNode);
-    ChildNode->Parents.push_back(ParentNode);
-  }
-
-  BoundOperationNode *getNode(Operation *op) const {
-    auto It = Nodes.find(op);
-    return It != Nodes.end() ? It->second.get() : nullptr;
-  }
-
-  const llvm::MapVector<Operation *, std::unique_ptr<BoundOperationNode>> &
-  getNodes() const {
-    return Nodes;
-  }
-
-private:
-  llvm::MapVector<Operation *, std::unique_ptr<BoundOperationNode>> Nodes;
-};
-
-// Type traIt to detect if a matcher has a match(Operation*) method
 template <typename T, typename = void>
 struct has_simple_match : std::false_type {};
 
@@ -78,15 +32,14 @@ struct has_simple_match<T, std::void_t<decltype(std::declval<T>().match(
                                std::declval<Operation *>()))>>
     : std::true_type {};
 
-// Type traIt to detect if a matcher has a match(Operation*,
-// BoundOperationsGraphBuilder&) method
 template <typename T, typename = void>
 struct has_bound_match : std::false_type {};
 
 template <typename T>
 struct has_bound_match<T, std::void_t<decltype(std::declval<T>().match(
                               std::declval<Operation *>(),
-                              std::declval<BoundOperationsGraphBuilder &>()))>>
+                              std::declval<SetVector<Operation *> &>(),
+                              std::declval<QueryOptions &>()))>>
     : std::true_type {};
 
 // Generic interface for matchers on an MLIR operation.
@@ -95,7 +48,8 @@ class MatcherInterface
 public:
   virtual ~MatcherInterface() = default;
   virtual bool match(Operation *op) = 0;
-  virtual bool match(Operation *op, BoundOperationsGraphBuilder &bound) = 0;
+  virtual bool match(Operation *op, SetVector<Operation *> &matchedOps,
+                     QueryOptions &options) = 0;
 };
 
 // MatcherFnImpl takes a matcher function object and implements
@@ -111,9 +65,10 @@ public:
     return false;
   }
 
-  bool match(Operation *op, BoundOperationsGraphBuilder &bound) override {
+  bool match(Operation *op, SetVector<Operation *> &matchedOps,
+             QueryOptions &options) override {
     if constexpr (has_bound_match<MatcherFn>::value)
-      return matcherFn.match(op, bound);
+      return matcherFn.match(op, matchedOps, options);
     return false;
   }
 
@@ -138,8 +93,9 @@ public:
   }
 
   bool match(Operation *op) const { return implementation->match(op); }
-  bool match(Operation *op, BoundOperationsGraphBuilder &bound) const {
-    return implementation->match(op, bound);
+  bool match(Operation *op, SetVector<Operation *> &matchedOps,
+             QueryOptions &options) const {
+    return implementation->match(op, matchedOps, options);
   }
 
   void setFunctionName(StringRef name) { functionName = name.str(); }
