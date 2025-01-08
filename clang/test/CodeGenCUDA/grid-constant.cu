@@ -5,6 +5,15 @@
 
 struct S {};
 
+// CHECK-LABEL: define dso_local void @_Z6kernel1Sii(
+// CHECK-SAME: ptr noundef byval([[STRUCT_S:%.*]]) align 1 [[GC_ARG1:%.*]], i32 noundef [[ARG2:%.*]], i32 noundef [[GC_ARG3:%.*]]) #[[ATTR0:[0-9]+]] {
+// CHECK-NEXT:  [[ENTRY:.*:]]
+// CHECK-NEXT:    [[ARG2_ADDR:%.*]] = alloca i32, align 4
+// CHECK-NEXT:    [[GC_ARG3_ADDR:%.*]] = alloca i32, align 4
+// CHECK-NEXT:    store i32 [[ARG2]], ptr [[ARG2_ADDR]], align 4
+// CHECK-NEXT:    store i32 [[GC_ARG3]], ptr [[GC_ARG3_ADDR]], align 4
+// CHECK-NEXT:    ret void
+//
 __global__ void kernel(__grid_constant__ const S gc_arg1, int arg2, __grid_constant__ const int gc_arg3) {}
 
 // dependent arguments get diagnosed after instantiation.
@@ -20,12 +29,16 @@ void foo() {
   tkernel<const S><<<1,1>>>(1, {});
 }
 //.
+// CHECK: attributes #[[ATTR0]] = { convergent mustprogress noinline norecurse nounwind optnone "no-trapping-math"="true" "nvvm.kernel" "stack-protector-buffer-size"="8" "target-features"="+ptx32" "uniform-work-group-size"="true" }
 //.
-// CHECK: [[META0:![0-9]+]] = !{ptr @_Z6kernel1Sii, !"kernel", i32 1, !"grid_constant", [[META1:![0-9]+]]}
+// CHECK: [[META0:![0-9]+]] = !{ptr @_Z6kernel1Sii, !"grid_constant", [[META1:![0-9]+]]}
 // CHECK: [[META1]] = !{i32 1, i32 3}
-// CHECK: [[META2:![0-9]+]] = !{ptr @_Z13tkernel_constIK1SEvT_, !"kernel", i32 1, !"grid_constant", [[META3:![0-9]+]]}
+// CHECK: [[META2:![0-9]+]] = !{ptr @_Z13tkernel_constIK1SEvT_, !"grid_constant", [[META3:![0-9]+]]}
 // CHECK: [[META3]] = !{i32 1}
-// CHECK: [[META4:![0-9]+]] = !{ptr @_Z13tkernel_constI1SEvT_, !"kernel", i32 1, !"grid_constant", [[META3]]}
-// CHECK: [[META5:![0-9]+]] = !{ptr @_Z7tkernelIK1SEviT_, !"kernel", i32 1, !"grid_constant", [[META6:![0-9]+]]}
+// CHECK: [[META4:![0-9]+]] = !{ptr @_Z13tkernel_constI1SEvT_, !"grid_constant", [[META3]]}
+// CHECK: [[META5:![0-9]+]] = !{ptr @_Z7tkernelIK1SEviT_, !"grid_constant", [[META6:![0-9]+]]}
 // CHECK: [[META6]] = !{i32 2}
+// CHECK: [[META7:![0-9]+]] = !{i32 1, !"wchar_size", i32 4}
+// CHECK: [[META8:![0-9]+]] = !{i32 4, !"nvvm-reflect-ftz", i32 0}
+// CHECK: [[META9:![0-9]+]] = !{!"{{.*}}clang version {{.*}}"}
 //.

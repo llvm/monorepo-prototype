@@ -8,6 +8,7 @@ __kernel void kernel_function() {
   device_function();
 }
 // CHECK-LABEL: define{{.*}} spir_kernel void @kernel_function()
+// CHECK-SAME: #[[ATTR0:[0-9]+]]
 // CHECK: call void @device_function()
-// CHECK: !{{[0-9]+}} = !{ptr @kernel_function, !"kernel", i32 1}
+// CHECK: attributes #[[ATTR0]] = {{{.*}} "nvvm.kernel" {{.*}}}
 

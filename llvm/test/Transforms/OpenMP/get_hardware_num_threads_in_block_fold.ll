@@ -210,14 +210,11 @@ attributes #0 = { "omp_target_thread_limit"="666" "omp_target_num_teams"="777"}
 !3 = !{ptr @kernel1, !"kernel", i32 1}
 !4 = !{ptr @kernel2, !"kernel", i32 1}
 ;.
-; CHECK: attributes #[[ATTR0]] = { "kernel" "omp_target_num_teams"="777" "omp_target_thread_limit"="666" }
+; CHECK: attributes #[[ATTR0]] = { "kernel" "nvvm.kernel" "omp_target_num_teams"="777" "omp_target_thread_limit"="666" }
 ; CHECK: attributes #[[ATTR1]] = { nounwind }
 ; CHECK: attributes #[[ATTR2:[0-9]+]] = { alwaysinline }
 ; CHECK: attributes #[[ATTR3:[0-9]+]] = { convergent nounwind }
 ;.
 ; CHECK: [[META0:![0-9]+]] = !{i32 7, !"openmp", i32 50}
 ; CHECK: [[META1:![0-9]+]] = !{i32 7, !"openmp-device", i32 50}
-; CHECK: [[META2:![0-9]+]] = !{ptr @kernel0, !"kernel", i32 1}
-; CHECK: [[META3:![0-9]+]] = !{ptr @kernel1, !"kernel", i32 1}
-; CHECK: [[META4:![0-9]+]] = !{ptr @kernel2, !"kernel", i32 1}
 ;.

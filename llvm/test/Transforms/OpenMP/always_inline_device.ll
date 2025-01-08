@@ -92,16 +92,15 @@ attributes #2 = { convergent }
 !6 = !{i32 7, !"frame-pointer", i32 2}
 !7 = !{!"clang version 14.0.0"}
 ;.
-; CHECK: attributes #[[ATTR0:[0-9]+]] = { norecurse nounwind "frame-pointer"="all" "kernel" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="sm_70" "target-features"="+ptx32,+sm_70" }
+; CHECK: attributes #[[ATTR0:[0-9]+]] = { norecurse nounwind "frame-pointer"="all" "kernel" "min-legal-vector-width"="0" "no-trapping-math"="true" "nvvm.kernel" "stack-protector-buffer-size"="8" "target-cpu"="sm_70" "target-features"="+ptx32,+sm_70" }
 ; CHECK: attributes #[[ATTR1:[0-9]+]] = { alwaysinline convergent nounwind "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="sm_70" "target-features"="+ptx32,+sm_70" }
 ; CHECK: attributes #[[ATTR2:[0-9]+]] = { nounwind }
 ;.
 ; CHECK: [[META0:![0-9]+]] = !{i32 0, i32 64770, i32 -1064087614, !"foo", i32 4, i32 0}
-; CHECK: [[META1:![0-9]+]] = !{ptr @__omp_offloading_fd02_c0934fc2_foo_l4, !"kernel", i32 1}
-; CHECK: [[META2:![0-9]+]] = !{i32 1, !"wchar_size", i32 4}
-; CHECK: [[META3:![0-9]+]] = !{i32 7, !"openmp", i32 50}
-; CHECK: [[META4:![0-9]+]] = !{i32 7, !"openmp-device", i32 50}
-; CHECK: [[META5:![0-9]+]] = !{i32 8, !"PIC Level", i32 2}
-; CHECK: [[META6:![0-9]+]] = !{i32 7, !"frame-pointer", i32 2}
-; CHECK: [[META7:![0-9]+]] = !{!"{{.*}}clang version {{.*}}"}
+; CHECK: [[META1:![0-9]+]] = !{i32 1, !"wchar_size", i32 4}
+; CHECK: [[META2:![0-9]+]] = !{i32 7, !"openmp", i32 50}
+; CHECK: [[META3:![0-9]+]] = !{i32 7, !"openmp-device", i32 50}
+; CHECK: [[META4:![0-9]+]] = !{i32 8, !"PIC Level", i32 2}
+; CHECK: [[META5:![0-9]+]] = !{i32 7, !"frame-pointer", i32 2}
+; CHECK: [[META6:![0-9]+]] = !{!"{{.*}}clang version {{.*}}"}
 ;.

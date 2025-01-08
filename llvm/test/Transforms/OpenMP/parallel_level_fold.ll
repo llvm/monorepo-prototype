@@ -144,12 +144,9 @@ declare void @__kmpc_target_deinit() #1
 !3 = !{ptr @spmd, !"kernel", i32 1}
 !4 = !{ptr @parallel, !"kernel", i32 1}
 ;.
-; CHECK: attributes #[[ATTR0]] = { "kernel" }
+; CHECK: attributes #[[ATTR0]] = { "kernel" "nvvm.kernel" }
 ; CHECK: attributes #[[ATTR1]] = { alwaysinline }
 ;.
 ; CHECK: [[META0:![0-9]+]] = !{i32 7, !"openmp", i32 50}
 ; CHECK: [[META1:![0-9]+]] = !{i32 7, !"openmp-device", i32 50}
-; CHECK: [[META2:![0-9]+]] = !{ptr @none_spmd, !"kernel", i32 1}
-; CHECK: [[META3:![0-9]+]] = !{ptr @spmd, !"kernel", i32 1}
-; CHECK: [[META4:![0-9]+]] = !{ptr @parallel, !"kernel", i32 1}
 ;.

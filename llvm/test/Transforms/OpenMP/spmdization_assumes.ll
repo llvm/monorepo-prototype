@@ -47,7 +47,7 @@ define weak void @__omp_offloading_fd02_404433c2_main_l5(ptr %dyn, ptr nonnull a
 ; CHECK-NEXT:    [[TMP3:%.*]] = icmp eq i32 [[TMP2]], 0
 ; CHECK-NEXT:    br i1 [[TMP3]], label [[REGION_GUARDED:%.*]], label [[REGION_BARRIER:%.*]]
 ; CHECK:       region.guarded:
-; CHECK-NEXT:    store double [[CALL_I]], ptr [[X]], align 8, !tbaa [[TBAA8:![0-9]+]]
+; CHECK-NEXT:    store double [[CALL_I]], ptr [[X]], align 8, !tbaa [[TBAA7:![0-9]+]]
 ; CHECK-NEXT:    br label [[REGION_GUARDED_END:%.*]]
 ; CHECK:       region.guarded.end:
 ; CHECK-NEXT:    br label [[REGION_BARRIER]]
@@ -144,7 +144,7 @@ attributes #6 = { convergent nounwind "llvm.assume"="ompx_spmd_amenable" }
 !10 = !{!"omnipotent char", !11, i64 0}
 !11 = !{!"Simple C/C++ TBAA"}
 ;.
-; CHECK: attributes #[[ATTR0]] = { alwaysinline convergent norecurse nounwind "frame-pointer"="all" "kernel" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" }
+; CHECK: attributes #[[ATTR0]] = { alwaysinline convergent norecurse nounwind "frame-pointer"="all" "kernel" "min-legal-vector-width"="0" "no-trapping-math"="true" "nvvm.kernel" "stack-protector-buffer-size"="8" }
 ; CHECK: attributes #[[ATTR1]] = { alwaysinline mustprogress nofree norecurse nosync nounwind willreturn memory(none) "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" }
 ; CHECK: attributes #[[ATTR2]] = { norecurse nounwind "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" }
 ; CHECK: attributes #[[ATTR3]] = { nounwind }
@@ -154,15 +154,14 @@ attributes #6 = { convergent nounwind "llvm.assume"="ompx_spmd_amenable" }
 ; CHECK: attributes #[[ATTR7]] = { convergent nounwind "llvm.assume"="ompx_spmd_amenable" }
 ;.
 ; CHECK: [[META0:![0-9]+]] = !{i32 0, i32 64770, i32 1078211522, !"main", i32 5, i32 0}
-; CHECK: [[META1:![0-9]+]] = !{ptr @__omp_offloading_fd02_404433c2_main_l5, !"kernel", i32 1}
-; CHECK: [[META2:![0-9]+]] = !{i32 1, !"wchar_size", i32 4}
-; CHECK: [[META3:![0-9]+]] = !{i32 7, !"openmp", i32 50}
-; CHECK: [[META4:![0-9]+]] = !{i32 7, !"openmp-device", i32 50}
-; CHECK: [[META5:![0-9]+]] = !{i32 8, !"PIC Level", i32 2}
-; CHECK: [[META6:![0-9]+]] = !{i32 7, !"frame-pointer", i32 2}
-; CHECK: [[META7:![0-9]+]] = !{!"{{.*}}clang version {{.*}}"}
-; CHECK: [[TBAA8]] = !{[[META9:![0-9]+]], [[META9]], i64 0}
-; CHECK: [[META9]] = !{!"double", [[META10:![0-9]+]], i64 0}
-; CHECK: [[META10]] = !{!"omnipotent char", [[META11:![0-9]+]], i64 0}
-; CHECK: [[META11]] = !{!"Simple C/C++ TBAA"}
+; CHECK: [[META1:![0-9]+]] = !{i32 1, !"wchar_size", i32 4}
+; CHECK: [[META2:![0-9]+]] = !{i32 7, !"openmp", i32 50}
+; CHECK: [[META3:![0-9]+]] = !{i32 7, !"openmp-device", i32 50}
+; CHECK: [[META4:![0-9]+]] = !{i32 8, !"PIC Level", i32 2}
+; CHECK: [[META5:![0-9]+]] = !{i32 7, !"frame-pointer", i32 2}
+; CHECK: [[META6:![0-9]+]] = !{!"{{.*}}clang version {{.*}}"}
+; CHECK: [[TBAA7]] = !{[[META8:![0-9]+]], [[META8]], i64 0}
+; CHECK: [[META8]] = !{!"double", [[META9:![0-9]+]], i64 0}
+; CHECK: [[META9]] = !{!"omnipotent char", [[META10:![0-9]+]], i64 0}
+; CHECK: [[META10]] = !{!"Simple C/C++ TBAA"}
 ;.
