@@ -8204,11 +8204,9 @@ ExprResult InitializationSequence::Perform(Sema &S,
             Kind.getRange().getEnd());
       } else {
         CurInit = new (S.Context) ImplicitValueInitExpr(Step->Type);
-        // Note the return value isn't used to return early
-        // to preserve the AST as best as possible even though an error
-        // might have occurred. For struct initialization it also allows
-        // all field assignments to be checked rather than bailing on the
-        // first error.
+        // Note the return value isn't used to return a ExprError() when
+        // initialization fails . For struct initialization allows all field
+        // assignments to be checked rather than bailing on the first error.
         S.BoundsSafetyCheckInitialization(Entity, Kind,
                                           AssignmentAction::Initializing,
                                           Step->Type, CurInit.get());
@@ -8258,11 +8256,9 @@ ExprResult InitializationSequence::Perform(Sema &S,
         }
       }
 
-      // Note the return value isn't used to return early so that additional
-      // diagnostics can be emitted and to preserve the AST as best as possible
-      // even though an error might have occurred. For struct initialization it
-      // also allows all field assignments to be checked rather than bailing on
-      // the first error.
+      // Note the return value isn't used to return a ExprError() when
+      // initialization fails. For struct initialization this allows all field
+      // assignments to be checked rather than bailing on the first error.
       S.BoundsSafetyCheckInitialization(Entity, Kind,
                                         getAssignmentAction(Entity, true),
                                         Step->Type, InitialCurInit.get());
