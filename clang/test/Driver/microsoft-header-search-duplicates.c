@@ -412,6 +412,7 @@
 // CHECK-NEXT: [[PWD]]/test6/include/z
 // CHECK-NEXT: End of search list.
 // CHECK-NOT:  diagnostics seen but not expected
+// CHECK-NOT:  diagnostics expected but not seen
 
 #--- test6/include/v/a.h
 // expected-warning@+1 {{shift count >= width of type}}
