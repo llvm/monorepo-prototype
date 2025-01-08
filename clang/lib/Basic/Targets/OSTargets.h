@@ -802,6 +802,7 @@ public:
       : OSTargetInfo<Target>(Triple, Opts), Triple(Triple) {
     this->WCharType = TargetInfo::UnsignedShort;
     this->WIntType = TargetInfo::UnsignedShort;
+    this->TheCXXABI.set(TargetCXXABI::Microsoft);
   }
 
   TargetInfo::CallingConvKind
