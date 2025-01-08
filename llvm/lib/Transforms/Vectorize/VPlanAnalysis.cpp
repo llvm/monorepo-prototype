@@ -86,6 +86,8 @@ Type *VPTypeAnalysis::inferScalarTypeForRecipe(const VPInstruction *R) {
   case VPInstruction::BranchOnCond:
   case VPInstruction::BranchOnCount:
     return Type::getVoidTy(Ctx);
+  case VPInstruction::Splat:
+    return inferScalarType(R->getOperand(0));
   default:
     break;
   }
@@ -227,7 +229,8 @@ Type *VPTypeAnalysis::inferScalarType(const VPValue *V) {
             // backedge value, here and in cases below.
             return inferScalarType(R->getStartValue());
           })
-          .Case<VPWidenIntOrFpInductionRecipe, VPDerivedIVRecipe>(
+          .Case<VPWidenIntOrFpInductionRecipe, VPDerivedIVRecipe,
+                VPStepVectorRecipe>(
               [](const auto *R) { return R->getScalarType(); })
           .Case<VPReductionRecipe, VPPredInstPHIRecipe, VPWidenPHIRecipe,
                 VPScalarIVStepsRecipe, VPWidenGEPRecipe, VPVectorPointerRecipe,

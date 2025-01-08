@@ -108,8 +108,8 @@ define void @test_array_load2_i16_store2(i32 %C, i32 %D) #1 {
 ; CHECK-NEXT:    [[TMP1:%.*]] = shl nuw nsw i64 [[TMP0]], 2
 ; CHECK-NEXT:    [[TMP2:%.*]] = call <vscale x 4 x i64> @llvm.stepvector.nxv4i64()
 ; CHECK-NEXT:    [[TMP3:%.*]] = shl <vscale x 4 x i64> [[TMP2]], splat (i64 1)
-; CHECK-NEXT:    [[TMP5:%.*]] = shl nuw nsw i64 [[TMP0]], 3
-; CHECK-NEXT:    [[DOTSPLATINSERT:%.*]] = insertelement <vscale x 4 x i64> poison, i64 [[TMP5]], i64 0
+; CHECK-NEXT:    [[TMP4:%.*]] = shl nuw nsw i64 [[TMP0]], 3
+; CHECK-NEXT:    [[DOTSPLATINSERT:%.*]] = insertelement <vscale x 4 x i64> poison, i64 [[TMP4]], i64 0
 ; CHECK-NEXT:    [[DOTSPLAT:%.*]] = shufflevector <vscale x 4 x i64> [[DOTSPLATINSERT]], <vscale x 4 x i64> poison, <vscale x 4 x i32> zeroinitializer
 ; CHECK-NEXT:    [[BROADCAST_SPLATINSERT:%.*]] = insertelement <vscale x 4 x i32> poison, i32 [[C:%.*]], i64 0
 ; CHECK-NEXT:    [[BROADCAST_SPLAT:%.*]] = shufflevector <vscale x 4 x i32> [[BROADCAST_SPLATINSERT]], <vscale x 4 x i32> poison, <vscale x 4 x i32> zeroinitializer
@@ -197,8 +197,8 @@ define void @test_array_load2_store2_i16(i32 noundef %C, i32 noundef %D) #1 {
 ; CHECK-NEXT:    [[TMP1:%.*]] = shl nuw nsw i64 [[TMP0]], 2
 ; CHECK-NEXT:    [[TMP2:%.*]] = call <vscale x 4 x i64> @llvm.stepvector.nxv4i64()
 ; CHECK-NEXT:    [[TMP3:%.*]] = shl <vscale x 4 x i64> [[TMP2]], splat (i64 1)
-; CHECK-NEXT:    [[TMP5:%.*]] = shl nuw nsw i64 [[TMP0]], 3
-; CHECK-NEXT:    [[DOTSPLATINSERT:%.*]] = insertelement <vscale x 4 x i64> poison, i64 [[TMP5]], i64 0
+; CHECK-NEXT:    [[TMP4:%.*]] = shl nuw nsw i64 [[TMP0]], 3
+; CHECK-NEXT:    [[DOTSPLATINSERT:%.*]] = insertelement <vscale x 4 x i64> poison, i64 [[TMP4]], i64 0
 ; CHECK-NEXT:    [[DOTSPLAT:%.*]] = shufflevector <vscale x 4 x i64> [[DOTSPLATINSERT]], <vscale x 4 x i64> poison, <vscale x 4 x i32> zeroinitializer
 ; CHECK-NEXT:    [[BROADCAST_SPLATINSERT:%.*]] = insertelement <vscale x 4 x i32> poison, i32 [[C:%.*]], i64 0
 ; CHECK-NEXT:    [[BROADCAST_SPLAT:%.*]] = shufflevector <vscale x 4 x i32> [[BROADCAST_SPLATINSERT]], <vscale x 4 x i32> poison, <vscale x 4 x i32> zeroinitializer
@@ -1452,15 +1452,15 @@ define void @PR34743(ptr %a, ptr %b, i64 %n) #1 {
 ; CHECK-NEXT:    [[TMP9:%.*]] = call i64 @llvm.vscale.i64()
 ; CHECK-NEXT:    [[TMP10:%.*]] = shl nuw nsw i64 [[TMP9]], 2
 ; CHECK-NEXT:    [[IND_END:%.*]] = shl i64 [[N_VEC]], 1
+; CHECK-NEXT:    [[TMP14:%.*]] = call <vscale x 4 x i64> @llvm.stepvector.nxv4i64()
+; CHECK-NEXT:    [[TMP15:%.*]] = shl <vscale x 4 x i64> [[TMP14]], splat (i64 1)
+; CHECK-NEXT:    [[TMP16:%.*]] = shl nuw nsw i64 [[TMP9]], 3
+; CHECK-NEXT:    [[DOTSPLATINSERT:%.*]] = insertelement <vscale x 4 x i64> poison, i64 [[TMP16]], i64 0
+; CHECK-NEXT:    [[DOTSPLAT:%.*]] = shufflevector <vscale x 4 x i64> [[DOTSPLATINSERT]], <vscale x 4 x i64> poison, <vscale x 4 x i32> zeroinitializer
 ; CHECK-NEXT:    [[TMP11:%.*]] = call i32 @llvm.vscale.i32()
 ; CHECK-NEXT:    [[TMP12:%.*]] = shl nuw nsw i32 [[TMP11]], 2
 ; CHECK-NEXT:    [[TMP13:%.*]] = add nsw i32 [[TMP12]], -1
 ; CHECK-NEXT:    [[VECTOR_RECUR_INIT:%.*]] = insertelement <vscale x 4 x i16> poison, i16 [[DOTPRE]], i32 [[TMP13]]
-; CHECK-NEXT:    [[TMP14:%.*]] = call <vscale x 4 x i64> @llvm.stepvector.nxv4i64()
-; CHECK-NEXT:    [[TMP15:%.*]] = shl <vscale x 4 x i64> [[TMP14]], splat (i64 1)
-; CHECK-NEXT:    [[TMP17:%.*]] = shl nuw nsw i64 [[TMP9]], 3
-; CHECK-NEXT:    [[DOTSPLATINSERT:%.*]] = insertelement <vscale x 4 x i64> poison, i64 [[TMP17]], i64 0
-; CHECK-NEXT:    [[DOTSPLAT:%.*]] = shufflevector <vscale x 4 x i64> [[DOTSPLATINSERT]], <vscale x 4 x i64> poison, <vscale x 4 x i32> zeroinitializer
 ; CHECK-NEXT:    br label [[VECTOR_BODY:%.*]]
 ; CHECK:       vector.body:
 ; CHECK-NEXT:    [[INDEX:%.*]] = phi i64 [ 0, [[VECTOR_PH]] ], [ [[INDEX_NEXT:%.*]], [[VECTOR_BODY]] ]

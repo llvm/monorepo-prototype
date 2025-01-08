@@ -531,8 +531,8 @@ define void @double_stride_int_scaled(ptr %p, ptr %p2, i64 %stride) {
 ; STRIDED-NEXT:    [[TMP12:%.*]] = call <vscale x 4 x i64> @llvm.stepvector.nxv4i64()
 ; STRIDED-NEXT:    [[TMP14:%.*]] = mul <vscale x 4 x i64> [[TMP12]], splat (i64 1)
 ; STRIDED-NEXT:    [[INDUCTION:%.*]] = add <vscale x 4 x i64> zeroinitializer, [[TMP14]]
-; STRIDED-NEXT:    [[TMP17:%.*]] = mul i64 1, [[TMP11]]
-; STRIDED-NEXT:    [[DOTSPLATINSERT:%.*]] = insertelement <vscale x 4 x i64> poison, i64 [[TMP17]], i64 0
+; STRIDED-NEXT:    [[TMP15:%.*]] = mul i64 1, [[TMP11]]
+; STRIDED-NEXT:    [[DOTSPLATINSERT:%.*]] = insertelement <vscale x 4 x i64> poison, i64 [[TMP15]], i64 0
 ; STRIDED-NEXT:    [[DOTSPLAT:%.*]] = shufflevector <vscale x 4 x i64> [[DOTSPLATINSERT]], <vscale x 4 x i64> poison, <vscale x 4 x i32> zeroinitializer
 ; STRIDED-NEXT:    [[BROADCAST_SPLATINSERT:%.*]] = insertelement <vscale x 4 x i64> poison, i64 [[STRIDE]], i64 0
 ; STRIDED-NEXT:    [[BROADCAST_SPLAT:%.*]] = shufflevector <vscale x 4 x i64> [[BROADCAST_SPLATINSERT]], <vscale x 4 x i64> poison, <vscale x 4 x i32> zeroinitializer

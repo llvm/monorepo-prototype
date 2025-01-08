@@ -1225,6 +1225,8 @@ public:
     // Returns a scalar boolean value, which is true if any lane of its single
     // operand is true.
     AnyOf,
+    // Splats a scalar value across all lanes.
+    Splat,
   };
 
 private:
@@ -1617,6 +1619,41 @@ public:
            "Op must be an operand of the recipe");
     return true;
   }
+};
+
+/// A recipe for generating a step vector.
+class VPStepVectorRecipe : public VPSingleDefRecipe {
+  /// Scalar return type of the intrinsic.
+  Type *ScalarTy;
+
+public:
+  VPStepVectorRecipe(Type *Ty)
+      : VPSingleDefRecipe(VPDef::VPStepVectorSC, {}), ScalarTy(Ty) {}
+
+  ~VPStepVectorRecipe() override = default;
+
+  VPStepVectorRecipe *clone() override {
+    return new VPStepVectorRecipe(ScalarTy);
+  }
+
+  VP_CLASSOF_IMPL(VPDef::VPStepVectorSC)
+
+  void execute(VPTransformState &State) override;
+
+  /// Return the cost of this VPStepVectorRecipe.
+  InstructionCost computeCost(ElementCount VF,
+                              VPCostContext &Ctx) const override {
+    // TODO: Compute accurate cost after retiring the legacy cost model.
+    return 0;
+  }
+
+#if !defined(NDEBUG) || defined(LLVM_ENABLE_DUMP)
+  void print(raw_ostream &O, const Twine &Indent,
+             VPSlotTracker &SlotTracker) const override;
+#endif
+
+  /// Return the scalar return type of the intrinsic.
+  Type *getScalarType() const { return ScalarTy; }
 };
 
 /// A recipe for widening vector intrinsics.
@@ -2133,7 +2170,9 @@ public:
 };
 
 /// A recipe for handling phi nodes of integer and floating-point inductions,
-/// producing their vector values.
+/// producing their vector values. This won't execute any LLVM IR and will get
+/// expanded later into VPWidenIntOrFpInitialRecipe, VPWidenIntOrFpPHIRecipe and
+/// VPWidenIntOrFpBackedgeRecipe.
 class VPWidenIntOrFpInductionRecipe : public VPWidenInductionRecipe {
   TruncInst *Trunc;
 
@@ -2166,9 +2205,10 @@ public:
 
   VP_CLASSOF_IMPL(VPDef::VPWidenIntOrFpInductionSC)
 
-  /// Generate the vectorized and scalarized versions of the phi node as
-  /// needed by their users.
-  void execute(VPTransformState &State) override;
+  void execute(VPTransformState &State) override {
+    llvm_unreachable("cannot execute this recipe, should be expanded via "
+                     "expandVPWidenIntOrFpInductionRecipe");
+  }
 
 #if !defined(NDEBUG) || defined(LLVM_ENABLE_DUMP)
   /// Print the recipe.
@@ -2298,10 +2338,16 @@ class VPWidenPHIRecipe : public VPSingleDefRecipe {
   /// List of incoming blocks. Only used in the VPlan native path.
   SmallVector<VPBasicBlock *, 2> IncomingBlocks;
 
+  /// Name to use for the generated IR instruction for the widened IV.
+  std::string Name;
+
 public:
-  /// Create a new VPWidenPHIRecipe for \p Phi with start value \p Start.
-  VPWidenPHIRecipe(PHINode *Phi, VPValue *Start = nullptr)
-      : VPSingleDefRecipe(VPDef::VPWidenPHISC, ArrayRef<VPValue *>(), Phi) {
+  /// Create a new VPWidenPHIRecipe for \p Phi with start value \p Start and
+  /// debug location \p DL..
+  VPWidenPHIRecipe(Instruction *Phi, VPValue *Start = nullptr, DebugLoc DL = {},
+                   const Twine &Name = "vec.phi")
+      : VPSingleDefRecipe(VPDef::VPWidenPHISC, ArrayRef<VPValue *>(), Phi, DL),
+        Name(Name.str()) {
     if (Start)
       addOperand(Start);
   }
@@ -2331,6 +2377,11 @@ public:
 
   /// Returns the \p I th incoming VPBasicBlock.
   VPBasicBlock *getIncomingBlock(unsigned I) { return IncomingBlocks[I]; }
+
+  /// Set the \p I th incoming VPBasicBlock to \p IncomingBlock.
+  void setIncomingBlock(unsigned I, VPBasicBlock *IncomingBlock) {
+    IncomingBlocks[I] = IncomingBlock;
+  }
 
   /// Returns the \p I th incoming VPValue.
   VPValue *getIncomingValue(unsigned I) { return getOperand(I); }

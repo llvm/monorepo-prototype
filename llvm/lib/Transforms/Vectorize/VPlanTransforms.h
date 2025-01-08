@@ -136,7 +136,7 @@ struct VPlanTransforms {
                                          VPRecipeBuilder &RecipeBuilder);
 
   /// Lower abstract recipes to concrete ones, that can be codegen'd.
-  static void convertToConcreteRecipes(VPlan &Plan);
+  static void convertToConcreteRecipes(VPlan &Plan, Type *CanonicalIVTy);
 };
 
 } // namespace llvm
