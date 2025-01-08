@@ -99,6 +99,7 @@ void VariantValue::reset() {
   type = ValueType::Nothing;
 }
 
+// Unsinged
 bool VariantValue::isUnsigned() const { return type == ValueType::Unsigned; }
 
 unsigned VariantValue::getUnsigned() const {

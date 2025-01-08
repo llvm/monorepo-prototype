@@ -44,6 +44,10 @@ int main(int argc, char **argv) {
                                   mlir::query::extramatcher::getDefinitions);
   matcherRegistry.registerMatcher("definedBy",
                                   mlir::query::extramatcher::definedBy);
+  matcherRegistry.registerMatcher("usedBy", mlir::query::extramatcher::usedBy);
+  matcherRegistry.registerMatcher("getUses",
+                                  mlir::query::extramatcher::getUses);
+
   matcherRegistry.registerMatcher("hasOpAttrName",
                                   static_cast<HasOpAttrName *>(m_Attr));
   matcherRegistry.registerMatcher("hasOpName", static_cast<HasOpName *>(m_Op));
