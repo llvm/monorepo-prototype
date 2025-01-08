@@ -151,7 +151,9 @@ Additions:
 * time.h
 
   * gmtime_r
+  * localtime
   * localtime_r
+  * localtime_s
   * timegm
   * timespec_getres
   * strftime conversion specifiers

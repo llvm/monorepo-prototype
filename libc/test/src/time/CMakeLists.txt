@@ -12,6 +12,7 @@ add_libc_unittest(
   CXX_STANDARD
     20
   DEPENDS
+    libc.src.stdio.fopen
     libc.src.time.asctime
 )
 
@@ -27,6 +28,7 @@ add_libc_unittest(
   CXX_STANDARD
     20
   DEPENDS
+    libc.src.stdio.fopen
     libc.src.time.asctime_r
 )
 
@@ -42,10 +44,7 @@ add_libc_unittest(
   CXX_STANDARD
     20
   DEPENDS
-    libc.include.time
-    libc.hdr.types.time_t
     libc.src.time.ctime
-    libc.src.time.time_utils
 )
 
 add_libc_unittest(
@@ -60,10 +59,52 @@ add_libc_unittest(
   CXX_STANDARD
     20
   DEPENDS
-    libc.include.time
-    libc.hdr.types.time_t
     libc.src.time.ctime_r
-    libc.src.time.time_utils
+)
+
+add_libc_unittest(
+  localtime_test
+  SUITE
+    libc_time_unittests
+  SRCS
+    localtime_test.cpp
+  HDRS
+    TmHelper.h
+    TmMatcher.h
+  CXX_STANDARD
+    20
+  DEPENDS
+    libc.src.time.localtime
+)
+
+add_libc_unittest(
+  localtime_r_test
+  SUITE
+    libc_time_unittests
+  SRCS
+    localtime_r_test.cpp
+  HDRS
+    TmHelper.h
+    TmMatcher.h
+  CXX_STANDARD
+    20
+  DEPENDS
+    libc.src.time.localtime_r
+)
+
+add_libc_unittest(
+  localtime_s_test
+  SUITE
+    libc_time_unittests
+  SRCS
+    localtime_s_test.cpp
+  HDRS
+    TmHelper.h
+    TmMatcher.h
+  CXX_STANDARD
+    20
+  DEPENDS
+    libc.src.time.localtime_s
 )
 
 add_libc_test(
@@ -145,7 +186,6 @@ add_libc_unittest(
     20
   DEPENDS
     libc.src.time.mktime
-    libc.src.__support.CPP.limits
 )
 
 add_libc_test(
@@ -155,9 +195,7 @@ add_libc_test(
   SRCS
     nanosleep_test.cpp
   DEPENDS
-    libc.include.time
     libc.src.time.nanosleep
-    libc.src.errno.errno
 )
 
 add_libc_unittest(
@@ -168,11 +206,9 @@ add_libc_unittest(
     time_test.cpp
   DEPENDS
     libc.src.time.time
-    libc.src.__support.time.clock_gettime
-    libc.src.errno.errno
 )
 
-add_libc_test(
+add_libc_unittest(
   timespec_get_test
   SUITE
     libc_time_unittests
@@ -182,14 +218,12 @@ add_libc_test(
     libc.src.time.timespec_get
 )
 
-add_libc_test(
+add_libc_unittest(
   clock_test
   SUITE
     libc_time_unittests
   SRCS
     clock_test.cpp
   DEPENDS
-    libc.include.time
     libc.src.time.clock
-    libc.src.errno.errno
 )

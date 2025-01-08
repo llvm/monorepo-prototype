@@ -1,4 +1,4 @@
-//===-- Implementation of asctime function --------------------------------===//
+//===-- Implementation of localtime_s function ----------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -6,16 +6,18 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "src/time/asctime.h"
+#include "src/time/localtime_s.h"
 #include "src/time/time_utils.h"
 
 namespace LIBC_NAMESPACE_DECL {
 
-using LIBC_NAMESPACE::time_utils::TimeConstants;
+// windows only, implemented in gnu/linux for compatibility reasons
+LLVM_LIBC_FUNCTION(int, localtime_s, (const time_t *timer, struct tm *input)) {
+  if (timer == nullptr) {
+    return -1;
+  }
 
-LLVM_LIBC_FUNCTION(char *, asctime, (const struct tm *timeptr)) {
-  static char buffer[TimeConstants::ASCTIME_BUFFER_SIZE];
-  return time_utils::asctime(timeptr, buffer, TimeConstants::ASCTIME_MAX_BYTES);
+  return time_utils::localtime_s_internal(timer, input);
 }
 
 } // namespace LIBC_NAMESPACE_DECL
