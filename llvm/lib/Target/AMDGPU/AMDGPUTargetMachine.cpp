@@ -449,6 +449,11 @@ static cl::opt<bool>
                            cl::desc("Enable AMDGPUAttributorPass"),
                            cl::init(true), cl::Hidden);
 
+static cl::opt<bool> EnableUniformIntrinsicCombine(
+    "amdgpu-enable-uniform-intrinsic-combine",
+    cl::desc("Enable/Disable the Uniform Intrinsic Combine Pass"),
+    cl::init(true), cl::Hidden);
+
 extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeAMDGPUTarget() {
   // Register the target
   RegisterTargetMachine<R600TargetMachine> X(getTheR600Target());
@@ -529,6 +534,7 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeAMDGPUTarget() {
   initializeGCNPreRALongBranchRegPass(*PR);
   initializeGCNRewritePartialRegUsesPass(*PR);
   initializeGCNRegPressurePrinterPass(*PR);
+  initializeAMDGPUUniformIntrinsicCombineLegacyPass(*PR);
 }
 
 static std::unique_ptr<TargetLoweringObjectFile> createTLOF(const Triple &TT) {
@@ -770,13 +776,16 @@ void AMDGPUTargetMachine::registerPassBuilderCallbacks(PassBuilder &PB) {
       });
 
   PB.registerPeepholeEPCallback(
-      [](FunctionPassManager &FPM, OptimizationLevel Level) {
+      [this](FunctionPassManager &FPM, OptimizationLevel Level) {
         if (Level == OptimizationLevel::O0)
           return;
 
         FPM.addPass(AMDGPUUseNativeCallsPass());
         if (EnableLibCallSimplify)
           FPM.addPass(AMDGPUSimplifyLibCallsPass());
+
+        if (EnableUniformIntrinsicCombine)
+          FPM.addPass(AMDGPUUniformIntrinsicCombinePass(*this));
       });
 
   PB.registerCGSCCOptimizerLateEPCallback(
