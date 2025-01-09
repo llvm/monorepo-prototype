@@ -15,17 +15,16 @@
 #ifndef LLVM_CLANG_LIB_CODEGEN_CGHLSLRUNTIME_H
 #define LLVM_CLANG_LIB_CODEGEN_CGHLSLRUNTIME_H
 
+#include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Intrinsics.h"
-#include "llvm/IR/IntrinsicsDirectX.h"
-#include "llvm/IR/IntrinsicsSPIRV.h"
-
-#include "clang/Basic/Builtins.h"
-#include "clang/Basic/HLSLRuntime.h"
 
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Frontend/HLSL/HLSLResource.h"
+#include "llvm/IR/IntrinsicsDirectX.h"
+#include "llvm/IR/IntrinsicsSPIRV.h"
+#include "llvm/TargetParser/Triple.h"
 
 #include <optional>
 #include <vector>
@@ -53,6 +52,7 @@ class StructType;
 } // namespace llvm
 
 namespace clang {
+class NamedDecl;
 class VarDecl;
 class ParmVarDecl;
 class HLSLBufferDecl;
@@ -117,22 +117,28 @@ public:
   //===----------------------------------------------------------------------===//
 
   struct BufferResBinding {
-    // The ID like 2 in register(b2, space1).
-    std::optional<unsigned> Reg;
-    // The Space like 1 is register(b2, space1).
-    // Default value is 0.
+    // Register slot
+    std::optional<unsigned> Slot;
+    // Register space; default value is 0.
     unsigned Space;
+
     BufferResBinding(HLSLResourceBindingAttr *Attr);
   };
+
   struct Buffer {
-    Buffer(const HLSLBufferDecl *D);
     llvm::StringRef Name;
-    // IsCBuffer - Whether the buffer is a cbuffer (and not a tbuffer).
+    // Whether the buffer is a cbuffer (and not a tbuffer).
     bool IsCBuffer;
-    BufferResBinding Binding;
-    // Global variable and offset for each constant.
-    std::vector<std::pair<llvm::GlobalVariable *, unsigned>> Constants;
-    llvm::StructType *LayoutStruct = nullptr;
+    // Whether the buffer has packoffset annotations
+    bool HasPackoffset;
+    // List of global constants
+    std::vector<llvm::GlobalVariable *> Constants;
+    // reference to the AST Decl node with resource binding attribute
+    HLSLBufferDecl *Decl;
+    // global variable for the constant buffer
+    llvm::GlobalVariable *GlobalVar;
+
+    Buffer(HLSLBufferDecl *D);
   };
 
 protected:
@@ -145,12 +151,14 @@ public:
   CGHLSLRuntime(CodeGenModule &CGM) : CGM(CGM) {}
   virtual ~CGHLSLRuntime() {}
 
-  llvm::Type *convertHLSLSpecificType(const Type *T);
+  llvm::Type *
+  convertHLSLSpecificType(const Type *T,
+                          const HLSLBufferDecl *BufferDecl = nullptr);
 
   void annotateHLSLResource(const VarDecl *D, llvm::GlobalVariable *GV);
   void generateGlobalCtorDtorCalls();
 
-  void addBuffer(const HLSLBufferDecl *D);
+  void addBuffer(HLSLBufferDecl *D);
   void finishCodeGen();
 
   void setHLSLEntryAttributes(const FunctionDecl *FD, llvm::Function *Fn);
@@ -174,7 +182,7 @@ private:
   llvm::Triple::ArchType getArch();
   llvm::SmallVector<Buffer> Buffers;
 
-  llvm::SmallVector<std::pair<const VarDecl *, llvm::GlobalVariable *>>
+  llvm::SmallVector<std::pair<const NamedDecl *, llvm::GlobalVariable *>>
       ResourcesToBind;
 };
 
