@@ -241,6 +241,8 @@ public:
   static Kind getParsedKind(const IdentifierInfo *Name,
                             const IdentifierInfo *Scope, Syntax SyntaxUsed);
 
+  bool isKnownScopeName() const;
+
 private:
   /// Get an index into the attribute spelling list
   /// defined in Attr.td. This index is used by an attribute

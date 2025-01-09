@@ -553,6 +553,8 @@ Attribute Changes in Clang
 - Clang now permits the usage of the placement new operator in ``[[msvc::constexpr]]``
   context outside of the std namespace. (#GH74924)
 
+- Clang now raises warnings for unknown namespaced attributes only in pedantic mode (#GH120875).
+
 Improvements to Clang's diagnostics
 -----------------------------------
 
