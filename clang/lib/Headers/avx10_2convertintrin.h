@@ -2544,7 +2544,7 @@ _mm_maskz_cvtneph_pbf8(__mmask8 __U, __m128h __A) {
 ///
 /// \headerfile <immintrin.h>
 ///
-/// This intrinsic corresponds to the \c VCVTNE2PH2BF8 instruction.
+/// This intrinsic corresponds to the \c VCVTNEPH2BF8 instruction.
 ///
 /// \param __A
 ///    A 256-bit vector of [16 x half].
@@ -2575,7 +2575,7 @@ _mm256_cvtneph_pbf8(__m256h __A) {
 ///
 /// \headerfile <immintrin.h>
 ///
-/// This intrinsic corresponds to the \c VCVTNE2PH2BF8 instruction.
+/// This intrinsic corresponds to the \c VCVTNEPH2BF8 instruction.
 ///
 /// \param __W
 ///    A 128-bit vector of [16 x bf8].
@@ -2611,7 +2611,7 @@ _mm256_mask_cvtneph_pbf8(__m128i __W, __mmask16 __U, __m256h __A) {
 ///
 /// \headerfile <immintrin.h>
 ///
-/// This intrinsic corresponds to the \c VCVTNE2PH2BF8 instruction.
+/// This intrinsic corresponds to the \c VCVTNEPH2BF8 instruction.
 ///
 /// \param __U
 ///    A 16-bit zeroing mask.
@@ -2641,7 +2641,7 @@ _mm256_maskz_cvtneph_pbf8(__mmask16 __U, __m256h __A) {
 ///
 /// \headerfile <immintrin.h>
 ///
-/// This intrinsic corresponds to the \c VCVTNE2PH2BF8S instruction.
+/// This intrinsic corresponds to the \c VCVTNEPH2BF8S instruction.
 ///
 /// \param __A
 ///    A 128-bit vector of [8 x half].
@@ -2672,7 +2672,7 @@ static __inline__ __m128i __DEFAULT_FN_ATTRS128 _mm_cvtnesph_pbf8(__m128h __A) {
 ///
 /// \headerfile <immintrin.h>
 ///
-/// This intrinsic corresponds to the \c VCVTNE2PH2BF8S instruction.
+/// This intrinsic corresponds to the \c VCVTNEPH2BF8S instruction.
 ///
 /// \param __W
 ///    A 128-bit vector of [16 x bf8].
@@ -2709,7 +2709,7 @@ _mm_mask_cvtnesph_pbf8(__m128i __W, __mmask8 __U, __m128h __A) {
 ///
 /// \headerfile <immintrin.h>
 ///
-/// This intrinsic corresponds to the \c VCVTNE2PH2BF8S instruction.
+/// This intrinsic corresponds to the \c VCVTNEPH2BF8S instruction.
 ///
 /// \param __U
 ///    A 8-bit zeroing mask.
@@ -2738,7 +2738,7 @@ _mm_maskz_cvtnesph_pbf8(__mmask8 __U, __m128h __A) {
 ///
 /// \headerfile <immintrin.h>
 ///
-/// This intrinsic corresponds to the \c VCVTNE2PH2BF8S instruction.
+/// This intrinsic corresponds to the \c VCVTNEPH2BF8S instruction.
 ///
 /// \param __A
 ///    A 256-bit vector of [16 x half].
@@ -2770,7 +2770,7 @@ _mm256_cvtnesph_pbf8(__m256h __A) {
 ///
 /// \headerfile <immintrin.h>
 ///
-/// This intrinsic corresponds to the \c VCVTNE2PH2BF8S instruction.
+/// This intrinsic corresponds to the \c VCVTNEPH2BF8S instruction.
 ///
 /// \param __W
 ///    A 128-bit vector of [16 x bf8].
@@ -2807,7 +2807,7 @@ _mm256_mask_cvtnesph_pbf8(__m128i __W, __mmask16 __U, __m256h __A) {
 ///
 /// \headerfile <immintrin.h>
 ///
-/// This intrinsic corresponds to the \c VCVTNE2PH2BF8S instruction.
+/// This intrinsic corresponds to the \c VCVTNEPH2BF8S instruction.
 ///
 /// \param __U
 ///    A 16-bit zeroing mask.
@@ -2868,7 +2868,7 @@ static __inline__ __m128i __DEFAULT_FN_ATTRS128 _mm_cvtneph_phf8(__m128h __A) {
 ///
 /// \headerfile <immintrin.h>
 ///
-/// This intrinsic corresponds to the \c VCVTNE2PH2BF8 instruction.
+/// This intrinsic corresponds to the \c VCVTNEPH2BF8 instruction.
 ///
 /// \param __W
 ///    A 128-bit vector of [16 x hf8].
@@ -2905,7 +2905,7 @@ _mm_mask_cvtneph_phf8(__m128i __W, __mmask8 __U, __m128h __A) {
 ///
 /// \headerfile <immintrin.h>
 ///
-/// This intrinsic corresponds to the \c VCVTNE2PH2BF8 instruction.
+/// This intrinsic corresponds to the \c VCVTNEPH2BF8 instruction.
 ///
 /// \param __U
 ///    A 8-bit zeroing mask.
@@ -2934,7 +2934,7 @@ _mm_maskz_cvtneph_phf8(__mmask8 __U, __m128h __A) {
 ///
 /// \headerfile <immintrin.h>
 ///
-/// This intrinsic corresponds to the \c VCVTNE2PH2BF8 instruction.
+/// This intrinsic corresponds to the \c VCVTNEPH2BF8 instruction.
 ///
 /// \param __A
 ///    A 256-bit vector of [16 x half].
@@ -2965,7 +2965,7 @@ _mm256_cvtneph_phf8(__m256h __A) {
 ///
 /// \headerfile <immintrin.h>
 ///
-/// This intrinsic corresponds to the \c VCVTNE2PH2BF8 instruction.
+/// This intrinsic corresponds to the \c VCVTNEPH2BF8 instruction.
 ///
 /// \param __W
 ///    A 128-bit vector of [16 x hf8].
@@ -3001,7 +3001,7 @@ _mm256_mask_cvtneph_phf8(__m128i __W, __mmask16 __U, __m256h __A) {
 ///
 /// \headerfile <immintrin.h>
 ///
-/// This intrinsic corresponds to the \c VCVTNE2PH2BF8 instruction.
+/// This intrinsic corresponds to the \c VCVTNEPH2BF8 instruction.
 ///
 /// \param __U
 ///    A 16-bit zeroing mask.
@@ -3062,7 +3062,7 @@ static __inline__ __m128i __DEFAULT_FN_ATTRS128 _mm_cvtnesph_phf8(__m128h __A) {
 ///
 /// \headerfile <immintrin.h>
 ///
-/// This intrinsic corresponds to the \c VCVTNE2PH2BF8S instruction.
+/// This intrinsic corresponds to the \c VCVTNEPH2BF8S instruction.
 ///
 /// \param __W
 ///    A 128-bit vector of [16 x hf8].
@@ -3099,7 +3099,7 @@ _mm_mask_cvtnesph_phf8(__m128i __W, __mmask8 __U, __m128h __A) {
 ///
 /// \headerfile <immintrin.h>
 ///
-/// This intrinsic corresponds to the \c VCVTNE2PH2BF8S instruction.
+/// This intrinsic corresponds to the \c VCVTNEPH2BF8S instruction.
 ///
 /// \param __U
 ///    A 8-bit zeroing mask.
@@ -3128,7 +3128,7 @@ _mm_maskz_cvtnesph_phf8(__mmask8 __U, __m128h __A) {
 ///
 /// \headerfile <immintrin.h>
 ///
-/// This intrinsic corresponds to the \c VCVTNE2PH2BF8S instruction.
+/// This intrinsic corresponds to the \c VCVTNEPH2BF8S instruction.
 ///
 /// \param __A
 ///    A 256-bit vector of [16 x half].
@@ -3160,7 +3160,7 @@ _mm256_cvtnesph_phf8(__m256h __A) {
 ///
 /// \headerfile <immintrin.h>
 ///
-/// This intrinsic corresponds to the \c VCVTNE2PH2BF8S instruction.
+/// This intrinsic corresponds to the \c VCVTNEPH2BF8S instruction.
 ///
 /// \param __W
 ///    A 128-bit vector of [16 x hf8].
@@ -3197,7 +3197,7 @@ _mm256_mask_cvtnesph_phf8(__m128i __W, __mmask16 __U, __m256h __A) {
 ///
 /// \headerfile <immintrin.h>
 ///
-/// This intrinsic corresponds to the \c VCVTNE2PH2BF8S instruction.
+/// This intrinsic corresponds to the \c VCVTNEPH2BF8S instruction.
 ///
 /// \param __U
 ///    A 16-bit zeroing mask.
