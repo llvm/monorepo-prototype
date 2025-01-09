@@ -1,5 +1,6 @@
 // RUN: %clang_cc1 -emit-llvm -debug-info-kind=standalone -triple %itanium_abi_triple %s -o - | FileCheck %s --implicit-check-not="call void @llvm.dbg.declare"
 
+// CHECK: define noundef i32 @_Z1fv
 // CHECK: #dbg_declare(ptr %{{[a-z]+}}, ![[VAR_0:[0-9]+]], !DIExpression(),
 // CHECK: #dbg_declare(ptr %{{[0-9]+}}, ![[VAR_1:[0-9]+]], !DIExpression(),
 // CHECK: #dbg_declare(ptr %{{[0-9]+}}, ![[VAR_2:[0-9]+]], !DIExpression(DW_OP_plus_uconst, 4),
@@ -7,6 +8,9 @@
 // CHECK: #dbg_declare(ptr %{{[0-9]+}}, ![[VAR_4:[0-9]+]], !DIExpression(DW_OP_deref, DW_OP_plus_uconst, 4),
 // CHECK: #dbg_declare(ptr %z1, ![[VAR_5:[0-9]+]], !DIExpression()
 // CHECK: #dbg_declare(ptr %z2, ![[VAR_6:[0-9]+]], !DIExpression()
+// CHECK: #dbg_declare(ptr %k, ![[VAR_7:[0-9]+]], !DIExpression()
+// CHECK: #dbg_declare(ptr %v, ![[VAR_8:[0-9]+]], !DIExpression()
+// CHECK: #dbg_declare(ptr %w, ![[VAR_9:[0-9]+]], !DIExpression()
 // CHECK: ![[VAR_0]] = !DILocalVariable(name: "a"
 // CHECK: ![[VAR_1]] = !DILocalVariable(name: "x1", scope: !{{[0-9]+}}, file: !{{[0-9]+}}, line: {{[0-9]+}}, type: !{{[0-9]+}})
 // CHECK: ![[VAR_2]] = !DILocalVariable(name: "y1", scope: !{{[0-9]+}}, file: !{{[0-9]+}}, line: {{[0-9]+}}, type: !{{[0-9]+}})
@@ -14,6 +18,9 @@
 // CHECK: ![[VAR_4]] = !DILocalVariable(name: "y2", scope: !{{[0-9]+}}, file: !{{[0-9]+}}, line: {{[0-9]+}}, type: !{{[0-9]+}})
 // CHECK: ![[VAR_5]] = !DILocalVariable(name: "z1", scope: !{{[0-9]+}}, file: !{{[0-9]+}}, line: {{[0-9]+}}, type: !{{[0-9]+}})
 // CHECK: ![[VAR_6]] = !DILocalVariable(name: "z2", scope: !{{[0-9]+}}, file: !{{[0-9]+}}, line: {{[0-9]+}}, type: !{{[0-9]+}})
+// CHECK: ![[VAR_7]] = !DILocalVariable(name: "k", scope: !{{[0-9]+}}, file: !{{[0-9]+}}, line: {{[0-9]+}}, type: !{{[0-9]+}})
+// CHECK: ![[VAR_8]] = !DILocalVariable(name: "v", scope: !{{[0-9]+}}, file: !{{[0-9]+}}, line: {{[0-9]+}}, type: !{{[0-9]+}})
+// CHECK: ![[VAR_9]] = !DILocalVariable(name: "w", scope: !{{[0-9]+}}, file: !{{[0-9]+}}, line: {{[0-9]+}}, type: !{{[0-9]+}})
 
 struct A {
   int x;
@@ -39,6 +46,24 @@ struct tuple_size<B> {
 };
 
 template<unsigned, typename T> struct tuple_element { using type = int; };
+
+// Decomposition of tuple-like bindings but where the `get` methods
+// are declared as free functions.
+struct triple {
+  int k;
+  int v;
+  int w;
+};
+
+template<>
+struct tuple_size<triple> {
+    static constexpr unsigned value = 3;
+};
+
+template <unsigned I> int get(triple);
+template <> int get<0>(triple p) { return p.k; }
+template <> int get<1>(triple p) { return p.v; }
+template <> int get<2>(triple p) { return p.w; }
 } // namespace std
 
 int f() {
@@ -46,5 +71,6 @@ int f() {
   auto [x1, y1] = a;
   auto &[x2, y2] = a;
   auto [z1, z2] = B{1, 2};
-  return x1 + y1 + x2 + y2 + z1 + z2;
+  auto [k, v, w] = std::triple{3, 4, 5};
+  return x1 + y1 + x2 + y2 + z1 + z2 + k + v + w;
 }
