@@ -966,11 +966,8 @@ struct CounterCoverageMappingBuilder
 
     // The old behavior of SingleByte is unaware of Branches.
     // Will be pruned after the migration of SingleByte.
-    if (llvm::EnableSingleByteCoverage) {
-      assert(SkipCntForOld &&
-             "SingleByte must provide SkipCntForOld as a fake Skipped count.");
+    if (llvm::EnableSingleByteCoverage && SkipCntForOld)
       return {ExecCnt, *SkipCntForOld};
-    }
 
     BranchCounterPair Counters = {ExecCnt,
                                   Builder.subtract(ParentCnt, ExecCnt)};
@@ -2168,11 +2165,7 @@ struct CounterCoverageMappingBuilder
     extendRegion(E);
 
     Counter ParentCount = getRegion().getCounter();
-    auto [TrueCount, FalseCount] =
-        (llvm::EnableSingleByteCoverage
-             ? BranchCounterPair{getRegionCounter(E->getTrueExpr()),
-                                 getRegionCounter(E->getFalseExpr())}
-             : getBranchCounterPair(E, ParentCount));
+    auto [TrueCount, FalseCount] = getBranchCounterPair(E, ParentCount);
     Counter OutCount;
 
     if (const auto *BCO = dyn_cast<BinaryConditionalOperator>(E)) {
@@ -2191,11 +2184,8 @@ struct CounterCoverageMappingBuilder
     }
 
     extendRegion(E->getFalseExpr());
-    Counter FalseOutCount = propagateCounts(FalseCount, E->getFalseExpr());
-    if (llvm::EnableSingleByteCoverage)
-      OutCount = getRegionCounter(E);
-    else
-      OutCount = addCounters(OutCount, FalseOutCount);
+    OutCount =
+        addCounters(OutCount, propagateCounts(FalseCount, E->getFalseExpr()));
 
     if (!IsCounterEqual(OutCount, ParentCount)) {
       pushRegion(OutCount);
@@ -2203,8 +2193,7 @@ struct CounterCoverageMappingBuilder
     }
 
     // Create Branch Region around condition.
-    if (!llvm::EnableSingleByteCoverage)
-      createBranchRegion(E->getCond(), TrueCount, FalseCount);
+    createBranchRegion(E->getCond(), TrueCount, FalseCount);
   }
 
   void createOrCancelDecision(const BinaryOperator *E, unsigned Since) {
