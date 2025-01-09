@@ -3391,6 +3391,29 @@ static void findStoresToUninstrumentedArgAllocas(
   }
 }
 
+StringRef getAllocaName(AllocaInst *AI) {
+  StringRef Name = AI->getName();
+
+  // Alloca could have been renamed for uniqueness. Its true name will have been
+  // recorded as an annotation.
+  if (AI->hasMetadata(LLVMContext::MD_annotation)) {
+    MDTuple *Annotation =
+        (MDTuple *)AI->getMetadata(LLVMContext::MD_annotation);
+    for (int i = 0; i < Annotation->getNumOperands(); i++) {
+      if (auto Tuple = dyn_cast<MDTuple>(Annotation->getOperand(i))) {
+        for (int i = 0; i < Tuple->getNumOperands(); i++) {
+          if (auto stringMetadata = dyn_cast<MDString>(Tuple->getOperand(i))) {
+            if (stringMetadata->getString() == "alloca_name_altered") {
+              Name = ((MDString *)Tuple->getOperand(i + 1).get())->getString();
+            }
+          }
+        }
+      }
+    }
+  }
+  return Name;
+}
+
 void FunctionStackPoisoner::processStaticAllocas() {
   if (AllocaVec.empty()) {
     assert(StaticAllocaPoisonCallVec.empty());
@@ -3425,30 +3448,20 @@ void FunctionStackPoisoner::processStaticAllocas() {
     ArgInitInst->moveBefore(InsBefore);
 
   // If we have a call to llvm.localescape, keep it in the entry block.
-  if (LocalEscapeCall) LocalEscapeCall->moveBefore(InsBefore);
+  if (LocalEscapeCall)
+    LocalEscapeCall->moveBefore(InsBefore);
 
   SmallVector<ASanStackVariableDescription, 16> SVD;
   SVD.reserve(AllocaVec.size());
   for (AllocaInst *AI : AllocaVec) {
-    StringRef Name = AI->getName();
-    if (AI->hasMetadata(LLVMContext::MD_annotation)) {
-      MDTuple *Annotation = (MDTuple *)AI->getMetadata(LLVMContext::MD_annotation);
-      for (int i = 0; i < Annotation->getNumOperands(); i++) {
-        if (auto Tuple = dyn_cast<MDTuple>(Annotation->getOperand(i))) {
-          for (int i = 0; i < Tuple->getNumOperands(); i++) {
-            if (auto stringMetadata = dyn_cast<MDString>(Tuple->getOperand(i))) {
-              if (stringMetadata->getString() == "alloca_name_altered") {
-                Name = ((MDString *)Tuple->getOperand(i + 1).get())
-                          ->getString();
-              }
-            }
-          }
-        }
-      }
-    }
-    ASanStackVariableDescription D = {
-        Name.data(), ASan.getAllocaSizeInBytes(*AI), 0, AI->getAlign().value(), AI, 0,
-        0};
+    StringRef Name = getAllocaName(AI);
+    ASanStackVariableDescription D = {Name.data(),
+                                      ASan.getAllocaSizeInBytes(*AI),
+                                      0,
+                                      AI->getAlign().value(),
+                                      AI,
+                                      0,
+                                      0};
     SVD.push_back(D);
   }
 
