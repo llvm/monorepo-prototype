@@ -430,6 +430,50 @@ Non-comprehensive list of changes in this release
 - Matrix types (a Clang extension) can now be used in pseudo-destructor expressions,
   which allows them to be stored in STL containers.
 
+- There is a new ``format_matches`` attribute to complement the existing
+  ``format`` attribute. ``format_matches`` allows the compiler to verify that
+  a format string argument is equivalent to a reference format string: it is
+  useful when a function accepts a format string without its accompanying
+  arguments to format. For instance:
+
+  .. code-block:: c
+
+    static int status_code;
+    static const char *status_string;
+
+    void print_status(const char *fmt) {
+      fprintf(stderr, fmt, status_code, status_string);
+      // ^ warning: format string is not a string literal [-Wformat-nonliteral]
+    }
+
+    void stuff(void) {
+      print_status("%s (%#08x)\n");
+      // order of %s and %x is swapped but there is no diagnostic
+    }
+  
+  Before the introducion of ``format_matches``, this code cannot be verified
+  at compile-time. ``format_matches`` plugs that hole:
+
+  .. code-block:: c
+
+    __attribute__((format_matches(printf, 1, "%x %s")))
+    void print_status(const char *fmt) {
+      fprintf(stderr, fmt, status_code, status_string);
+      // ^ `fmt` verified as if it was "%x %s" here; no longer triggers
+      //   -Wformat-nonliteral, would warn if arguments did not match "%x %s"
+    }
+
+    void stuff(void) {
+      print_status("%s (%#08x)\n");
+      // warning: format specifier 's' is incompatible with 'x'
+      // warning: format specifier 'x' is incompatible with 's'
+    }
+
+  Like with ``format``, the first argument is the format string flavor and the
+  second argument is the index of the format string parameter.
+  ``format_matches`` accepts an example valid format string as its third
+  argument. For more information, see the Clang attributes documentation.
+
 New Compiler Flags
 ------------------
 
