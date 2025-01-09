@@ -1,12 +1,17 @@
 # REQUIRES: amdgpu-registered-target
-# RUN: llc -mtriple=amdgcn --passes='regallocfast<filter=sgpr>,regallocfast<filter=wwm>,regallocfast<filter=vgpr>' --print-pipeline-passes --filetype=null %s | FileCheck %s --check-prefix=PASS
-# RUN: not llc -mtriple=amdgcn --passes='regallocfast<filter=bad-filter>' --print-pipeline-passes --filetype=null %s 2>&1 | FileCheck %s --check-prefix=BAD-FILTER
+# RUN: llc -mtriple=amdgcn --passes='regallocfast<filter=sgpr>,regallocfast<filter=wwm>,regallocfast<filter=vgpr>' --print-pipeline-passes --filetype=null %s | FileCheck %s --check-prefix=RAFAST
+# RUN: not llc -mtriple=amdgcn --passes='regallocfast<filter=bad-filter>' --print-pipeline-passes --filetype=null %s 2>&1 | FileCheck %s --check-prefix=RAFAST-BAD-FILTER
 
-# PASS: regallocfast<filter=sgpr>
-# PASS: regallocfast<filter=wwm>
-# PASS: regallocfast<filter=vgpr>
-# BAD-FILTER: invalid regallocfast register filter 'bad-filter'
+# RUN: llc -mtriple=amdgcn -passes='regallocgreedy<sgpr>' --print-pipeline-passes --filetype=null %s | FileCheck %s --check-prefix=RAGREEDY
+# RUN: not llc -mtriple=amdgcn -passes='regallocgreedy<bad-filter>' --print-pipeline-passes --filetype=null %s 2>&1 | FileCheck %s --check-prefix=RAGREEDY-BAD-FILTER
 
+# RAFAST: regallocfast<filter=sgpr>
+# RAFAST: regallocfast<filter=wwm>
+# RAFAST: regallocfast<filter=vgpr>
+# RAFAST-BAD-FILTER: invalid regallocfast register filter 'bad-filter'
+
+# RAGREEDY: regallocgreedy<sgpr>
+# RAGREEDY-BAD-FILTER: invalid regallocgreedy register filter 'bad-filter'
 ---
 name: f
 ...

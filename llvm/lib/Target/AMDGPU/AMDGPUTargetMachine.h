@@ -176,6 +176,8 @@ public:
   void addAsmPrinter(AddMachinePass &, CreateMCStreamer) const;
   Error addInstSelector(AddMachinePass &) const;
   void addMachineSSAOptimization(AddMachinePass &) const;
+  Error addRegAssignmentOptimized(AddMachinePass &) const;
+  Error addRegAssignmentFast(AddMachinePass &) const;
 
   /// Check if a pass is enabled given \p Opt option. The option always
   /// overrides defaults if explicitly used. Otherwise its default will be used

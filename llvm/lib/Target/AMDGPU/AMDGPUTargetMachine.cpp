@@ -68,6 +68,7 @@
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Support/FormatVariadic.h"
+#include "llvm/Target/CGPassBuilderOption.h"
 #include "llvm/Transforms/HipStdPar/HipStdPar.h"
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/IPO/AlwaysInliner.h"
@@ -2097,6 +2098,28 @@ void AMDGPUCodeGenPassBuilder::addMachineSSAOptimization(
   }
   addPass(DeadMachineInstructionElimPass());
   addPass(SIShrinkInstructionsPass());
+}
+
+static const char RegAllocNPMNotSupportedMessage[] =
+    "-regalloc-npm not supported with amdgcn. Use -sgpr-regalloc-npm, "
+    "-wwm-regalloc-npm, and -vgpr-regalloc-npm";
+
+Error AMDGPUCodeGenPassBuilder::addRegAssignmentOptimized(
+    AddMachinePass &addPass) const {
+  if (Opt.RegAlloc != RegAllocType::Unset)
+    report_fatal_error(RegAllocNPMNotSupportedMessage, false);
+
+  return make_error<StringError>("not implemented yet",
+                                 inconvertibleErrorCode());
+}
+
+Error AMDGPUCodeGenPassBuilder::addRegAssignmentFast(
+    AddMachinePass &addPass) const {
+  if (Opt.RegAlloc != RegAllocType::Unset)
+    report_fatal_error(RegAllocNPMNotSupportedMessage, false);
+
+  return make_error<StringError>("not implemented yet",
+                                 inconvertibleErrorCode());
 }
 
 bool AMDGPUCodeGenPassBuilder::isPassEnabled(const cl::opt<bool> &Opt,

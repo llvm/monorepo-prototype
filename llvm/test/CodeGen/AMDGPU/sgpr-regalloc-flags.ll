@@ -12,8 +12,11 @@
 ; RUN: not --crash llc -verify-machineinstrs=0 -regalloc=basic -mtriple=amdgcn-amd-amdhsa -debug-pass=Structure -o /dev/null %s 2>&1 | FileCheck -check-prefix=REGALLOC %s
 ; RUN: not --crash llc -verify-machineinstrs=0 -regalloc=fast -O0 -mtriple=amdgcn-amd-amdhsa -debug-pass=Structure -o /dev/null %s 2>&1 | FileCheck -check-prefix=REGALLOC %s
 
+; RUN: not llc -enable-new-pm -verify-machineinstrs=0 -regalloc-npm=fast -O0 -mtriple=amdgcn-amd-amdhsa -o /dev/null %s 2>&1 | FileCheck -check-prefix=REGALLOC-NPM %s
+; RUN: not llc -enable-new-pm -verify-machineinstrs=0 -regalloc-npm=basic -O3 -mtriple=amdgcn-amd-amdhsa -o /dev/null %s 2>&1 | FileCheck -check-prefix=REGALLOC-NPM %s
 
 ; REGALLOC: -regalloc not supported with amdgcn. Use -sgpr-regalloc, -wwm-regalloc, and -vgpr-regalloc
+; REGALLOC-NPM: -regalloc-npm not supported with amdgcn. Use -sgpr-regalloc-npm, -wwm-regalloc-npm, and -vgpr-regalloc-npm
 
 ; DEFAULT: Greedy Register Allocator
 ; DEFAULT-NEXT: Virtual Register Rewriter
