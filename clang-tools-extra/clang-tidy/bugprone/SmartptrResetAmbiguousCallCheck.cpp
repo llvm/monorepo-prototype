@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "SmartptrResetAmbiguousCallCheck.h"
+#include "../utils/OptionsUtils.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
@@ -30,7 +31,7 @@ AST_MATCHER_P(CallExpr, everyArgumentMatches,
   return true;
 }
 
-AST_MATCHER(CXXMethodDecl, hasOnlyDefaultArgs) {
+AST_MATCHER(CXXMethodDecl, hasOnlyDefaultParameters) {
   if (Node.param_empty())
     return true;
 
@@ -41,13 +42,26 @@ AST_MATCHER(CXXMethodDecl, hasOnlyDefaultArgs) {
   return true;
 }
 
+const auto DefaultSmartPointers = "::std::shared_ptr; ::std::unique_ptr";
 } // namespace
 
+SmartptrResetAmbiguousCallCheck::SmartptrResetAmbiguousCallCheck(
+    StringRef Name, ClangTidyContext *Context)
+    : ClangTidyCheck(Name, Context),
+      SmartPointers(utils::options::parseStringList(
+          Options.get("SmartPointers", DefaultSmartPointers))) {}
+
+void SmartptrResetAmbiguousCallCheck::storeOptions(
+    ClangTidyOptions::OptionMap &Opts) {
+  Options.store(Opts, "SmartPointers",
+                utils::options::serializeStringList(SmartPointers));
+}
+
 void SmartptrResetAmbiguousCallCheck::registerMatchers(MatchFinder *Finder) {
-  const auto IsSmartptr = hasAnyName("::std::unique_ptr", "::std::shared_ptr");
+  const auto IsSmartptr = hasAnyName(SmartPointers);
 
   const auto ResetMethod =
-      cxxMethodDecl(hasName("reset"), hasOnlyDefaultArgs());
+      cxxMethodDecl(hasName("reset"), hasOnlyDefaultParameters());
 
   const auto TypeWithReset =
       anyOf(cxxRecordDecl(hasMethod(ResetMethod)),
@@ -87,12 +101,9 @@ void SmartptrResetAmbiguousCallCheck::registerMatchers(MatchFinder *Finder) {
 
 void SmartptrResetAmbiguousCallCheck::check(
     const MatchFinder::MatchResult &Result) {
-  const auto *SmartptrResetCall =
-      Result.Nodes.getNodeAs<CXXMemberCallExpr>("smartptrResetCall");
-  const auto *ObjectResetCall =
-      Result.Nodes.getNodeAs<CXXMemberCallExpr>("objectResetCall");
 
-  if (SmartptrResetCall) {
+  if (const auto *SmartptrResetCall =
+          Result.Nodes.getNodeAs<CXXMemberCallExpr>("smartptrResetCall")) {
     const auto *Member = cast<MemberExpr>(SmartptrResetCall->getCallee());
 
     auto DiagBuilder = diag(SmartptrResetCall->getBeginLoc(),
@@ -106,12 +117,15 @@ void SmartptrResetAmbiguousCallCheck::check(
     DiagBuilder << FixItHint::CreateReplacement(
         SourceRange(Member->getMemberLoc(), SmartptrResetCall->getEndLoc()),
         " nullptr");
+
+    return;
   }
 
-  if (ObjectResetCall) {
+  if (const auto *ObjectResetCall =
+          Result.Nodes.getNodeAs<CXXMemberCallExpr>("objectResetCall")) {
     const auto *Arrow = Result.Nodes.getNodeAs<CXXOperatorCallExpr>("OpCall");
 
-    const auto SmartptrSourceRange =
+    const CharSourceRange SmartptrSourceRange =
         Lexer::getAsCharRange(Arrow->getArg(0)->getSourceRange(),
                               *Result.SourceManager, getLangOpts());
 

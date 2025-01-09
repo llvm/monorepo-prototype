@@ -20,13 +20,16 @@ namespace clang::tidy::bugprone {
 /// http://clang.llvm.org/extra/clang-tidy/checks/bugprone/smartptr-reset-ambiguous-call.html
 class SmartptrResetAmbiguousCallCheck : public ClangTidyCheck {
 public:
-  SmartptrResetAmbiguousCallCheck(StringRef Name, ClangTidyContext *Context)
-      : ClangTidyCheck(Name, Context) {}
+  SmartptrResetAmbiguousCallCheck(StringRef Name, ClangTidyContext *Context);
   void registerMatchers(ast_matchers::MatchFinder *Finder) override;
   void check(const ast_matchers::MatchFinder::MatchResult &Result) override;
+  void storeOptions(ClangTidyOptions::OptionMap &Opts) override;
   bool isLanguageVersionSupported(const LangOptions &LangOpts) const override {
     return LangOpts.CPlusPlus;
   }
+
+private:
+  const std::vector<StringRef> SmartPointers;
 };
 
 } // namespace clang::tidy::bugprone
