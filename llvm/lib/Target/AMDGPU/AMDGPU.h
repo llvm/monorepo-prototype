@@ -459,6 +459,17 @@ void initializeAMDGPUSetWavePriorityPass(PassRegistry &);
 void initializeGCNRewritePartialRegUsesPass(llvm::PassRegistry &);
 extern char &GCNRewritePartialRegUsesID;
 
+void initializeAMDGPUUniformIntrinsicCombinePass(PassRegistry &);
+extern char &AMDGPUUniformIntrinsicCombineID;
+FunctionPass *createAMDGPUUniformIntrinsicCombinePass();
+
+struct AMDGPUUniformIntrinsicCombinePass
+    : public PassInfoMixin<AMDGPUUniformIntrinsicCombinePass> {
+  const AMDGPUTargetMachine &TM;
+  AMDGPUUniformIntrinsicCombinePass(const AMDGPUTargetMachine &TM_) : TM(TM_) {}
+  PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
+};
+
 namespace AMDGPU {
 enum TargetIndex {
   TI_CONSTDATA_START,
