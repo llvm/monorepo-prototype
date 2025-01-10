@@ -9,7 +9,7 @@
 ;;    for (int j=1;j<256;++j)
 ;;      aa[j][i] = aa[j-1][255-i] + bb[j][i];
 ;;
-;; The direciton vector of `aa` is [* =]. We cannot interchange the loops
+;; The direction vector of `aa` is [* >]. We cannot interchange the loops
 ;; because we must handle a `*` dependence conservatively.
 
 ; CHECK: Dependency matrix before interchange:

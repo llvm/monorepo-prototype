@@ -5,14 +5,11 @@
 @aa = dso_local global [256 x [256 x float]] zeroinitializer, align 64
 @bb = dso_local global [256 x [256 x float]] zeroinitializer, align 64
 
-declare i32 @dummy(ptr noundef, ptr noundef)
-
 ;;  for (int nl=0;nl<100;++nl) {
 ;;    for (int i=0;i<256;++i) {
 ;;      for (int j=1;j<256;++j)
 ;;        aa[j][i] = aa[j-1][i] + bb[j][i];
 ;;    }
-;;    dummy(aa, bb);
 ;;  }
 ;;
 ;; The direction vector of `aa` is [S = >]. We can swap the innermost two
@@ -40,7 +37,6 @@ for.cond1.preheader:                              ; preds = %entry, %for.cond.cl
   br label %for.cond5.preheader
 
 for.cond.cleanup3:                                ; preds = %for.cond.cleanup7
-  %call = tail call i32 @dummy(ptr noundef nonnull @aa, ptr noundef nonnull @bb)
   %inc23 = add nuw nsw i32 %nl.036, 1
   %exitcond43 = icmp ne i32 %inc23, 100
   br i1 %exitcond43, label %for.cond1.preheader, label %for.cond.cleanup
