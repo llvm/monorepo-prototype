@@ -1448,7 +1448,9 @@ static bool isExpansion(const CountedRegion &R, unsigned FileID) {
   return R.Kind == CounterMappingRegion::ExpansionRegion && R.FileID == FileID;
 }
 
-CoverageData CoverageMapping::getCoverageForFile(StringRef Filename) const {
+CoverageData CoverageMapping::getCoverageForFile(
+    StringRef Filename,
+    const DenseSet<const FunctionRecord *> &FilteredOutFunctions) const {
   assert(SingleByteCoverage);
   MergeableCoverageData FileCoverage(*SingleByteCoverage, Filename);
 
@@ -1458,6 +1460,8 @@ CoverageData CoverageMapping::getCoverageForFile(StringRef Filename) const {
       getImpreciseRecordIndicesForFilename(Filename);
   for (unsigned RecordIndex : RecordIndices) {
     const FunctionRecord &Function = Functions[RecordIndex];
+    if (FilteredOutFunctions.count(&Function))
+      continue;
     auto MainFileID = findMainViewFileID(Filename, Function);
     auto FileIDs = gatherFileIDs(Filename, Function);
     FileCoverage.addFunctionRegions(
