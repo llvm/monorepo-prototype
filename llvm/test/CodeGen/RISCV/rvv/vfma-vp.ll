@@ -10357,17 +10357,17 @@ define <vscale x 32 x half> @vfnmadd_vf_nxv32f16_commute(<vscale x 32 x half> %v
 ; ZVFHMIN-NEXT:    vfwcvt.f.f.v v8, v16
 ; ZVFHMIN-NEXT:    csrr a4, vlenb
 ; ZVFHMIN-NEXT:    slli a4, a4, 3
+; ZVFHMIN-NEXT:    add a4, sp, a4
+; ZVFHMIN-NEXT:    addi a4, a4, 16
+; ZVFHMIN-NEXT:    vl8r.v v24, (a4) # Unknown-size Folded Reload
+; ZVFHMIN-NEXT:    csrr a4, vlenb
+; ZVFHMIN-NEXT:    slli a4, a4, 3
 ; ZVFHMIN-NEXT:    mv a5, a4
 ; ZVFHMIN-NEXT:    slli a4, a4, 1
 ; ZVFHMIN-NEXT:    add a4, a4, a5
 ; ZVFHMIN-NEXT:    add a4, sp, a4
 ; ZVFHMIN-NEXT:    addi a4, a4, 16
 ; ZVFHMIN-NEXT:    vl8r.v v16, (a4) # Unknown-size Folded Reload
-; ZVFHMIN-NEXT:    csrr a4, vlenb
-; ZVFHMIN-NEXT:    slli a4, a4, 3
-; ZVFHMIN-NEXT:    add a4, sp, a4
-; ZVFHMIN-NEXT:    addi a4, a4, 16
-; ZVFHMIN-NEXT:    vl8r.v v24, (a4) # Unknown-size Folded Reload
 ; ZVFHMIN-NEXT:    vsetvli zero, a3, e32, m8, ta, ma
 ; ZVFHMIN-NEXT:    vfmadd.vv v16, v8, v24, v0.t
 ; ZVFHMIN-NEXT:    csrr a3, vlenb
