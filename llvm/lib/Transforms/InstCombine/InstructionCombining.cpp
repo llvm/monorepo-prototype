@@ -33,6 +33,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "InstCombineInternal.h"
+#include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/APInt.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/DenseMap.h"
@@ -4064,6 +4065,57 @@ InstCombinerImpl::foldExtractOfOverflowIntrinsic(ExtractValueInst &EV) {
   return nullptr;
 }
 
+static Value *foldFrexpOfSelect(ExtractValueInst &EV, IntrinsicInst *FrexpCall,
+                                SelectInst *SelectInst,
+                                InstCombiner::BuilderTy &Builder) {
+  // Helper to fold frexp of select to select of frexp.
+  Value *Cond = SelectInst->getCondition();
+  Value *TrueVal = SelectInst->getTrueValue();
+  Value *FalseVal = SelectInst->getFalseValue();
+
+  const APFloat *ConstVal = nullptr;
+  Value *VarOp = nullptr;
+  bool ConstIsTrue = false;
+
+  if (match(TrueVal, m_APFloat(ConstVal))) {
+    VarOp = FalseVal;
+    ConstIsTrue = true;
+  } else if (match(FalseVal, m_APFloat(ConstVal))) {
+    VarOp = TrueVal;
+    ConstIsTrue = false;
+  } else {
+    return nullptr;
+  }
+
+  Builder.SetInsertPoint(&EV);
+
+  CallInst *NewFrexp =
+      Builder.CreateCall(FrexpCall->getCalledFunction(), {VarOp}, "frexp");
+  NewFrexp->copyIRFlags(FrexpCall);
+
+  Value *NewEV = Builder.CreateExtractValue(NewFrexp, 0, "mantissa");
+
+  int Exp;
+  APFloat Mantissa = frexp(*ConstVal, Exp, APFloat::rmNearestTiesToEven);
+
+  Constant *ConstantMantissa;
+  if (auto *VecTy = dyn_cast<VectorType>(TrueVal->getType())) {
+    SmallVector<Constant *, 4> Elems(
+        VecTy->getElementCount().getFixedValue(),
+        ConstantFP::get(VecTy->getElementType(), Mantissa));
+    ConstantMantissa = ConstantVector::get(Elems);
+  } else {
+    ConstantMantissa = ConstantFP::get(TrueVal->getType(), Mantissa);
+  }
+
+  Value *NewSel = Builder.CreateSelect(
+      Cond, ConstIsTrue ? ConstantMantissa : NewEV,
+      ConstIsTrue ? NewEV : ConstantMantissa, "select.frexp");
+  if (auto *NewSelInst = dyn_cast<Instruction>(NewSel))
+    NewSelInst->copyFastMathFlags(SelectInst);
+
+  return NewSel;
+}
 Instruction *InstCombinerImpl::visitExtractValueInst(ExtractValueInst &EV) {
   Value *Agg = EV.getAggregateOperand();
 
@@ -4073,7 +4125,18 @@ Instruction *InstCombinerImpl::visitExtractValueInst(ExtractValueInst &EV) {
   if (Value *V = simplifyExtractValueInst(Agg, EV.getIndices(),
                                           SQ.getWithInstruction(&EV)))
     return replaceInstUsesWith(EV, V);
-
+  if (EV.getNumIndices() == 1 && EV.getIndices()[0] == 0) {
+    if (auto *FrexpCall = dyn_cast<IntrinsicInst>(Agg)) {
+      if (FrexpCall->getIntrinsicID() == Intrinsic::frexp) {
+        if (auto *SelInst = dyn_cast<SelectInst>(FrexpCall->getArgOperand(0))) {
+          if (Value *Result =
+                  foldFrexpOfSelect(EV, FrexpCall, SelInst, Builder)) {
+            return replaceInstUsesWith(EV, Result);
+          }
+        }
+      }
+    }
+  }
   if (InsertValueInst *IV = dyn_cast<InsertValueInst>(Agg)) {
     // We're extracting from an insertvalue instruction, compare the indices
     const unsigned *exti, *exte, *insi, *inse;
