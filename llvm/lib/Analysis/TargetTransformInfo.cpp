@@ -893,7 +893,8 @@ TargetTransformInfo::getOperandInfo(const Value *V) {
 
   // Check for a splat of a constant or for a non uniform vector of constants
   // and check if the constant(s) are all powers of two.
-  if (isa<ConstantVector>(V) || isa<ConstantDataVector>(V)) {
+  if (isa<ConstantVector>(V) || isa<ConstantDataVector>(V) ||
+      isa<ConstantExpr>(V)) {
     OpInfo = OK_NonUniformConstantValue;
     if (Splat) {
       OpInfo = OK_UniformConstantValue;
