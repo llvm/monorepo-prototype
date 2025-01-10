@@ -225,7 +225,6 @@ public:
 
   bool isLDRB(const MCInst &Inst) const {
     const unsigned opcode = Inst.getOpcode();
-    bool isLoad = false;
     switch (opcode) {
     case AArch64::LDRBpost:
     case AArch64::LDRBBpost:
@@ -254,17 +253,15 @@ public:
     case AArch64::LDTRBi:
     case AArch64::LDTRSBWi:
     case AArch64::LDTRSBXi:
-      isLoad = true;
-      break;
+      return true;
     default:
-      break;
+      return false;
     }
-    return isLoad;
+    llvm_unreachable("");
   }
 
   bool isLDRH(const MCInst &Inst) const {
     const unsigned opcode = Inst.getOpcode();
-    bool isLoad = false;
     switch (opcode) {
     case AArch64::LDRHpost:
     case AArch64::LDRHHpost:
@@ -293,17 +290,15 @@ public:
     case AArch64::LDTRHi:
     case AArch64::LDTRSHWi:
     case AArch64::LDTRSHXi:
-      isLoad = true;
-      break;
+      return true;
     default:
-      break;
+      return false;
     }
-    return isLoad;
+    llvm_unreachable("");
   }
 
   bool isLDRW(const MCInst &Inst) const {
     const unsigned opcode = Inst.getOpcode();
-    bool isLoad = false;
     switch (opcode) {
     case AArch64::LDRWpost:
     case AArch64::LDRWpre:
@@ -326,16 +321,15 @@ public:
     case AArch64::LDPSWpost:
     case AArch64::LDPSWpre:
     case AArch64::LDNPWi:
-      isLoad = true;
+      return true;
     default:
-      break;
+      return false;
     }
-    return isLoad;
+    llvm_unreachable("");
   }
 
   bool isLDRX(const MCInst &Inst) const {
     const unsigned opcode = Inst.getOpcode();
-    bool isLoad = false;
     switch (opcode) {
     case AArch64::LDRXpost:
     case AArch64::LDRXpre:
@@ -348,18 +342,15 @@ public:
     case AArch64::LDPXi:
     case AArch64::LDPXpost:
     case AArch64::LDPXpre:
-      isLoad = true;
-      break;
+      return true;
     default:
-      break;
+      return false;
     }
-
-    return isLoad;
+    llvm_unreachable("");
   }
 
   bool isLDRS(const MCInst &Inst) const {
     const unsigned opcode = Inst.getOpcode();
-    bool isLoad = false;
     switch (opcode) {
     case AArch64::LDRSui:
     case AArch64::LDRSroW:
@@ -371,18 +362,15 @@ public:
     case AArch64::LDRSpost:
     case AArch64::LDPSpost:
     case AArch64::LDPSpre:
-      isLoad = true;
-      break;
+      return true;
     default:
-      break;
+      return false;
     }
-
-    return isLoad;
+    llvm_unreachable("");
   }
 
   bool isLDRD(const MCInst &Inst) const {
     const unsigned opcode = Inst.getOpcode();
-    bool isLoad = false;
     switch (opcode) {
     case AArch64::LDRDui:
     case AArch64::LDRDpre:
@@ -394,18 +382,15 @@ public:
     case AArch64::LDNPDi:
     case AArch64::LDPDpost:
     case AArch64::LDPDpre:
-      isLoad = true;
-      break;
+      return true;
     default:
-      break;
+      return false;
     }
-
-    return isLoad;
+    llvm_unreachable("");
   }
 
   bool isLDRQ(const MCInst &Inst) const {
     const unsigned opcode = Inst.getOpcode();
-    bool isLoad = false;
     switch (opcode) {
     case AArch64::LDRQui:
     case AArch64::LDRQpre:
@@ -417,12 +402,11 @@ public:
     case AArch64::LDNPQi:
     case AArch64::LDPQpost:
     case AArch64::LDPQpre:
-      isLoad = true;
-      break;
+      return true;
     default:
-      break;
+      return false;
     }
-    return isLoad;
+    llvm_unreachable("");
   }
 
   bool mayLoad(const MCInst &Inst) const override {
@@ -1305,7 +1289,6 @@ public:
     const unsigned opcode = Inst.getOpcode();
 
     auto isStorePairImmOffset = [&]() {
-      bool isStorePair = false;
       switch (opcode) {
       case AArch64::STPWi:
       case AArch64::STPXi:
@@ -1317,50 +1300,40 @@ public:
       case AArch64::STNPSi:
       case AArch64::STNPDi:
       case AArch64::STNPQi:
-        isStorePair = true;
-        break;
-
+        return true;
       default:
-        break;
+        return false;
       }
 
-      return isStorePair;
+      llvm_unreachable("");
     };
 
     auto isStorePairPostIndex = [&]() {
-      bool isStorePair = false;
       switch (opcode) {
       case AArch64::STPWpost:
       case AArch64::STPXpost:
       case AArch64::STPSpost:
       case AArch64::STPDpost:
       case AArch64::STPQpost:
-        isStorePair = true;
-        break;
-
+        return true;
       default:
-        break;
+        return false;
       }
-
-      return isStorePair;
+      llvm_unreachable("");
     };
 
     auto isStorePairPreIndex = [&]() {
-      bool isStorePair = false;
       switch (opcode) {
       case AArch64::STPWpre:
       case AArch64::STPXpre:
       case AArch64::STPSpre:
       case AArch64::STPDpre:
       case AArch64::STPQpre:
-        isStorePair = true;
-        break;
-
+        return true;
       default:
-        break;
+        return false;
       }
-
-      return isStorePair;
+      llvm_unreachable("");
     };
 
     return isStorePairImmOffset() || isStorePairPostIndex() ||
@@ -1369,7 +1342,6 @@ public:
 
   bool isStoreReg(const MCInst &Inst) const {
     const unsigned opcode = Inst.getOpcode();
-    bool isStore = false;
 
     auto isStoreRegUnscaleImm = [&]() {
       switch (opcode) {
@@ -1382,14 +1354,11 @@ public:
       case AArch64::STURSi:
       case AArch64::STURDi:
       case AArch64::STURQi:
-        isStore = true;
-        break;
-
+        return true;
       default:
-        break;
+        return false;
       }
-
-      return isStore;
+      llvm_unreachable("");
     };
 
     auto isStoreRegScaledImm = [&]() {
@@ -1403,14 +1372,11 @@ public:
       case AArch64::STRSui:
       case AArch64::STRDui:
       case AArch64::STRQui:
-        isStore = true;
-        break;
-
+        return true;
       default:
-        break;
+        return false;
       }
-
-      return isStore;
+      llvm_unreachable("");
     };
 
     auto isStoreRegImmPostIndexed = [&]() {
@@ -1424,14 +1390,11 @@ public:
       case AArch64::STRSpost:
       case AArch64::STRDpost:
       case AArch64::STRQpost:
-        isStore = true;
-        break;
-
+        return true;
       default:
-        break;
+        return false;
       }
-
-      return isStore;
+      llvm_unreachable("");
     };
 
     auto isStoreRegImmPreIndexed = [&]() {
@@ -1445,14 +1408,11 @@ public:
       case AArch64::STRSpre:
       case AArch64::STRDpre:
       case AArch64::STRQpre:
-        isStore = true;
-        break;
-
+        return true;
       default:
-        break;
+        return false;
       }
-
-      return isStore;
+      llvm_unreachable("");
     };
 
     auto isStoreRegUnscaleUnpriv = [&]() {
@@ -1461,14 +1421,11 @@ public:
       case AArch64::STTRHi:
       case AArch64::STTRWi:
       case AArch64::STTRXi:
-        isStore = true;
-        break;
-
+        return true;
       default:
-        break;
+        return false;
       }
-
-      return isStore;
+      llvm_unreachable("");
     };
 
     auto isStoreRegTrunc = [&]() {
@@ -1491,14 +1448,11 @@ public:
       case AArch64::STRWroX:
       case AArch64::STRXroW:
       case AArch64::STRXroX:
-        isStore = true;
-        break;
-
+        return true;
       default:
-        break;
+        return false;
       }
-
-      return isStore;
+      llvm_unreachable("");
     };
 
     return isStoreRegUnscaleImm() || isStoreRegScaledImm() ||
