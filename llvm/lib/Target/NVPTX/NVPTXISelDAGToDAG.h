@@ -83,8 +83,6 @@ private:
   bool tryStoreParam(SDNode *N);
   bool tryFence(SDNode *N);
   void SelectAddrSpaceCast(SDNode *N);
-  bool tryTextureIntrinsic(SDNode *N);
-  bool trySurfaceIntrinsic(SDNode *N);
   bool tryBFE(SDNode *N);
   bool tryConstantFP(SDNode *N);
   bool SelectSETP_F16X2(SDNode *N);
@@ -92,9 +90,14 @@ private:
   bool tryEXTRACT_VECTOR_ELEMENT(SDNode *N);
   void SelectV2I64toI128(SDNode *N);
   void SelectI128toV2I64(SDNode *N);
+  void SelectCpAsyncBulkG2S(SDNode *N);
+  void SelectCpAsyncBulkS2G(SDNode *N);
   void SelectCpAsyncBulkTensorG2SCommon(SDNode *N, bool IsIm2Col = false);
   void SelectCpAsyncBulkTensorS2GCommon(SDNode *N, bool IsIm2Col = false);
   void SelectCpAsyncBulkTensorPrefetchCommon(SDNode *N, bool IsIm2Col = false);
+  void SelectCpAsyncBulkTensorReduceCommon(SDNode *N, unsigned RedOp,
+                                           bool IsIm2Col = false);
+
   inline SDValue getI32Imm(unsigned Imm, const SDLoc &DL) {
     return CurDAG->getTargetConstant(Imm, DL, MVT::i32);
   }
