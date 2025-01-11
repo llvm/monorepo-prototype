@@ -9,6 +9,7 @@
 
 /// FIXME: Skip testing on windows temporarily due to the different escaping
 /// code mode.
+#include "llvm/ADT/StringRef.h"
 #ifndef _WIN32
 
 #include "ModulesBuilder.h"
@@ -39,7 +40,25 @@ public:
   void addFile(llvm::StringRef Path, llvm::StringRef Contents);
 
   std::unique_ptr<ProjectModules> getProjectModules(PathRef) const override {
-    return scanningProjectModules(MockedCDBPtr, TFS);
+    auto Modules = scanningProjectModules(MockedCDBPtr, TFS);
+    Modules->setCommandProvider(
+        [this](tooling::CompileCommand &Command, PathRef) {
+          for (auto &Flag : ExcludeFlags) {
+            auto const It = std::find(Command.CommandLine.begin(),
+                                      Command.CommandLine.end(), Flag);
+            if (It != Command.CommandLine.end())
+              Command.CommandLine.erase(It);
+          }
+        });
+    return Modules;
+  }
+
+  void addExtraClangFlag(std::string Flag) {
+    this->ExtraClangFlags.push_back(std::move(Flag));
+  }
+
+  void addExcludedFlag(std::string Flag) {
+    this->ExcludeFlags.push_back(std::move(Flag));
   }
 
 private:
@@ -66,6 +85,7 @@ private:
   };
 
   std::shared_ptr<MockClangCompilationDatabase> MockedCDBPtr;
+  std::vector<std::string> ExcludeFlags;
   const ThreadsafeFS &TFS;
 };
 
@@ -189,6 +209,29 @@ export module M;
   auto Invocation =
       buildCompilerInvocation(getInputs("M.cppm", CDB), DiagConsumer);
   EXPECT_TRUE(MInfo->canReuse(*Invocation, FS.view(TestDir)));
+}
+
+TEST_F(PrerequisiteModulesTests, ModuleWithArgumentPatch) {
+  MockDirectoryCompilationDatabase CDB(TestDir, FS);
+
+  CDB.addExtraClangFlag("-invalid-unknown-flag");
+
+  CDB.addFile("Dep.cppm", R"cpp(
+export module Dep;
+  )cpp");
+
+  CDB.addFile("M.cppm", R"cpp(
+export module M;
+import Dep;
+  )cpp");
+
+  auto ProjectModules = CDB.getProjectModules(getFullPath("M.cppm"));
+  EXPECT_TRUE(
+      ProjectModules->getRequiredModules(getFullPath("M.cppm")).empty());
+
+  CDB.addExcludedFlag("-invalid-unknown-flag");
+  EXPECT_FALSE(
+      ProjectModules->getRequiredModules(getFullPath("M.cppm")).empty());
 }
 
 TEST_F(PrerequisiteModulesTests, ModuleWithDepTest) {
@@ -435,7 +478,7 @@ void func() {
                     /*Callback=*/nullptr);
   EXPECT_TRUE(Preamble);
   EXPECT_TRUE(Preamble->RequiredModules);
-  
+
   auto Result = codeComplete(getFullPath("Use.cpp"), Test.point(),
                              Preamble.get(), Use, {});
   EXPECT_FALSE(Result.Completions.empty());
@@ -474,7 +517,7 @@ void func() {
                     /*Callback=*/nullptr);
   EXPECT_TRUE(Preamble);
   EXPECT_TRUE(Preamble->RequiredModules);
-  
+
   auto Result = signatureHelp(getFullPath("Use.cpp"), Test.point(),
                               *Preamble.get(), Use, MarkupKind::PlainText);
   EXPECT_FALSE(Result.signatures.empty());

@@ -32,6 +32,9 @@ namespace {
 /// interfere with each other.
 class ModuleDependencyScanner {
 public:
+  using CommandProvider =
+      llvm::unique_function<void(tooling::CompileCommand &, PathRef) const>;
+
   ModuleDependencyScanner(
       std::shared_ptr<const clang::tooling::CompilationDatabase> CDB,
       const ThreadsafeFS &TFS)
@@ -48,7 +51,8 @@ public:
   };
 
   /// Scanning the single file specified by \param FilePath.
-  std::optional<ModuleDependencyInfo> scan(PathRef FilePath);
+  std::optional<ModuleDependencyInfo> scan(PathRef FilePath,
+                                           CommandProvider const &Provider);
 
   /// Scanning every source file in the current project to get the
   /// <module-name> to <module-unit-source> map.
@@ -57,7 +61,7 @@ public:
   /// a global module dependency scanner to monitor every file. Or we
   /// can simply require the build systems (or even the end users)
   /// to provide the map.
-  void globalScan();
+  void globalScan(CommandProvider const &Provider);
 
   /// Get the source file from the module name. Note that the language
   /// guarantees all the module names are unique in a valid program.
@@ -69,7 +73,8 @@ public:
 
   /// Return the direct required modules. Indirect required modules are not
   /// included.
-  std::vector<std::string> getRequiredModules(PathRef File);
+  std::vector<std::string> getRequiredModules(PathRef File,
+                                              CommandProvider const &Provider);
 
 private:
   std::shared_ptr<const clang::tooling::CompilationDatabase> CDB;
@@ -87,7 +92,8 @@ private:
 };
 
 std::optional<ModuleDependencyScanner::ModuleDependencyInfo>
-ModuleDependencyScanner::scan(PathRef FilePath) {
+ModuleDependencyScanner::scan(PathRef FilePath,
+                              CommandProvider const &Provider) {
   auto Candidates = CDB->getCompileCommands(FilePath);
   if (Candidates.empty())
     return std::nullopt;
@@ -97,10 +103,8 @@ ModuleDependencyScanner::scan(PathRef FilePath) {
   // DirectoryBasedGlobalCompilationDatabase::getCompileCommand.
   tooling::CompileCommand Cmd = std::move(Candidates.front());
 
-  static int StaticForMainAddr; // Just an address in this process.
-  Cmd.CommandLine.push_back("-resource-dir=" +
-                            CompilerInvocation::GetResourcesPath(
-                                "clangd", (void *)&StaticForMainAddr));
+  if (Provider)
+    Provider(Cmd, FilePath);
 
   using namespace clang::tooling::dependencies;
 
@@ -130,9 +134,9 @@ ModuleDependencyScanner::scan(PathRef FilePath) {
   return Result;
 }
 
-void ModuleDependencyScanner::globalScan() {
+void ModuleDependencyScanner::globalScan(CommandProvider const &Provider) {
   for (auto &File : CDB->getAllFiles())
-    scan(File);
+    scan(File, Provider);
 
   GlobalScanned = true;
 }
@@ -150,9 +154,9 @@ PathRef ModuleDependencyScanner::getSourceForModuleName(
   return {};
 }
 
-std::vector<std::string>
-ModuleDependencyScanner::getRequiredModules(PathRef File) {
-  auto ScanningResult = scan(File);
+std::vector<std::string> ModuleDependencyScanner::getRequiredModules(
+    PathRef File, CommandProvider const &CmdProvider) {
+  auto ScanningResult = scan(File, CmdProvider);
   if (!ScanningResult)
     return {};
 
@@ -177,7 +181,11 @@ public:
   ~ScanningAllProjectModules() override = default;
 
   std::vector<std::string> getRequiredModules(PathRef File) override {
-    return Scanner.getRequiredModules(File);
+    return Scanner.getRequiredModules(File, Provider);
+  }
+
+  void setCommandProvider(CommandProvider Provider) override {
+    this->Provider = std::move(Provider);
   }
 
   /// RequiredSourceFile is not used intentionally. See the comments of
@@ -185,12 +193,13 @@ public:
   PathRef
   getSourceForModuleName(llvm::StringRef ModuleName,
                          PathRef RequiredSourceFile = PathRef()) override {
-    Scanner.globalScan();
+    Scanner.globalScan(Provider);
     return Scanner.getSourceForModuleName(ModuleName);
   }
 
 private:
   ModuleDependencyScanner Scanner;
+  CommandProvider Provider;
 };
 
 std::unique_ptr<ProjectModules> scanningProjectModules(
