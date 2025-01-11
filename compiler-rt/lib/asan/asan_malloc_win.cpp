@@ -224,7 +224,7 @@ INTERCEPTOR_WINAPI(LPVOID, HeapAlloc, HANDLE hHeap, DWORD dwFlags,
     // In the case that we don't hook the rtl allocators,
     // this becomes an assert since there is no failover to the original
     // allocator.
-    CHECK((HEAP_ALLOCATE_UNSUPPORTED_FLAGS & dwFlags) != 0 &&
+    CHECK((HEAP_ALLOCATE_UNSUPPORTED_FLAGS & dwFlags) == 0 &&
           "unsupported flags");
   }
   GET_STACK_TRACE_MALLOC;
@@ -249,7 +249,7 @@ INTERCEPTOR_WINAPI(BOOL, HeapFree, HANDLE hHeap, DWORD dwFlags, LPVOID lpMem) {
     if (OWNED_BY_RTL(hHeap, lpMem))
       return REAL(HeapFree)(hHeap, dwFlags, lpMem);
   } else {
-    CHECK((HEAP_FREE_UNSUPPORTED_FLAGS & dwFlags) != 0 && "unsupported flags");
+    CHECK((HEAP_FREE_UNSUPPORTED_FLAGS & dwFlags) == 0 && "unsupported flags");
   }
   GET_STACK_TRACE_FREE;
   asan_free(lpMem, &stack, FROM_MALLOC);
@@ -323,12 +323,25 @@ void *SharedReAlloc(ReAllocFunction reallocFunc, SizeFunction heapSizeFunc,
     }
 
     if (ownershipState == ASAN && !only_asan_supported_flags) {
+      size_t old_usable_size = 0;
+      old_usable_size = asan_malloc_usable_size(lpMem, pc, bp);
+
+      // asan_realloc will never reallocate in place, so for now this flag is
+      // unsupported until we figure out a way to fake this.
+      if (dwFlags & HEAP_REALLOC_IN_PLACE_ONLY) {
+        if (old_usable_size < dwBytes) {
+          VPrintf(0, "SharedReAlloc: HEAP_REALLOC_IN_PLACE_ONLY not supported, return nullptr to indicate failure.\n");
+          return nullptr;
+        } else {
+          VPrintf(0, "SharedReAlloc: HEAP_REALLOC_IN_PLACE_ONLY not supported, return previous pointer to mimic success\n");
+          return lpMem;
+        }
+      }
+
       // Conversion to unsupported flags allocation,
       // transfer this allocation back to the original allocator.
       void *replacement_alloc = allocFunc(hHeap, dwFlags, dwBytes);
-      size_t old_usable_size = 0;
       if (replacement_alloc) {
-        old_usable_size = asan_malloc_usable_size(lpMem, pc, bp);
         REAL(memcpy)(replacement_alloc, lpMem,
                      Min<size_t>(dwBytes, old_usable_size));
         asan_free(lpMem, &stack, FROM_MALLOC);
@@ -343,7 +356,7 @@ void *SharedReAlloc(ReAllocFunction reallocFunc, SizeFunction heapSizeFunc,
     // Pass through even when it's neither since this could be a null realloc or
     // UAF that ASAN needs to catch.
   } else {
-    CHECK((HEAP_REALLOC_UNSUPPORTED_FLAGS & dwFlags) != 0 &&
+    CHECK((HEAP_REALLOC_UNSUPPORTED_FLAGS & dwFlags) == 0 &&
           "unsupported flags");
   }
   // asan_realloc will never reallocate in place, so for now this flag is
@@ -517,7 +530,10 @@ void ReplaceSystemMalloc() {
 #define INTERCEPT_UCRT_FUNCTION(func)                                  \
   if (!INTERCEPT_FUNCTION_DLLIMPORT(                                   \
           "ucrtbase.dll", "api-ms-win-core-heap-l1-1-0.dll", func)) {  \
-    VPrintf(2, "Failed to intercept ucrtbase.dll import %s\n", #func); \
+    if (!INTERCEPT_FUNCTION_DLLIMPORT(                                 \
+            "ucrtbase.dll", "kernel32.dll", func)) {                   \
+      VPrintf(2, "Failed to intercept ucrtbase.dll import %s\n", #func); \
+    } \
   }
     INTERCEPT_UCRT_FUNCTION(HeapAlloc);
     INTERCEPT_UCRT_FUNCTION(HeapFree);

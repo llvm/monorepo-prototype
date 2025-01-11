@@ -332,6 +332,7 @@ int InterceptorFunction(int x);
 u8 *AllocateCode2GBAway(u8 *Base) {
   // Find a 64K aligned location after Base plus 2GB.
   size_t TwoGB = 0x80000000;
+  TwoGB = sizeof(void*) == 4 ? 0x20000000 : TwoGB; // lower requirement with i686
   size_t AllocGranularity = 0x10000;
   Base = (u8 *)((((uptr)Base + TwoGB + AllocGranularity)) & ~(AllocGranularity - 1));
 
@@ -409,8 +410,18 @@ int InterceptorFunction(int x) {
 
 }  // namespace
 
+struct DebugOutputPrinter {
+  static void Report(const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    vfprintf(stdout, format, args);
+    va_end(args);
+  }
+};
+
 // Tests for interception_win.h
 TEST(Interception, InternalGetProcAddress) {
+  SetErrorReportCallback(DebugOutputPrinter::Report);
   HMODULE ntdll_handle = ::GetModuleHandle("ntdll");
   ASSERT_NE(nullptr, ntdll_handle);
   uptr DbgPrint_expected = (uptr)::GetProcAddress(ntdll_handle, "DbgPrint");
@@ -470,6 +481,7 @@ static void TestIdentityFunctionPatching(
 
 #    if !SANITIZER_WINDOWS64
 TEST(Interception, OverrideFunctionWithDetour) {
+  SetErrorReportCallback(DebugOutputPrinter::Report);
   TestOverrideFunction override = OverrideFunctionWithDetour;
   FunctionPrefixKind prefix = FunctionPrefixDetour;
   TestIdentityFunctionPatching(kIdentityCodeWithPrologue, override, prefix);
@@ -480,6 +492,7 @@ TEST(Interception, OverrideFunctionWithDetour) {
 #endif  // !SANITIZER_WINDOWS64
 
 TEST(Interception, OverrideFunctionWithRedirectJump) {
+  SetErrorReportCallback(DebugOutputPrinter::Report);
   TestOverrideFunction override = OverrideFunctionWithRedirectJump;
   TestIdentityFunctionPatching(kIdentityCodeWithJump, override);
   TestIdentityFunctionPatching(kIdentityCodeWithJumpBackwards, override,
@@ -488,12 +501,14 @@ TEST(Interception, OverrideFunctionWithRedirectJump) {
 }
 
 TEST(Interception, OverrideFunctionWithHotPatch) {
+  SetErrorReportCallback(DebugOutputPrinter::Report);
   TestOverrideFunction override = OverrideFunctionWithHotPatch;
   FunctionPrefixKind prefix = FunctionPrefixHotPatch;
   TestIdentityFunctionPatching(kIdentityCodeWithMov, override, prefix);
 }
 
 TEST(Interception, OverrideFunctionWithTrampoline) {
+  SetErrorReportCallback(DebugOutputPrinter::Report);
   TestOverrideFunction override = OverrideFunctionWithTrampoline;
   FunctionPrefixKind prefix = FunctionPrefixNone;
   TestIdentityFunctionPatching(kIdentityCodeWithPrologue, override, prefix);
@@ -505,6 +520,7 @@ TEST(Interception, OverrideFunctionWithTrampoline) {
 }
 
 TEST(Interception, OverrideFunction) {
+  SetErrorReportCallback(DebugOutputPrinter::Report);
   TestOverrideFunction override = OverrideFunction;
   FunctionPrefixKind prefix = FunctionPrefixNone;
   TestIdentityFunctionPatching(kIdentityCodeWithPrologue, override, prefix);
@@ -556,6 +572,7 @@ static void TestIdentityFunctionMultiplePatching(
 }
 
 TEST(Interception, OverrideFunctionMultiplePatchingIsFailing) {
+  SetErrorReportCallback(DebugOutputPrinter::Report);
 #if !SANITIZER_WINDOWS64
   TestIdentityFunctionMultiplePatching(kIdentityCodeWithPrologue,
                                        OverrideFunctionWithDetour,
@@ -572,6 +589,7 @@ TEST(Interception, OverrideFunctionMultiplePatchingIsFailing) {
 }
 
 TEST(Interception, OverrideFunctionTwice) {
+  SetErrorReportCallback(DebugOutputPrinter::Report);
   uptr identity_address1;
   LoadActiveCode(kIdentityTwice, &identity_address1);
   uptr identity_address2 = identity_address1 + kIdentityTwiceOffset;
@@ -614,6 +632,7 @@ static bool TestFunctionPatching(
 }
 
 TEST(Interception, PatchableFunction) {
+  SetErrorReportCallback(DebugOutputPrinter::Report);
   TestOverrideFunction override = OverrideFunction;
   // Test without function padding.
   EXPECT_TRUE(TestFunctionPatching(kPatchableCode1, override));
@@ -639,6 +658,7 @@ TEST(Interception, PatchableFunction) {
 
 #if !SANITIZER_WINDOWS64
 TEST(Interception, PatchableFunctionWithDetour) {
+  SetErrorReportCallback(DebugOutputPrinter::Report);
   TestOverrideFunction override = OverrideFunctionWithDetour;
   // Without the prefix, no function can be detoured.
   EXPECT_FALSE(TestFunctionPatching(kPatchableCode1, override));
@@ -668,6 +688,7 @@ TEST(Interception, PatchableFunctionWithDetour) {
 #endif  // !SANITIZER_WINDOWS64
 
 TEST(Interception, PatchableFunctionWithRedirectJump) {
+  SetErrorReportCallback(DebugOutputPrinter::Report);
   TestOverrideFunction override = OverrideFunctionWithRedirectJump;
   EXPECT_FALSE(TestFunctionPatching(kPatchableCode1, override));
   EXPECT_FALSE(TestFunctionPatching(kPatchableCode2, override));
@@ -682,6 +703,7 @@ TEST(Interception, PatchableFunctionWithRedirectJump) {
 }
 
 TEST(Interception, PatchableFunctionWithHotPatch) {
+  SetErrorReportCallback(DebugOutputPrinter::Report);
   TestOverrideFunction override = OverrideFunctionWithHotPatch;
   FunctionPrefixKind prefix = FunctionPrefixHotPatch;
 
@@ -703,6 +725,7 @@ TEST(Interception, PatchableFunctionWithHotPatch) {
 }
 
 TEST(Interception, PatchableFunctionWithTrampoline) {
+  SetErrorReportCallback(DebugOutputPrinter::Report);
   TestOverrideFunction override = OverrideFunctionWithTrampoline;
   FunctionPrefixKind prefix = FunctionPrefixPadding;
 
@@ -733,6 +756,7 @@ TEST(Interception, PatchableFunctionWithTrampoline) {
 }
 
 TEST(Interception, UnsupportedInstructionWithTrampoline) {
+  SetErrorReportCallback(DebugOutputPrinter::Report);
   TestOverrideFunction override = OverrideFunctionWithTrampoline;
   FunctionPrefixKind prefix = FunctionPrefixPadding;
 
@@ -763,13 +787,14 @@ TEST(Interception, UnsupportedInstructionWithTrampoline) {
 
   SetErrorReportCallback(Local::Report);
   EXPECT_FALSE(TestFunctionPatching(kUnsupportedCode1, override, prefix));
-  SetErrorReportCallback(nullptr);
+  SetErrorReportCallback(DebugOutputPrinter::Report);
 
   if (!reportCalled)
     ADD_FAILURE() << "Report not called";
 }
 
 TEST(Interception, PatchableFunctionPadding) {
+  SetErrorReportCallback(DebugOutputPrinter::Report);
   TestOverrideFunction override = OverrideFunction;
   FunctionPrefixKind prefix = FunctionPrefixPadding;
 
@@ -801,8 +826,8 @@ const struct InstructionSizeData {
   size_t size;  // hold instruction size or 0 for failure,
                 // e.g. on control instructions
   u8 instr[16];
-  size_t rel_offset;  // filled just for instructions with two operands
-                      // and displacement length of four bytes.
+  size_t rel_offset;  // adjustment for RIP-relative addresses when copying
+                      // instructions during hooking via hotpatch or trampoline.
   const char *comment;
 } data[] = {
     // clang-format off
@@ -839,25 +864,40 @@ const struct InstructionSizeData {
     { 1, {0x90}, 0, "90 : nop"},
     { 1, {0xC3}, 0, "C3 : ret   (for small/empty function interception"},
     { 1, {0xCC}, 0, "CC : int 3  i.e. registering weak functions)"},
+    { 2, {0x31, 0xC0}, 0, "31 C0 : xor eax, eax"},
+    { 2, {0x31, 0xC9}, 0, "31 C9 : xor ecx, ecx"},
+    { 2, {0x31, 0xD2}, 0, "31 D2 : xor edx, edx"},
     { 2, {0x33, 0xC0}, 0, "33 C0 : xor eax, eax"},
     { 2, {0x33, 0xC9}, 0, "33 C9 : xor ecx, ecx"},
     { 2, {0x33, 0xD2}, 0, "33 D2 : xor edx, edx"},
     { 2, {0x6A, 0x71}, 0, "6A XX : push XX"},
+    { 2, {0x84, 0xC0}, 0, "84 C0 : test al,al"},
     { 2, {0x84, 0xC9}, 0, "84 C9 : test cl,cl"},
     { 2, {0x84, 0xD2}, 0, "84 D2 : test dl,dl"},
     { 2, {0x84, 0xDB}, 0, "84 DB : test bl,bl"},
     { 2, {0x89, 0xc8}, 0, "89 C8 : mov eax, ecx"},
+    { 2, {0x89, 0xD1}, 0, "89 D1 : mov ecx, edx"},
     { 2, {0x89, 0xE5}, 0, "89 E5 : mov ebp, esp"},
     { 2, {0x8A, 0x01}, 0, "8A 01 : mov al, byte ptr [ecx]"},
     { 2, {0x8B, 0xC1}, 0, "8B C1 : mov eax, ecx"},
     { 2, {0x8B, 0xEC}, 0, "8B EC : mov ebp, esp"},
     { 2, {0x8B, 0xFF}, 0, "8B FF : mov edi, edi"},
+    { 3, {0x80, 0x39, 0x72}, 0, "80 39 XX : cmp BYTE PTR [rcx], XX"},
     { 3, {0x83, 0xE4, 0x72}, 0, "83 E4 XX : and esp, XX"},
     { 3, {0x83, 0xEC, 0x72}, 0, "83 EC XX : sub esp, XX"},
+    { 3, {0x8B, 0x4D, 0x72}, 0, "8B 4D XX : mov XX(%ebp), ecx"},
+    { 3, {0x8B, 0x55, 0x72}, 0, "8B 55 XX : mov XX(%ebp), edx"},
+    { 3, {0x8B, 0x75, 0x72}, 0, "8B 75 XX : mov XX(%ebp), esp"},
     { 3, {0xc2, 0x71, 0x72}, 0, "C2 XX XX : ret XX (needed for registering weak functions)"},
+    { 4, {0x8D, 0x4C, 0x24, 0x73}, 0, "8D 4C 24 XX : lea ecx, [esp + XX]"},
+    { 4, {0xFF, 0x74, 0x24, 0x73}, 0, "FF 74 24 XX : push qword ptr [rsp + XX]"},
     { 5, {0x68, 0x71, 0x72, 0x73, 0x74}, 0, "68 XX XX XX XX : push imm32"},
     { 5, {0xb8, 0x71, 0x72, 0x73, 0x74}, 0, "b8 XX XX XX XX : mov eax, XX XX XX XX"},
     { 5, {0xB9, 0x71, 0x72, 0x73, 0x74}, 0, "b9 XX XX XX XX : mov ecx, XX XX XX XX"},
+    { 5, {0xBA, 0x71, 0x72, 0x73, 0x74}, 0, "ba XX XX XX XX : mov edx, XX XX XX XX"},
+    { 6, {0x81, 0xEC, 0x72, 0x73, 0x74, 0x75}, 0, "81 EC XX XX XX XX : sub esp, XX XX XX XX"},
+    { 6, {0xFF, 0x89, 0x72, 0x73, 0x74, 0x75}, 0, "FF 89 XX XX XX XX : dec dword ptr [ecx + XX XX XX XX]"},
+    { 7, {0x8D, 0xA4, 0x24, 0x73, 0x74, 0x75, 0x76}, 0, "8D A4 24 XX XX XX XX : lea esp, [esp + XX XX XX XX]"},
 #if SANITIZER_WINDOWS_x64
     // sorted list
     { 2, {0x40, 0x50}, 0, "40 50 : push rax"},
@@ -875,17 +915,26 @@ const struct InstructionSizeData {
     { 2, {0x66, 0x90}, 0, "66 90 : Two-byte NOP"},
     { 2, {0x84, 0xc0}, 0, "84 c0 : test al, al"},
     { 2, {0x8a, 0x01}, 0, "8a 01 : mov al, byte ptr [rcx]"},
+    { 3, {0x0f, 0xb6, 0x01}, 0, "0f b6 01 : movzx eax, BYTE PTR [rcx]"},
+    { 3, {0x0f, 0xb6, 0x09}, 0, "0f b6 09 : movzx ecx, BYTE PTR [rcx]"},
+    { 3, {0x0f, 0xb6, 0x11}, 0, "0f b6 11 : movzx edx, BYTE PTR [rcx]"},
     { 3, {0x0f, 0xb6, 0xc2}, 0, "0f b6 c2 : movzx eax, dl"},
     { 3, {0x0f, 0xb6, 0xd2}, 0, "0f b6 d2 : movzx edx, dl"},
     { 3, {0x0f, 0xb7, 0x10}, 0, "0f b7 10 : movzx edx, WORD PTR [rax]"},
+    { 3, {0x0f, 0xbe, 0xd2}, 0, "0f be d2 : movsx edx, dl"},
     { 3, {0x41, 0x8b, 0xc0}, 0, "41 8b c0 : mov eax, r8d"},
     { 3, {0x41, 0x8b, 0xc1}, 0, "41 8b c1 : mov eax, r9d"},
     { 3, {0x41, 0x8b, 0xc2}, 0, "41 8b c2 : mov eax, r10d"},
     { 3, {0x41, 0x8b, 0xc3}, 0, "41 8b c3 : mov eax, r11d"},
     { 3, {0x41, 0x8b, 0xc4}, 0, "41 8b c4 : mov eax, r12d"},
+    { 3, {0x45, 0x31, 0xc0}, 0, "45 31 c0 : xor r8d,r8d"},
+    { 3, {0x45, 0x31, 0xc9}, 0, "45 31 c9 : xor r9d,r9d"},
     { 3, {0x45, 0x33, 0xc0}, 0, "45 33 c0 : xor r8d, r8d"},
     { 3, {0x45, 0x33, 0xc9}, 0, "45 33 c9 : xor r9d, r9d"},
     { 3, {0x45, 0x33, 0xdb}, 0, "45 33 db : xor r11d, r11d"},
+    { 3, {0x45, 0x84, 0xc0}, 0, "45 84 c0 : test r8b,r8b"},
+    { 3, {0x45, 0x84, 0xd2}, 0, "45 84 d2 : test r10b,r10b"},
+    { 3, {0x48, 0x29, 0xd1}, 0, "48 29 d1 : sub rcx, rdx"},
     { 3, {0x48, 0x2b, 0xca}, 0, "48 2b ca : sub rcx, rdx"},
     { 3, {0x48, 0x2b, 0xd1}, 0, "48 2b d1 : sub rdx, rcx"},
     { 3, {0x48, 0x3b, 0xca}, 0, "48 3b ca : cmp rcx, rdx"},
@@ -895,6 +944,11 @@ const struct InstructionSizeData {
     { 3, {0x48, 0x85, 0xdb}, 0, "48 85 db : test rbx, rbx"},
     { 3, {0x48, 0x85, 0xe4}, 0, "48 85 e4 : test rsp, rsp"},
     { 3, {0x48, 0x85, 0xed}, 0, "48 85 ed : test rbp, rbp"},
+    { 3, {0x48, 0x89, 0xc8}, 0, "48 89 c8 : mov rax,rcx"},
+    { 3, {0x48, 0x89, 0xcb}, 0, "48 89 cb : mov rbx,rcx"},
+    { 3, {0x48, 0x89, 0xd0}, 0, "48 89 d0 : mov rax,rdx"},
+    { 3, {0x48, 0x89, 0xd1}, 0, "48 89 d1 : mov rcx,rdx"},
+    { 3, {0x48, 0x89, 0xd3}, 0, "48 89 d3 : mov rbx,rdx"},
     { 3, {0x48, 0x89, 0xe5}, 0, "48 89 e5 : mov rbp, rsp"},
     { 3, {0x48, 0x8b, 0xc1}, 0, "48 8b c1 : mov rax, rcx"},
     { 3, {0x48, 0x8b, 0xc4}, 0, "48 8b c4 : mov rax, rsp"},
@@ -906,6 +960,13 @@ const struct InstructionSizeData {
     { 3, {0x48, 0xff, 0xc3}, 0, "48 ff c3 : inc rbx"},
     { 3, {0x48, 0xff, 0xc6}, 0, "48 ff c6 : inc rsi"},
     { 3, {0x48, 0xff, 0xc7}, 0, "48 ff c7 : inc rdi"},
+    { 3, {0x49, 0x89, 0xc8}, 0, "49 89 c8 : mov r8, rcx"},
+    { 3, {0x49, 0x89, 0xc9}, 0, "49 89 c9 : mov r9, rcx"},
+    { 3, {0x49, 0x89, 0xca}, 0, "49 89 ca : mov r10,rcx"},
+    { 3, {0x49, 0x89, 0xd0}, 0, "49 89 d0 : mov r8, rdx"},
+    { 3, {0x49, 0x89, 0xd1}, 0, "49 89 d1 : mov r9, rdx"},
+    { 3, {0x49, 0x89, 0xd2}, 0, "49 89 d2 : mov r10, rdx"},
+    { 3, {0x49, 0x89, 0xd3}, 0, "49 89 d3 : mov r11, rdx"},
     { 3, {0x49, 0xff, 0xc0}, 0, "49 ff c0 : inc r8"},
     { 3, {0x49, 0xff, 0xc1}, 0, "49 ff c1 : inc r9"},
     { 3, {0x49, 0xff, 0xc2}, 0, "49 ff c2 : inc r10"},
@@ -930,11 +991,19 @@ const struct InstructionSizeData {
     { 3, {0x4d, 0x85, 0xf6}, 0, "4d 85 f6 : test r14, r14"},
     { 3, {0x4d, 0x85, 0xff}, 0, "4d 85 ff : test r15, r15"},
     { 3, {0xf6, 0xc1, 0x72}, 0, "f6 c1 XX : test cl, XX"},
+    { 4, {0x44, 0x0f, 0xb6, 0x01}, 0, "44 0f b6 01 : movzx r8d, BYTE PTR [rcx]"},
+    { 4, {0x44, 0x0f, 0xb6, 0x09}, 0, "44 0f b6 09 : movzx r9d, BYTE PTR [rcx]"},
+    { 4, {0x44, 0x0f, 0xb6, 0x0a}, 0, "44 0f b6 0a : movzx r8d, BYTE PTR [rdx]"},
+    { 4, {0x44, 0x0f, 0xb6, 0x11}, 0, "44 0f b6 11 : movzx r10d, BYTE PTR [rcx]"},
     { 4, {0x44, 0x0f, 0xb6, 0x1a}, 0, "44 0f b6 1a : movzx r11d, BYTE PTR [rdx]"},
     { 4, {0x44, 0x8d, 0x42, 0x73}, 0, "44 8d 42 XX : lea r8d , [rdx + XX]"},
     { 4, {0x48, 0x83, 0xec, 0x73}, 0, "48 83 ec XX : sub rsp, XX"},
     { 4, {0x48, 0x89, 0x58, 0x73}, 0, "48 89 58 XX : mov QWORD PTR[rax + XX], rbx"},
     { 4, {0x49, 0x83, 0xf8, 0x73}, 0, "49 83 f8 XX : cmp r8, XX"},
+    { 4, {0x49, 0x8d, 0x48, 0xff}, 0, "49 8d 48 ff : lea rcx,[r8-0x1]"},
+    { 4, {0x4c, 0x8d, 0x04, 0x11}, 0, "4c 8d 04 11 : lea r8,[rcx+rdx*1]"},
+    { 4, {0x4e, 0x8d, 0x14, 0x73}, 0, "4e 8d 14 XX : lea r10, [rcx+r8*XX]"},
+    { 4, {0x66, 0x83, 0x39, 0x73}, 0, "66 83 39 XX : cmp WORD PTR [rcx], XX"},
     { 4, {0x80, 0x78, 0x72, 0x73}, 0, "80 78 YY XX : cmp BYTE PTR [rax+YY], XX"},
     { 4, {0x80, 0x79, 0x72, 0x73}, 0, "80 79 YY XX : cmp BYTE ptr [rcx+YY], XX"},
     { 4, {0x80, 0x7A, 0x72, 0x73}, 0, "80 7A YY XX : cmp BYTE PTR [rdx+YY], XX"},
@@ -942,6 +1011,7 @@ const struct InstructionSizeData {
     { 4, {0x80, 0x7D, 0x72, 0x73}, 0, "80 7D YY XX : cmp BYTE PTR [rbp+YY], XX"},
     { 4, {0x80, 0x7E, 0x72, 0x73}, 0, "80 7E YY XX : cmp BYTE PTR [rsi+YY], XX"},
     { 4, {0x89, 0x54, 0x24, 0x73}, 0, "89 54 24 XX : mov DWORD PTR[rsp + XX], edx"},
+    { 5, {0x0F, 0x1F, 0x44, 0x00, 0x00}, 0, "0F 1F 44 00 00 : nop DWORD PTR [rax+rax*1+0x0]"},
     { 5, {0x44, 0x89, 0x44, 0x24, 0x74}, 0, "44 89 44 24 XX : mov DWORD PTR [rsp + XX], r8d"},
     { 5, {0x44, 0x89, 0x4c, 0x24, 0x74}, 0, "44 89 4c 24 XX : mov DWORD PTR [rsp + XX], r9d"},
     { 5, {0x48, 0x89, 0x4C, 0x24, 0x74}, 0, "48 89 4C 24 XX : mov QWORD PTR [rsp + XX], rcx"},
@@ -954,8 +1024,10 @@ const struct InstructionSizeData {
     { 5, {0x48, 0x8d, 0x6c, 0x24, 0x74}, 0, "48 8d 6c 24 XX : lea rbp, [rsp + XX]"},
     { 5, {0x4c, 0x89, 0x44, 0x24, 0x74}, 0, "4c 89 44 24 XX : mov QWORD PTR [rsp + XX], r8"},
     { 5, {0x4c, 0x89, 0x4c, 0x24, 0x74}, 0, "4c 89 4c 24 XX : mov QWORD PTR [rsp + XX], r9"},
+    { 5, {0x66, 0x48, 0x0F, 0x7E, 0xC0}, 0, "66 48 0F 7E C0 : movq rax,xmm0 (for wine fexp)"},
     { 5, {0x83, 0x44, 0x72, 0x73, 0x74}, 0, "83 44 72 XX YY : add DWORD PTR [rdx+rsi*2+XX],YY"},
     { 5, {0x83, 0x64, 0x24, 0x73, 0x74}, 0, "83 64 24 XX YY : and DWORD PTR [rsp+XX], YY"},
+    { 6, {0x41, 0xB8, 0x72, 0x73, 0x74, 0x75}, 0, "41 B8 XX XX XX XX : mov r8d, XX XX XX XX"},
     { 6, {0x48, 0x83, 0x64, 0x24, 0x74, 0x75}, 0, "48 83 64 24 XX YY : and QWORD PTR [rsp + XX], YY"},
     { 6, {0x66, 0x81, 0x78, 0x73, 0x74, 0x75}, 0, "66 81 78 XX YY YY : cmp WORD PTR [rax+XX], YY YY"},
     { 6, {0x66, 0x81, 0x79, 0x73, 0x74, 0x75}, 0, "66 81 79 XX YY YY : cmp WORD PTR [rcx+XX], YY YY"},
@@ -975,6 +1047,7 @@ const struct InstructionSizeData {
     { 7, {0x48, 0x89, 0x15, 0x73, 0x74, 0x75, 0x76}, 3, "48 89 15 XX XX XX XX : mov QWORD PTR [rip + XXXXXXXX], rdx"},
     { 7, {0x48, 0x8b, 0x05, 0x73, 0x74, 0x75, 0x76}, 3, "48 8b 05 XX XX XX XX : mov rax, QWORD PTR [rip + XXXXXXXX]"},
     { 7, {0x48, 0x8d, 0x05, 0x73, 0x74, 0x75, 0x76}, 3, "48 8d 05 XX XX XX XX : lea rax, QWORD PTR [rip + XXXXXXXX]"},
+    { 7, {0x48, 0xc7, 0xc0, 0x73, 0x74, 0x75, 0x76}, 0, "48 C7 C0 XX XX XX XX : mov rax, XX XX XX XX"},
     { 7, {0x48, 0xff, 0x25, 0x73, 0x74, 0x75, 0x76}, 3, "48 ff 25 XX XX XX XX : rex.W jmp QWORD PTR [rip + XXXXXXXX]"},
     { 7, {0x4C, 0x8D, 0x15, 0x73, 0x74, 0x75, 0x76}, 3, "4c 8d 15 XX XX XX XX : lea r10, [rip + XX]"},
     { 7, {0x81, 0x78, 0x72, 0x73, 0x74, 0x75, 0x76}, 0, "81 78 YY XX XX XX XX : cmp DWORD PTR [rax+YY], XX XX XX XX"},
@@ -990,10 +1063,14 @@ const struct InstructionSizeData {
     { 8, {0x41, 0x81, 0x7d, 0x73, 0x74, 0x75, 0x76, 0x77}, 0, "41 81 7d XX YY YY YY YY : cmp DWORD PTR [r13+YY], XX XX XX XX"},
     { 8, {0x41, 0x81, 0x7e, 0x73, 0x74, 0x75, 0x76, 0x77}, 0, "41 81 7e XX YY YY YY YY : cmp DWORD PTR [r14+YY], XX XX XX XX"},
     { 8, {0x41, 0x81, 0x7f, 0x73, 0x74, 0x75, 0x76, 0x77}, 0, "41 81 7f YY XX XX XX XX : cmp DWORD PTR [r15+YY], XX XX XX XX"},
+    { 8, {0x48, 0x8D, 0xA4, 0x24, 0x74, 0x75, 0x76, 0x77}, 0, "48 8D A4 24 XX YY ZZ WW : lea rsp, [rsp + WWZZYYXX]"},
     { 8, {0x81, 0x7c, 0x24, 0x73, 0x74, 0x75, 0x76, 0x77}, 0, "81 7c 24 YY XX XX XX XX : cmp DWORD PTR [rsp+YY], XX XX XX XX"},
     { 8, {0xc7, 0x44, 0x24, 0x73, 0x74, 0x75, 0x76, 0x77}, 0, "C7 44 24 XX YY YY YY YY : mov dword ptr [rsp + XX], YYYYYYYY"},
     { 9, {0x41, 0x81, 0x7c, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78}, 0, "41 81 7c ZZ YY XX XX XX XX : cmp DWORD PTR [reg+reg*n+YY], XX XX XX XX"},
     { 9, {0xA1, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78}, 0, "A1 XX XX XX XX XX XX XX XX : movabs eax, dword ptr ds:[XXXXXXXX]"},
+    {10, {0x48, 0xb8, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79}, 0, "48 b8 XX XX XX XX XX XX XX XX : movabs rax,XX XX XX XX XX XX XX XX"},
+//    {11, {0x66, 0x66, 0x2e, 0x0f, 0x1f, 0x84, 0x76, 0x77, 0x78, 0x79, 0x70}, 0, "66 66 2e 0f 1f 84 YY XX XX XX XX : data16 cs nop WORD PTR [rax+rax*1 + XX XX XX XX]"},
+//    {13, {0x66, 0x66, 0x66, 0x66, 0x2e, 0x0f, 0x1f, 0x84, 0x78, 0x79, 0x70, 0x71, 0x72}, 0, "66 66 66 66 2e 0f 1f 84 YY XX XX XX XX : data16 data16 data16 cs nop WORD PTR [rax+rax*1 + XX XX XX XX]"},
 #else
     // sorted list
     { 3, {0x8B, 0x45, 0x72}, 0, "8B 45 XX : mov eax, dword ptr [ebp + XX]"},
@@ -1032,13 +1109,74 @@ std::string dumpInstruction(unsigned arrayIndex,
   return ret.str();
 }
 
+
+
+extern "C" {
+#include "bddisasm/inc/bdx86_core.h"
+#include "bddisasm/bddisasm/bdx86_decoder.c"
+  void *nd_memset(void *s, int c, ND_SIZET n) {
+    memset(s, c, n);
+    return NULL;
+  }
+}
+
+
+
 TEST(Interception, GetInstructionSize) {
+  SetErrorReportCallback(DebugOutputPrinter::Report);
   for (unsigned i = 0; i < sizeof(data) / sizeof(*data); i++) {
     size_t rel_offset = ~0L;
     size_t size = __interception::TestOnlyGetInstructionSize(
         (uptr)data[i].instr, &rel_offset);
     EXPECT_EQ(data[i].size, size) << dumpInstruction(i, data[i]);
     EXPECT_EQ(data[i].rel_offset, rel_offset) << dumpInstruction(i, data[i]);
+
+    INSTRUX instrux;
+    ND_CONTEXT ctx = { 0 };
+    NDSTATUS status;
+    NdInitContext(&ctx);
+#if SANITIZER_WINDOWS_x64
+    ctx.DefCode = ND_CODE_64;
+#else
+    ctx.DefCode = ND_CODE_32;
+#endif
+    ctx.DefData = ctx.DefCode;
+    ctx.DefStack = ctx.DefCode;
+    ctx.VendMode = ND_VEND_ANY;
+    ctx.FeatMode = ND_FEAT_ALL;
+
+    status = NdDecodeWithContext(&instrux, (const ND_UINT8 *)data[i].instr, 15, &ctx);
+    if (ND_SUCCESS(status)) {
+      if (data[i].size > 0) {
+        EXPECT_EQ(data[i].size, (size_t)instrux.Length) << dumpInstruction(i, data[i]);
+        if (instrux.IsRipRelative) {
+          EXPECT_EQ(data[i].rel_offset, (size_t)instrux.DispOffset) << dumpInstruction(i, data[i]);
+        } else {
+          EXPECT_EQ(data[i].rel_offset, (size_t)0) << dumpInstruction(i, data[i]);
+        }
+      }
+    }
+
+    // check rel_offset is just used in tests with x86-64
+    if (sizeof(void*) != 8) {
+        EXPECT_EQ(data[i].rel_offset, (size_t)0) << dumpInstruction(i, data[i]);
+    }
+
+    //// check if instruction is possibly the same in 64-bit and 32-bit
+    //if (i > 60) { // last index, which is already visible in i386 and x86_64
+    //  if (sizeof(void*) == 8 && data[i].size > 0) {
+    //    NdInitContext(&ctx);
+    //    ctx.DefCode = ND_CODE_32;
+    //    ctx.DefData = ctx.DefCode;
+    //    ctx.DefStack = ctx.DefCode;
+    //    ctx.VendMode = ND_VEND_ANY;
+    //    ctx.FeatMode = ND_FEAT_ALL;
+    //    status = NdDecodeWithContext(&instrux, (const ND_UINT8 *)data[i].instr, 15, &ctx);
+    //    if (ND_SUCCESS(status)) {
+    //      EXPECT_NE(data[i].size, (size_t)instrux.Length) << dumpInstruction(i, data[i]);
+    //    }
+    //  }
+    //}
   }
 }
 
