@@ -33,6 +33,10 @@ class TargetTransformInfo;
 struct VectorizerParams {
   /// Maximum SIMD width.
   static const unsigned MaxVectorWidth;
+  /// Maximum unroll factor. Can represent actual unroll factor and/or some
+  /// other target-specific features, like LMUL factor for RISC-V with RVV
+  /// support.
+  static const unsigned MaxVectorUF;
 
   /// VF as overridden by the user.
   static unsigned VectorizationFactor;
@@ -180,9 +184,10 @@ public:
 
   MemoryDepChecker(PredicatedScalarEvolution &PSE, const Loop *L,
                    const DenseMap<Value *, const SCEV *> &SymbolicStrides,
-                   unsigned MaxTargetVectorWidthInBits)
+                   unsigned MaxTargetVectorWidthInBits, bool AllowNonPow2Deps)
       : PSE(PSE), InnermostLoop(L), SymbolicStrides(SymbolicStrides),
-        MaxTargetVectorWidthInBits(MaxTargetVectorWidthInBits) {}
+        MaxTargetVectorWidthInBits(MaxTargetVectorWidthInBits),
+        AllowNonPow2Deps(AllowNonPow2Deps) {}
 
   /// Register the location (instructions are given increasing numbers)
   /// of a write access.
@@ -214,6 +219,18 @@ public:
   /// simultaneously, multiplied by the size of the element in bits.
   uint64_t getMaxSafeVectorWidthInBits() const {
     return MaxSafeVectorWidthInBits;
+  }
+
+  /// Return safe power-of-2 number of elements, which do not prevent store-load
+  /// forwarding and safe to operate simultaneously.
+  std::optional<uint64_t> getStoreLoadForwardSafeVFPowerOf2() const {
+    return MaxStoreLoadForwardSafeVF.first;
+  }
+
+  /// Return safe non-power-of-2 number of elements, which do not prevent
+  /// store-load forwarding and safe to operate simultaneously.
+  std::optional<uint64_t> getStoreLoadForwardSafeVFNonPowerOf2() const {
+    return MaxStoreLoadForwardSafeVF.second;
   }
 
   /// In same cases when the dependency check fails we can still
@@ -304,6 +321,11 @@ private:
   /// restrictive.
   uint64_t MaxSafeVectorWidthInBits = -1U;
 
+  /// Maximum number of elements (power-of-2 and non-power-of-2), which do not
+  /// prevent store-load forwarding and safe to operate simultaneously.
+  std::pair<std::optional<uint64_t>, std::optional<uint64_t>>
+      MaxStoreLoadForwardSafeVF;
+
   /// If we see a non-constant dependence distance we can still try to
   /// vectorize this loop with runtime checks.
   bool FoundNonConstantDistanceDependence = false;
@@ -327,6 +349,9 @@ private:
   /// backwards dependence with non-constant stride should be classified as
   /// backwards-vectorizable or unknown (triggering a runtime check).
   unsigned MaxTargetVectorWidthInBits = 0;
+
+  /// True if current target supports non-power-of-2 dependence distances.
+  bool AllowNonPow2Deps = false;
 
   /// Mapping of SCEV expressions to their expanded pointer bounds (pair of
   /// start and end pointer expressions).

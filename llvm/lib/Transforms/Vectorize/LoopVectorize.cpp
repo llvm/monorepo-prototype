@@ -1423,8 +1423,13 @@ public:
   /// Selects and saves TailFoldingStyle for 2 options - if IV update may
   /// overflow or not.
   /// \param IsScalableVF true if scalable vector factors enabled.
+  /// \param TailFoldPowOf2 true if tail folding with power-of-2
+  /// safe distance can be enabled.
+  /// \param TailFoldNonPowOf2 true if tail folding with non-power-of-2
+  /// safe distance can be enabled.
   /// \param UserIC User specific interleave count.
-  void setTailFoldingStyles(bool IsScalableVF, unsigned UserIC) {
+  void setTailFoldingStyles(bool IsScalableVF, bool TailFoldPowOf2,
+                            bool TailFoldNonPowOf2, unsigned UserIC) {
     assert(!ChosenTailFoldingStyle && "Tail folding must not be selected yet.");
     if (!Legal->canFoldTailByMasking()) {
       ChosenTailFoldingStyle =
@@ -1433,24 +1438,37 @@ public:
     }
 
     if (!ForceTailFoldingStyle.getNumOccurrences()) {
-      ChosenTailFoldingStyle = std::make_pair(
-          TTI.getPreferredTailFoldingStyle(/*IVUpdateMayOverflow=*/true),
-          TTI.getPreferredTailFoldingStyle(/*IVUpdateMayOverflow=*/false));
+      if (!TailFoldPowOf2)
+        ChosenTailFoldingStyle =
+            std::make_pair(TailFoldingStyle::None, TailFoldingStyle::None);
+      else
+        ChosenTailFoldingStyle = std::make_pair(
+            TTI.getPreferredTailFoldingStyle(/*IVUpdateMayOverflow=*/true),
+            TTI.getPreferredTailFoldingStyle(/*IVUpdateMayOverflow=*/false));
       return;
     }
 
     // Set styles when forced.
     ChosenTailFoldingStyle = std::make_pair(ForceTailFoldingStyle.getValue(),
                                             ForceTailFoldingStyle.getValue());
-    if (ForceTailFoldingStyle != TailFoldingStyle::DataWithEVL)
+    if (ForceTailFoldingStyle != TailFoldingStyle::DataWithEVL) {
+      if (!TailFoldPowOf2)
+        ChosenTailFoldingStyle =
+            std::make_pair(TailFoldingStyle::None, TailFoldingStyle::None);
       return;
+    }
     // Override forced styles if needed.
     // FIXME: use actual opcode/data type for analysis here.
     // FIXME: Investigate opportunity for fixed vector factor.
-    bool EVLIsLegal = UserIC <= 1 &&
+    bool EVLIsLegal = UserIC <= 1 && IsScalableVF &&
                       TTI.hasActiveVectorLength(0, nullptr, Align()) &&
                       !EnableVPlanNativePath;
     if (!EVLIsLegal) {
+      if (!TailFoldPowOf2) {
+        ChosenTailFoldingStyle =
+            std::make_pair(TailFoldingStyle::None, TailFoldingStyle::None);
+        return;
+      }
       // If for some reason EVL mode is unsupported, fallback to
       // DataWithoutLaneMask to try to vectorize the loop with folded tail
       // in a generic way.
@@ -1464,6 +1482,10 @@ public:
           << (UserIC > 1
                   ? "since interleave count specified is greater than 1.\n"
                   : "due to non-interleaving reasons.\n"));
+    } else if (!TailFoldNonPowOf2) {
+      ChosenTailFoldingStyle =
+          std::make_pair(TailFoldingStyle::None, TailFoldingStyle::None);
+      return;
     }
   }
 
@@ -1569,9 +1591,10 @@ private:
   /// elements is a power-of-2 larger than zero. If scalable vectorization is
   /// disabled or unsupported, then the scalable part will be equal to
   /// ElementCount::getScalable(0).
-  FixedScalableVFPair computeFeasibleMaxVF(unsigned MaxTripCount,
-                                           ElementCount UserVF,
-                                           bool FoldTailByMasking);
+  FixedScalableVFPair
+  computeFeasibleMaxVF(unsigned MaxTripCount, ElementCount UserVF,
+                       bool FoldTailByMasking,
+                       bool AllowNonPowerOf2SafeDist = false);
 
   /// \return the maximized element count based on the targets vector
   /// registers and the loop trip-count, but limited to a maximum safe VF.
@@ -3934,7 +3957,8 @@ LoopVectorizationCostModel::getMaxLegalScalableVF(unsigned MaxSafeElements) {
 }
 
 FixedScalableVFPair LoopVectorizationCostModel::computeFeasibleMaxVF(
-    unsigned MaxTripCount, ElementCount UserVF, bool FoldTailByMasking) {
+    unsigned MaxTripCount, ElementCount UserVF, bool FoldTailByMasking,
+    bool AllowNonPowerOf2SafeDist) {
   MinBWs = computeMinimumValueSizes(TheLoop->getBlocks(), *DB, &TTI);
   unsigned SmallestType, WidestType;
   std::tie(SmallestType, WidestType) = getSmallestAndWidestTypes();
@@ -3943,11 +3967,28 @@ FixedScalableVFPair LoopVectorizationCostModel::computeFeasibleMaxVF(
   // It is computed by MaxVF * sizeOf(type) * 8, where type is taken from
   // the memory accesses that is most restrictive (involved in the smallest
   // dependence distance).
-  unsigned MaxSafeElements =
-      llvm::bit_floor(Legal->getMaxSafeVectorWidthInBits() / WidestType);
+  unsigned MaxSafeElements = Legal->getMaxSafeVectorWidthInBits() / WidestType;
+  if (Legal->isSafeForAnyVectorWidth())
+    MaxSafeElements = bit_ceil(MaxSafeElements);
+  unsigned MaxSafeElementsPowerOf2 = bit_floor(std::gcd(
+      MaxSafeElements, Legal->getMaxStoreLoadForwardSafeVFPowerOf2().value_or(
+                           1ULL << countr_zero(MaxSafeElements))));
 
-  auto MaxSafeFixedVF = ElementCount::getFixed(MaxSafeElements);
-  auto MaxSafeScalableVF = getMaxLegalScalableVF(MaxSafeElements);
+  auto MaxSafeFixedVF = ElementCount::getFixed(MaxSafeElementsPowerOf2);
+  auto MaxSafeScalableVF = getMaxLegalScalableVF(MaxSafeElementsPowerOf2);
+  if (FoldTailByMasking && AllowNonPowerOf2SafeDist) {
+    if (std::optional<unsigned> SafeStoreLoadForwardingDist =
+            Legal->getMaxStoreLoadForwardSafeVFNonPowerOf2()) {
+      unsigned SafeDist = *SafeStoreLoadForwardingDist;
+      if (MaxSafeElements >= SafeDist)
+        MaxSafeElements = SafeDist;
+      else
+        MaxSafeElements = std::max(std::gcd(MaxSafeElements, SafeDist),
+                                   MaxSafeElementsPowerOf2);
+    }
+    MaxSafeScalableVF =
+        getMaxLegalScalableVF(std::numeric_limits<unsigned>::max());
+  }
   if (!Legal->isSafeForAnyVectorWidth())
     this->MaxSafeElements = MaxSafeElements;
 
@@ -4122,26 +4163,39 @@ LoopVectorizationCostModel::computeMaxVF(ElementCount UserVF, unsigned UserIC) {
   }
 
   FixedScalableVFPair MaxFactors = computeFeasibleMaxVF(MaxTC, UserVF, true);
+  FixedScalableVFPair FoldTailMaxFactors =
+      computeFeasibleMaxVF(MaxTC, UserVF, /*FoldTailByMasking=*/true,
+                           /*AllowNonPowerOf2SafeDist=*/true);
 
   // Avoid tail folding if the trip count is known to be a multiple of any VF
   // we choose.
   std::optional<unsigned> MaxPowerOf2RuntimeVF =
       MaxFactors.FixedVF.getFixedValue();
-  if (MaxFactors.ScalableVF) {
+  std::optional<unsigned> MaxNonPowerOf2RuntimeVF =
+      MaxFactors.FixedVF.getFixedValue();
+  if (MaxFactors.ScalableVF || FoldTailMaxFactors.ScalableVF) {
     std::optional<unsigned> MaxVScale = getMaxVScale(*TheFunction, TTI);
     if (MaxVScale && TTI.isVScaleKnownToBeAPowerOfTwo()) {
-      MaxPowerOf2RuntimeVF = std::max<unsigned>(
-          *MaxPowerOf2RuntimeVF,
-          *MaxVScale * MaxFactors.ScalableVF.getKnownMinValue());
-    } else
-      MaxPowerOf2RuntimeVF = std::nullopt; // Stick with tail-folding for now.
+      if (MaxFactors.ScalableVF)
+        MaxPowerOf2RuntimeVF = std::max<unsigned>(
+            *MaxPowerOf2RuntimeVF,
+            *MaxVScale * MaxFactors.ScalableVF.getKnownMinValue());
+      if (FoldTailMaxFactors.ScalableVF)
+        MaxNonPowerOf2RuntimeVF = std::max<unsigned>(
+            *MaxNonPowerOf2RuntimeVF,
+            *MaxVScale * FoldTailMaxFactors.ScalableVF.getKnownMinValue());
+    } else {
+      // Stick with tail-folding for now.
+      MaxPowerOf2RuntimeVF = MaxNonPowerOf2RuntimeVF = std::nullopt;
+    }
   }
 
-  if (MaxPowerOf2RuntimeVF && *MaxPowerOf2RuntimeVF > 0) {
+  if (MaxPowerOf2RuntimeVF.value_or(0) > 0 ||
+      MaxNonPowerOf2RuntimeVF.value_or(0) > 0) {
     assert((UserVF.isNonZero() || isPowerOf2_32(*MaxPowerOf2RuntimeVF)) &&
            "MaxFixedVF must be a power of 2");
-    unsigned MaxVFtimesIC =
-        UserIC ? *MaxPowerOf2RuntimeVF * UserIC : *MaxPowerOf2RuntimeVF;
+    unsigned MaxVFtimesIC = UserIC ? MaxPowerOf2RuntimeVF.value_or(0) * UserIC
+                                   : MaxPowerOf2RuntimeVF.value_or(0);
     ScalarEvolution *SE = PSE.getSE();
     // Currently only loops with countable exits are vectorized, but calling
     // getSymbolicMaxBackedgeTakenCount allows enablement work for loops with
@@ -4152,23 +4206,33 @@ LoopVectorizationCostModel::computeMaxVF(ElementCount UserVF, unsigned UserIC) {
            "Invalid loop count");
     const SCEV *ExitCount = SE->getAddExpr(
         BackedgeTakenCount, SE->getOne(BackedgeTakenCount->getType()));
-    const SCEV *Rem = SE->getURemExpr(
-        SE->applyLoopGuards(ExitCount, TheLoop),
-        SE->getConstant(BackedgeTakenCount->getType(), MaxVFtimesIC));
-    if (Rem->isZero()) {
-      // Accept MaxFixedVF if we do not have a tail.
-      LLVM_DEBUG(dbgs() << "LV: No tail will remain for any chosen VF.\n");
-      return MaxFactors;
+    if (MaxVFtimesIC > 0) {
+      const SCEV *Rem = SE->getURemExpr(
+          SE->applyLoopGuards(ExitCount, TheLoop),
+          SE->getConstant(BackedgeTakenCount->getType(), MaxVFtimesIC));
+      if (!Rem->isZero())
+        MaxPowerOf2RuntimeVF.reset();
+    } else {
+      MaxPowerOf2RuntimeVF.reset();
+    }
+    MaxVFtimesIC = UserIC ? MaxNonPowerOf2RuntimeVF.value_or(0) * UserIC
+                          : MaxNonPowerOf2RuntimeVF.value_or(0);
+    if (MaxVFtimesIC > 0) {
+      const SCEV *Rem = SE->getURemExpr(
+          SE->applyLoopGuards(ExitCount, TheLoop),
+          SE->getConstant(BackedgeTakenCount->getType(), MaxVFtimesIC));
+      if (!Rem->isZero())
+        MaxNonPowerOf2RuntimeVF.reset();
+    } else {
+      MaxNonPowerOf2RuntimeVF.reset();
     }
   }
 
-  // If we don't know the precise trip count, or if the trip count that we
-  // found modulo the vectorization factor is not zero, try to fold the tail
-  // by masking.
-  // FIXME: look for a smaller MaxVF that does divide TC rather than masking.
-  setTailFoldingStyles(MaxFactors.ScalableVF.isScalable(), UserIC);
+  setTailFoldingStyles(FoldTailMaxFactors.ScalableVF.isScalable(),
+                       !MaxPowerOf2RuntimeVF.has_value(),
+                       !MaxNonPowerOf2RuntimeVF.has_value(), UserIC);
   if (foldTailByMasking()) {
-    if (getTailFoldingStyle() == TailFoldingStyle::DataWithEVL) {
+    if (foldTailWithEVL()) {
       LLVM_DEBUG(
           dbgs()
           << "LV: tail is folded with EVL, forcing unroll factor to be 1. Will "
@@ -4177,11 +4241,18 @@ LoopVectorizationCostModel::computeMaxVF(ElementCount UserVF, unsigned UserIC) {
       // Tail folded loop using VP intrinsics restricts the VF to be scalable
       // for now.
       // TODO: extend it for fixed vectors, if required.
-      assert(MaxFactors.ScalableVF.isScalable() &&
+      assert(FoldTailMaxFactors.ScalableVF.isScalable() &&
              "Expected scalable vector factor.");
 
       MaxFactors.FixedVF = ElementCount::getFixed(1);
+      MaxFactors.ScalableVF = FoldTailMaxFactors.ScalableVF;
     }
+    return MaxFactors;
+  }
+
+  if (MaxPowerOf2RuntimeVF || MaxNonPowerOf2RuntimeVF) {
+    // Accept MaxFixedVF if we do not have a tail.
+    LLVM_DEBUG(dbgs() << "LV: No tail will remain for any chosen VF.\n");
     return MaxFactors;
   }
 
