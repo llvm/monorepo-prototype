@@ -1960,6 +1960,10 @@ DEF_TRAVERSE_DECL(BuiltinTemplateDecl, {
   TRY_TO(TraverseTemplateParameterListHelper(D->getTemplateParameters()));
 })
 
+DEF_TRAVERSE_DECL(CVRefQualifyingTemplateDecl, {
+  TRY_TO(TraverseTemplateParameterListHelper(D->getTemplateParameters()));
+})
+
 template <typename Derived>
 bool RecursiveASTVisitor<Derived>::TraverseTemplateTypeParamDeclConstraints(
     const TemplateTypeParmDecl *D) {
