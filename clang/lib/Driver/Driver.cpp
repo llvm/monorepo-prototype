@@ -6099,11 +6099,11 @@ const char *Driver::GetNamedOutputPath(Compilation &C, const JobAction &JA,
   llvm::PrettyStackTraceString CrashInfo("Computing output path");
   // Output to a user requested destination?
   if (AtTopLevel && !isa<DsymutilJobAction>(JA) && !isa<VerifyJobAction>(JA)) {
+    // CL and not building a PCH. Not sure why the GNU-style driver doesn't need
+    // this. May need to rethink.
     Arg *FinalOutput =
-        // CL and not generating a PCH: test for Fo, Fp, and Yc
-        IsCLMode() && !(C.getArgs().hasArg(options::OPT__SLASH_Yc) &&
-                        C.getArgs().hasArg(options::OPT__SLASH_Fp))
-            ? C.getArgs().getLastArg(options::OPT_o, options::OPT__SLASH_Fo,
+        IsCLMode() && !C.getArgs().hasArg(options::OPT__SLASH_Yc)
+            ? C.getArgs().getLastArg(options::OPT__SLASH_Fo,
                                      options::OPT__SLASH_Fo_COLON)
             : C.getArgs().getLastArg(options::OPT_o);
 
