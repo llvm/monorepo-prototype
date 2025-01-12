@@ -46,6 +46,7 @@ LLVM-libc aspires to a unique place in the software ecosystem.  The goals are:
    fullbuild_mode
    configure
    gpu/index.rst
+   uefi/index.rst
 
 .. toctree::
    :hidden:

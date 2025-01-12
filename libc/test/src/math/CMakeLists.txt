@@ -1249,100 +1249,102 @@ add_fp_unittest(
     libc.src.__support.FPUtil.manipulation_functions
 )
 
-add_fp_unittest(
-  ilogbl_test
-  SUITE
-    libc-math-unittests
-  SRCS
-    ilogbl_test.cpp
-  HDRS
-    ILogbTest.h
-  DEPENDS
-    libc.src.math.ilogbl
-    libc.src.__support.CPP.limits
-    libc.src.__support.FPUtil.fp_bits
-    libc.src.__support.FPUtil.manipulation_functions
-)
+if(NOT LIBC_TARGET_OS_IS_UEFI)
+  add_fp_unittest(
+    ilogbl_test
+    SUITE
+      libc-math-unittests
+    SRCS
+      ilogbl_test.cpp
+    HDRS
+      ILogbTest.h
+    DEPENDS
+      libc.src.math.ilogbl
+      libc.src.__support.CPP.limits
+      libc.src.__support.FPUtil.fp_bits
+      libc.src.__support.FPUtil.manipulation_functions
+  )
 
-add_fp_unittest(
-  ldexp_test
-  SUITE
-    libc-math-unittests
-  SRCS
-    ldexp_test.cpp
-  HDRS
-    LdExpTest.h
-  DEPENDS
-    libc.src.math.ldexp
-    libc.src.__support.CPP.limits
-    libc.src.__support.FPUtil.fp_bits
-    libc.src.__support.FPUtil.normal_float
-)
+  add_fp_unittest(
+    ldexp_test
+    SUITE
+      libc-math-unittests
+    SRCS
+      ldexp_test.cpp
+    HDRS
+      LdExpTest.h
+    DEPENDS
+      libc.src.math.ldexp
+      libc.src.__support.CPP.limits
+      libc.src.__support.FPUtil.fp_bits
+      libc.src.__support.FPUtil.normal_float
+  )
 
-add_fp_unittest(
-  ldexpf_test
-  SUITE
-    libc-math-unittests
-  SRCS
-    ldexpf_test.cpp
-  HDRS
-    LdExpTest.h
-  DEPENDS
-    libc.src.math.ldexpf
-    libc.src.__support.CPP.limits
-    libc.src.__support.FPUtil.fp_bits
-    libc.src.__support.FPUtil.normal_float
-)
+  add_fp_unittest(
+    ldexpf_test
+    SUITE
+      libc-math-unittests
+    SRCS
+      ldexpf_test.cpp
+    HDRS
+      LdExpTest.h
+    DEPENDS
+      libc.src.math.ldexpf
+      libc.src.__support.CPP.limits
+      libc.src.__support.FPUtil.fp_bits
+      libc.src.__support.FPUtil.normal_float
+  )
 
-add_fp_unittest(
-  ldexpl_test
-  SUITE
-    libc-math-unittests
-  SRCS
-    ldexpl_test.cpp
-  HDRS
-    LdExpTest.h
-  DEPENDS
-    libc.src.math.ldexpl
-    libc.src.__support.CPP.limits
-    libc.src.__support.FPUtil.fp_bits
-    libc.src.__support.FPUtil.normal_float
-)
+  add_fp_unittest(
+    ldexpl_test
+    SUITE
+      libc-math-unittests
+    SRCS
+      ldexpl_test.cpp
+    HDRS
+      LdExpTest.h
+    DEPENDS
+      libc.src.math.ldexpl
+      libc.src.__support.CPP.limits
+      libc.src.__support.FPUtil.fp_bits
+      libc.src.__support.FPUtil.normal_float
+  )
 
-add_fp_unittest(
-  logb_test
-  SUITE
-    libc-math-unittests
-  SRCS
-    logb_test.cpp
-  DEPENDS
-    libc.src.math.logb
-    libc.src.__support.FPUtil.manipulation_functions
-)
+  add_fp_unittest(
+    logb_test
+    SUITE
+      libc-math-unittests
+    SRCS
+      logb_test.cpp
+    DEPENDS
+      libc.src.math.logb
+      libc.src.__support.FPUtil.manipulation_functions
+  )
 
-add_fp_unittest(
-  logbf_test
-  SUITE
-    libc-math-unittests
-  SRCS
-    logbf_test.cpp
-  DEPENDS
-    libc.src.math.logbf
-    libc.src.__support.FPUtil.manipulation_functions
-)
+  add_fp_unittest(
+    logbf_test
+    SUITE
+      libc-math-unittests
+    SRCS
+      logbf_test.cpp
+    DEPENDS
+      libc.src.math.logbf
+      libc.src.__support.FPUtil.manipulation_functions
+  )
 
-add_fp_unittest(
-  logbl_test
-  SUITE
-    libc-math-unittests
-  SRCS
-    logbl_test.cpp
-  HDRS
-    LogbTest.h
-  DEPENDS
-    libc.src.math.logbl
-    libc.src.__support.FPUtil.manipulation_functions
-)
+  add_fp_unittest(
+    logbl_test
+    SUITE
+      libc-math-unittests
+    SRCS
+      logbl_test.cpp
+    HDRS
+      LogbTest.h
+    DEPENDS
+      libc.src.math.logbl
+      libc.src.__support.FPUtil.manipulation_functions
+  )
+endif()
 
 add_fp_unittest(
   modf_test
@@ -1376,19 +1378,21 @@ add_fp_unittest(
   UNIT_TEST_ONLY
 )
 
-add_fp_unittest(
-  modfl_test
-  SUITE
-    libc-math-unittests
-  SRCS
-    modfl_test.cpp
-  HDRS
-    ModfTest.h
-  DEPENDS
-    libc.src.math.modfl
-    libc.src.__support.FPUtil.basic_operations
-    libc.src.__support.FPUtil.nearest_integer_operations
-)
+if(NOT LIBC_TARGET_OS_IS_UEFI)
+  add_fp_unittest(
+    modfl_test
+    SUITE
+      libc-math-unittests
+    SRCS
+      modfl_test.cpp
+    HDRS
+      ModfTest.h
+    DEPENDS
+      libc.src.math.modfl
+      libc.src.__support.FPUtil.basic_operations
+      libc.src.__support.FPUtil.nearest_integer_operations
+  )
+endif()
 
 add_fp_unittest(
   fdimf_test
@@ -1418,19 +1422,21 @@ add_fp_unittest(
     libc.src.__support.FPUtil.fp_bits
 )
 
-add_fp_unittest(
-  fdiml_test
-  SUITE
-    libc-math-unittests
-  SRCS
-    fdiml_test.cpp
-  HDRS
-    FDimTest.h
-  DEPENDS
-    libc.src.math.fdiml
-    libc.src.__support.FPUtil.basic_operations
-    libc.src.__support.FPUtil.fp_bits
-)
+if(NOT LIBC_TARGET_OS_IS_UEFI)
+  add_fp_unittest(
+    fdiml_test
+    SUITE
+      libc-math-unittests
+    SRCS
+      fdiml_test.cpp
+    HDRS
+      FDimTest.h
+    DEPENDS
+      libc.src.math.fdiml
+      libc.src.__support.FPUtil.basic_operations
+      libc.src.__support.FPUtil.fp_bits
+  )
+endif()
 
 add_fp_unittest(
   fminf_test
@@ -1458,18 +1464,20 @@ add_fp_unittest(
     libc.src.__support.FPUtil.fp_bits
 )
 
-add_fp_unittest(
-  fminl_test
-  SUITE
-    libc-math-unittests
-  SRCS
-    fminl_test.cpp
-  HDRS
-    FMinTest.h
-  DEPENDS
-    libc.src.math.fminl
-    libc.src.__support.FPUtil.fp_bits
-)
+if(NOT LIBC_TARGET_OS_IS_UEFI)
+  add_fp_unittest(
+    fminl_test
+    SUITE
+      libc-math-unittests
+    SRCS
+      fminl_test.cpp
+    HDRS
+      FMinTest.h
+    DEPENDS
+      libc.src.math.fminl
+      libc.src.__support.FPUtil.fp_bits
+  )
+endif()
 
 add_fp_unittest(
   fmaxf_test
@@ -1497,18 +1505,20 @@ add_fp_unittest(
     libc.src.__support.FPUtil.fp_bits
 )
 
-add_fp_unittest(
-  fmaxl_test
-  SUITE
-    libc-math-unittests
-  SRCS
-    fmaxl_test.cpp
-  HDRS
-    FMaxTest.h
-  DEPENDS
-    libc.src.math.fmaxl
-    libc.src.__support.FPUtil.fp_bits
-)
+if(NOT LIBC_TARGET_OS_IS_UEFI)
+  add_fp_unittest(
+    fmaxl_test
+    SUITE
+      libc-math-unittests
+    SRCS
+      fmaxl_test.cpp
+    HDRS
+      FMaxTest.h
+    DEPENDS
+      libc.src.math.fmaxl
+      libc.src.__support.FPUtil.fp_bits
+  )
+endif()
 
 add_fp_unittest(
   sqrtf_test
@@ -1718,19 +1728,21 @@ add_fp_unittest(
     libc.src.__support.FPUtil.fp_bits
 )
 
-add_fp_unittest(
-  nextafterl_test
-  SUITE
-    libc-math-unittests
-  SRCS
-    nextafterl_test.cpp
-  HDRS
-    NextAfterTest.h
-  DEPENDS
-    libc.src.math.nextafterl
-    libc.src.__support.FPUtil.basic_operations
-    libc.src.__support.FPUtil.fp_bits
-)
+if(NOT LIBC_TARGET_OS_IS_UEFI)
+  add_fp_unittest(
+    nextafterl_test
+    SUITE
+      libc-math-unittests
+    SRCS
+      nextafterl_test.cpp
+    HDRS
+      NextAfterTest.h
+    DEPENDS
+      libc.src.math.nextafterl
+      libc.src.__support.FPUtil.basic_operations
+      libc.src.__support.FPUtil.fp_bits
+  )
+endif()
 
 add_fp_unittest(
   nextafterf128_test
