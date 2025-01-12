@@ -507,8 +507,13 @@ Expected<StringRef> clang(ArrayRef<StringRef> InputFiles, const ArgList &Args) {
   if (!Triple.isNVPTX() && !Triple.isSPIRV())
     CmdArgs.push_back("-Wl,--no-undefined");
 
+  // FIXME: Any input archives need to be extracted fully, otherwise device
+  // kernels will not always be extracted. This should be handled with a linker
+  // script on targets that support it.
+  CmdArgs.push_back("-Wl,--whole-archive");
   for (StringRef InputFile : InputFiles)
     CmdArgs.push_back(InputFile);
+  CmdArgs.push_back("-Wl,--no-whole-archive");
 
   // If this is CPU offloading we copy the input libraries.
   if (!Triple.isAMDGPU() && !Triple.isNVPTX() && !Triple.isSPIRV()) {
@@ -812,7 +817,7 @@ bundleLinkedOutput(ArrayRef<OffloadingImage> Images, const ArgList &Args,
 }
 
 /// Returns a new ArgList containg arguments used for the device linking phase.
-DerivedArgList getLinkerArgs(ArrayRef<OffloadFile> Input,
+DerivedArgList getLinkerArgs(ArrayRef<std::pair<bool, OffloadFile>> Input,
                              const InputArgList &Args) {
   DerivedArgList DAL = DerivedArgList(DerivedArgList(Args));
   for (Arg *A : Args)
@@ -820,15 +825,18 @@ DerivedArgList getLinkerArgs(ArrayRef<OffloadFile> Input,
 
   // Set the subarchitecture and target triple for this compilation.
   const OptTable &Tbl = getOptTable();
-  DAL.AddJoinedArg(nullptr, Tbl.getOption(OPT_arch_EQ),
-                   Args.MakeArgString(Input.front().getBinary()->getArch()));
-  DAL.AddJoinedArg(nullptr, Tbl.getOption(OPT_triple_EQ),
-                   Args.MakeArgString(Input.front().getBinary()->getTriple()));
+  DAL.AddJoinedArg(
+      nullptr, Tbl.getOption(OPT_arch_EQ),
+      Args.MakeArgString(Input.front().second.getBinary()->getArch()));
+  DAL.AddJoinedArg(
+      nullptr, Tbl.getOption(OPT_triple_EQ),
+      Args.MakeArgString(Input.front().second.getBinary()->getTriple()));
 
   // If every input file is bitcode we have whole program visibility as we
   // do only support static linking with bitcode.
-  auto ContainsBitcode = [](const OffloadFile &F) {
-    return identify_magic(F.getBinary()->getImage()) == file_magic::bitcode;
+  auto ContainsBitcode = [](const std::pair<bool, OffloadFile> &F) {
+    return identify_magic(F.second.getBinary()->getImage()) ==
+           file_magic::bitcode;
   };
   if (llvm::all_of(Input, ContainsBitcode))
     DAL.AddFlagArg(nullptr, Tbl.getOption(OPT_whole_program));
@@ -904,7 +912,8 @@ Error handleOverrideImages(
 /// Transforms all the extracted offloading input files into an image that can
 /// be registered by the runtime.
 Expected<SmallVector<StringRef>> linkAndWrapDeviceFiles(
-    SmallVectorImpl<SmallVector<OffloadFile>> &LinkerInputFiles,
+    SmallVectorImpl<SmallVector<std::pair<bool, OffloadFile>>>
+        &LinkerInputFiles,
     const InputArgList &Args, char **Argv, int Argc) {
   llvm::TimeTraceScope TimeScope("Handle all device input");
 
@@ -931,17 +940,44 @@ Expected<SmallVector<StringRef>> linkAndWrapDeviceFiles(
     auto LinkerArgs = getLinkerArgs(Input, BaseArgs);
 
     DenseSet<OffloadKind> ActiveOffloadKinds;
-    for (const auto &File : Input)
+    for (const auto &[IsArchive, File] : Input)
       if (File.getBinary()->getOffloadKind() != OFK_None)
         ActiveOffloadKinds.insert(File.getBinary()->getOffloadKind());
 
+    llvm::Triple TT(LinkerArgs.getLastArgValue(OPT_triple_EQ));
+    StringRef Arch = LinkerArgs.getLastArgValue(OPT_arch_EQ);
+
+    // Create a merged archive file that can be passed to the device linker.
+    SmallVector<NewArchiveMember> Members;
+    for (const auto &[IsArchive, File] : Input) {
+      if (IsArchive)
+        Members.emplace_back(MemoryBufferRef(
+            File.getBinary()->getImage(),
+            File.getBinary()->getMemoryBufferRef().getBufferIdentifier()));
+    }
+
     // Write any remaining device inputs to an output file.
     SmallVector<StringRef> InputFiles;
-    for (const OffloadFile &File : Input) {
-      auto FileNameOrErr = writeOffloadFile(File);
-      if (!FileNameOrErr)
-        return FileNameOrErr.takeError();
-      InputFiles.emplace_back(*FileNameOrErr);
+    for (const auto &[IsArchive, File] : Input) {
+      if (!IsArchive) {
+        auto FileNameOrErr = writeOffloadFile(File);
+        if (!FileNameOrErr)
+          return FileNameOrErr.takeError();
+        InputFiles.emplace_back(*FileNameOrErr);
+      }
+    }
+
+    if (!Members.empty()) {
+      auto TempFileOrErr = createOutputFile(
+          "merged-archive-" + TT.getTriple() + "-" + Arch, "a");
+      if (!TempFileOrErr)
+        return TempFileOrErr.takeError();
+
+      if (Error E = writeArchive(
+              *TempFileOrErr, Members, SymtabWritingMode::NormalSymtab,
+              Archive::getDefaultKindForTriple(TT), true, false, nullptr))
+        return std::move(E);
+      InputFiles.emplace_back(*TempFileOrErr);
     }
 
     // Link the remaining device files using the device linker.
@@ -973,6 +1009,8 @@ Expected<SmallVector<StringRef>> linkAndWrapDeviceFiles(
 
       Images[Kind].emplace_back(std::move(TheImage));
     }
+
+    Input.clear();
     return Error::success();
   });
   if (Err)
@@ -1046,157 +1084,17 @@ std::optional<std::string> searchLibrary(StringRef Input, StringRef Root,
   return searchLibraryBaseName(Input, Root, SearchPaths);
 }
 
-/// Common redeclaration of needed symbol flags.
-enum Symbol : uint32_t {
-  Sym_None = 0,
-  Sym_Undefined = 1U << 1,
-  Sym_Weak = 1U << 2,
-};
-
-/// Scan the symbols from a BitcodeFile \p Buffer and record if we need to
-/// extract any symbols from it.
-Expected<bool> getSymbolsFromBitcode(MemoryBufferRef Buffer, OffloadKind Kind,
-                                     bool IsArchive, StringSaver &Saver,
-                                     DenseMap<StringRef, Symbol> &Syms) {
-  Expected<IRSymtabFile> IRSymtabOrErr = readIRSymtab(Buffer);
-  if (!IRSymtabOrErr)
-    return IRSymtabOrErr.takeError();
-
-  bool ShouldExtract = !IsArchive;
-  DenseMap<StringRef, Symbol> TmpSyms;
-  for (unsigned I = 0; I != IRSymtabOrErr->Mods.size(); ++I) {
-    for (const auto &Sym : IRSymtabOrErr->TheReader.module_symbols(I)) {
-      if (Sym.isFormatSpecific() || !Sym.isGlobal())
-        continue;
-
-      bool NewSymbol = Syms.count(Sym.getName()) == 0;
-      auto OldSym = NewSymbol ? Sym_None : Syms[Sym.getName()];
-
-      // We will extract if it defines a currenlty undefined non-weak
-      // symbol.
-      bool ResolvesStrongReference =
-          ((OldSym & Sym_Undefined && !(OldSym & Sym_Weak)) &&
-           !Sym.isUndefined());
-      // We will extract if it defines a new global symbol visible to the
-      // host. This is only necessary for code targeting an offloading
-      // language.
-      bool NewGlobalSymbol =
-          ((NewSymbol || (OldSym & Sym_Undefined)) && !Sym.isUndefined() &&
-           !Sym.canBeOmittedFromSymbolTable() && Kind != object::OFK_None &&
-           (Sym.getVisibility() != GlobalValue::HiddenVisibility));
-      ShouldExtract |= ResolvesStrongReference | NewGlobalSymbol;
-
-      // Update this symbol in the "table" with the new information.
-      if (OldSym & Sym_Undefined && !Sym.isUndefined())
-        TmpSyms[Saver.save(Sym.getName())] =
-            static_cast<Symbol>(OldSym & ~Sym_Undefined);
-      if (Sym.isUndefined() && NewSymbol)
-        TmpSyms[Saver.save(Sym.getName())] =
-            static_cast<Symbol>(OldSym | Sym_Undefined);
-      if (Sym.isWeak())
-        TmpSyms[Saver.save(Sym.getName())] =
-            static_cast<Symbol>(OldSym | Sym_Weak);
-    }
-  }
-
-  // If the file gets extracted we update the table with the new symbols.
-  if (ShouldExtract)
-    Syms.insert(std::begin(TmpSyms), std::end(TmpSyms));
-
-  return ShouldExtract;
-}
-
-/// Scan the symbols from an ObjectFile \p Obj and record if we need to extract
-/// any symbols from it.
-Expected<bool> getSymbolsFromObject(const ObjectFile &Obj, OffloadKind Kind,
-                                    bool IsArchive, StringSaver &Saver,
-                                    DenseMap<StringRef, Symbol> &Syms) {
-  bool ShouldExtract = !IsArchive;
-  DenseMap<StringRef, Symbol> TmpSyms;
-  for (SymbolRef Sym : Obj.symbols()) {
-    auto FlagsOrErr = Sym.getFlags();
-    if (!FlagsOrErr)
-      return FlagsOrErr.takeError();
-
-    if (!(*FlagsOrErr & SymbolRef::SF_Global) ||
-        (*FlagsOrErr & SymbolRef::SF_FormatSpecific))
-      continue;
-
-    auto NameOrErr = Sym.getName();
-    if (!NameOrErr)
-      return NameOrErr.takeError();
-
-    bool NewSymbol = Syms.count(*NameOrErr) == 0;
-    auto OldSym = NewSymbol ? Sym_None : Syms[*NameOrErr];
-
-    // We will extract if it defines a currenlty undefined non-weak symbol.
-    bool ResolvesStrongReference = (OldSym & Sym_Undefined) &&
-                                   !(OldSym & Sym_Weak) &&
-                                   !(*FlagsOrErr & SymbolRef::SF_Undefined);
-
-    // We will extract if it defines a new global symbol visible to the
-    // host. This is only necessary for code targeting an offloading
-    // language.
-    bool NewGlobalSymbol =
-        ((NewSymbol || (OldSym & Sym_Undefined)) &&
-         !(*FlagsOrErr & SymbolRef::SF_Undefined) && Kind != object::OFK_None &&
-         !(*FlagsOrErr & SymbolRef::SF_Hidden));
-    ShouldExtract |= ResolvesStrongReference | NewGlobalSymbol;
-
-    // Update this symbol in the "table" with the new information.
-    if (OldSym & Sym_Undefined && !(*FlagsOrErr & SymbolRef::SF_Undefined))
-      TmpSyms[Saver.save(*NameOrErr)] =
-          static_cast<Symbol>(OldSym & ~Sym_Undefined);
-    if (*FlagsOrErr & SymbolRef::SF_Undefined && NewSymbol)
-      TmpSyms[Saver.save(*NameOrErr)] =
-          static_cast<Symbol>(OldSym | Sym_Undefined);
-    if (*FlagsOrErr & SymbolRef::SF_Weak)
-      TmpSyms[Saver.save(*NameOrErr)] = static_cast<Symbol>(OldSym | Sym_Weak);
-  }
-
-  // If the file gets extracted we update the table with the new symbols.
-  if (ShouldExtract)
-    Syms.insert(std::begin(TmpSyms), std::end(TmpSyms));
-
-  return ShouldExtract;
-}
-
-/// Attempt to 'resolve' symbols found in input files. We use this to
-/// determine if an archive member needs to be extracted. An archive member
-/// will be extracted if any of the following is true.
-///   1) It defines an undefined symbol in a regular object filie.
-///   2) It defines a global symbol without hidden visibility that has not
-///      yet been defined.
-Expected<bool> getSymbols(StringRef Image, OffloadKind Kind, bool IsArchive,
-                          StringSaver &Saver,
-                          DenseMap<StringRef, Symbol> &Syms) {
-  MemoryBufferRef Buffer = MemoryBufferRef(Image, "");
-  switch (identify_magic(Image)) {
-  case file_magic::bitcode:
-    return getSymbolsFromBitcode(Buffer, Kind, IsArchive, Saver, Syms);
-  case file_magic::elf_relocatable: {
-    Expected<std::unique_ptr<ObjectFile>> ObjFile =
-        ObjectFile::createObjectFile(Buffer);
-    if (!ObjFile)
-      return ObjFile.takeError();
-    return getSymbolsFromObject(**ObjFile, Kind, IsArchive, Saver, Syms);
-  }
-  default:
-    return false;
-  }
-}
-
 /// Search the input files and libraries for embedded device offloading code
 /// and add it to the list of files to be linked. Files coming from static
 /// libraries are only added to the input if they are used by an existing
 /// input file. Returns a list of input files intended for a single linking job.
-Expected<SmallVector<SmallVector<OffloadFile>>>
+Expected<SmallVector<SmallVector<std::pair<bool, OffloadFile>>>>
 getDeviceInput(const ArgList &Args) {
   llvm::TimeTraceScope TimeScope("ExtractDeviceCode");
 
   // Skip all the input if the user is overriding the output.
   if (Args.hasArg(OPT_override_image))
-    return SmallVector<SmallVector<OffloadFile>>();
+    return SmallVector<SmallVector<std::pair<bool, OffloadFile>>>();
 
   StringRef Root = Args.getLastArgValue(OPT_sysroot_EQ);
   SmallVector<StringRef> LibraryPaths;
@@ -1208,8 +1106,8 @@ getDeviceInput(const ArgList &Args) {
 
   // Try to extract device code from the linker input files.
   bool WholeArchive = Args.hasArg(OPT_wholearchive_flag) ? true : false;
-  SmallVector<OffloadFile> ObjectFilesToExtract;
-  SmallVector<OffloadFile> ArchiveFilesToExtract;
+  MapVector<OffloadFile::TargetID, SmallVector<std::pair<bool, OffloadFile>>>
+      InputFiles;
   for (const opt::Arg *Arg : Args.filtered(
            OPT_INPUT, OPT_library, OPT_whole_archive, OPT_no_whole_archive)) {
     if (Arg->getOption().matches(OPT_whole_archive) ||
@@ -1237,100 +1135,38 @@ getDeviceInput(const ArgList &Args) {
       return createFileError(*Filename, EC);
 
     MemoryBufferRef Buffer = **BufferOrErr;
-    if (identify_magic(Buffer.getBuffer()) == file_magic::elf_shared_object)
+    file_magic Magic = identify_magic(Buffer.getBuffer());
+    if (Magic == file_magic::elf_shared_object)
       continue;
 
     SmallVector<OffloadFile> Binaries;
     if (Error Err = extractOffloadBinaries(Buffer, Binaries))
       return std::move(Err);
 
-    for (auto &OffloadFile : Binaries) {
-      if (identify_magic(Buffer.getBuffer()) == file_magic::archive &&
-          !WholeArchive)
-        ArchiveFilesToExtract.emplace_back(std::move(OffloadFile));
-      else
-        ObjectFilesToExtract.emplace_back(std::move(OffloadFile));
+    bool IsArchive = Magic == file_magic::archive && !WholeArchive;
+    for (auto &OffloadFile : Binaries)
+      InputFiles[OffloadFile].emplace_back(IsArchive, std::move(OffloadFile));
+  }
+
+  // We need to copy any files that bind to multiple architectures. This is
+  // quadratic, but it's unlikely that the user will have so many different
+  // inputs that this would create noticable delays.
+  for (auto &[DestID, Dest] : InputFiles) {
+    for (auto &[SourceID, Source] : InputFiles) {
+      if (areTargetsCompatible(DestID, SourceID))
+        llvm::transform(Source, std::back_inserter(Dest), [](auto &File) {
+          return std::pair<bool, OffloadFile>({File.first, File.second.copy()});
+        });
     }
   }
 
-  // Link all standard input files and update the list of symbols.
-  MapVector<OffloadFile::TargetID, SmallVector<OffloadFile, 0>> InputFiles;
-  DenseMap<OffloadFile::TargetID, DenseMap<StringRef, Symbol>> Syms;
-  for (OffloadFile &Binary : ObjectFilesToExtract) {
-    if (!Binary.getBinary())
-      continue;
-
-    SmallVector<OffloadFile::TargetID> CompatibleTargets = {Binary};
-    for (const auto &[ID, Input] : InputFiles)
-      if (object::areTargetsCompatible(Binary, ID))
-        CompatibleTargets.emplace_back(ID);
-
-    for (const auto &[Index, ID] : llvm::enumerate(CompatibleTargets)) {
-      Expected<bool> ExtractOrErr = getSymbols(
-          Binary.getBinary()->getImage(), Binary.getBinary()->getOffloadKind(),
-          /*IsArchive=*/false, Saver, Syms[ID]);
-      if (!ExtractOrErr)
-        return ExtractOrErr.takeError();
-
-      // If another target needs this binary it must be copied instead.
-      if (Index == CompatibleTargets.size() - 1)
-        InputFiles[ID].emplace_back(std::move(Binary));
-      else
-        InputFiles[ID].emplace_back(Binary.copy());
-    }
+  // Create the final input list and remove any targets that only contain
+  // archives inputs as they will not be extracted under normal circumstances.
+  SmallVector<SmallVector<std::pair<bool, OffloadFile>>> InputsForTarget;
+  for (auto &[ID, Input] : InputFiles) {
+    if (!llvm::all_of(Input, [](const auto &Pair) { return Pair.first; }))
+      InputsForTarget.emplace_back(std::move(Input));
   }
-
-  // Archive members only extract if they define needed symbols. We do this
-  // after every regular input file so that libraries may be included out of
-  // order. This follows 'ld.lld' semantics which are more lenient.
-  bool Extracted = true;
-  while (Extracted) {
-    Extracted = false;
-    for (OffloadFile &Binary : ArchiveFilesToExtract) {
-      // If the binary was previously extracted it will be set to null.
-      if (!Binary.getBinary())
-        continue;
-
-      SmallVector<OffloadFile::TargetID> CompatibleTargets = {Binary};
-      for (const auto &[ID, Input] : InputFiles)
-        if (object::areTargetsCompatible(Binary, ID))
-          CompatibleTargets.emplace_back(ID);
-
-      for (const auto &[Index, ID] : llvm::enumerate(CompatibleTargets)) {
-        // Only extract an if we have an an object matching this target.
-        if (!InputFiles.count(ID))
-          continue;
-
-        Expected<bool> ExtractOrErr =
-            getSymbols(Binary.getBinary()->getImage(),
-                       Binary.getBinary()->getOffloadKind(),
-                       /*IsArchive=*/true, Saver, Syms[ID]);
-        if (!ExtractOrErr)
-          return ExtractOrErr.takeError();
-
-        Extracted = *ExtractOrErr;
-
-        // Skip including the file if it is an archive that does not resolve
-        // any symbols.
-        if (!Extracted)
-          continue;
-
-        // If another target needs this binary it must be copied instead.
-        if (Index == CompatibleTargets.size() - 1)
-          InputFiles[ID].emplace_back(std::move(Binary));
-        else
-          InputFiles[ID].emplace_back(Binary.copy());
-      }
-
-      // If we extracted any files we need to check all the symbols again.
-      if (Extracted)
-        break;
-    }
-  }
-
-  SmallVector<SmallVector<OffloadFile>> InputsForTarget;
-  for (auto &[ID, Input] : InputFiles)
-    InputsForTarget.emplace_back(std::move(Input));
 
   return std::move(InputsForTarget);
 }
