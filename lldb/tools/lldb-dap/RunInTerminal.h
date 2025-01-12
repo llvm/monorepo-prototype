@@ -98,7 +98,7 @@ private:
 
 class RunInTerminalDebugAdapterCommChannel {
 public:
-  RunInTerminalDebugAdapterCommChannel(llvm::StringRef comm_file);
+  RunInTerminalDebugAdapterCommChannel(FifoFile comm_file);
 
   /// Notify the runInTerminal launcher that it was attached.
   ///
@@ -117,6 +117,8 @@ public:
   /// Fetch any errors emitted by the runInTerminal launcher or return a
   /// default error message if a certain timeout if reached.
   std::string GetLauncherError();
+
+  llvm::Error WaitForLauncher();
 
 private:
   FifoFileIO m_io;

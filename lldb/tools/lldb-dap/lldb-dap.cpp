@@ -2007,7 +2007,7 @@ llvm::Error request_runInTerminal(DAP &dap,
     return comm_file_or_err.takeError();
   FifoFile &comm_file = *comm_file_or_err.get();
 
-  RunInTerminalDebugAdapterCommChannel comm_channel(comm_file.m_path);
+  RunInTerminalDebugAdapterCommChannel comm_channel(comm_file);
 
   lldb::pid_t debugger_pid = LLDB_INVALID_PROCESS_ID;
 #if !defined(_WIN32)
@@ -2025,6 +2025,9 @@ llvm::Error request_runInTerminal(DAP &dap,
                            }
                          });
 
+  auto err = comm_channel.WaitForLauncher();
+  if (err)
+    return err;
   if (llvm::Expected<lldb::pid_t> pid = comm_channel.GetLauncherPid())
     attach_info.SetProcessID(*pid);
   else
@@ -2032,7 +2035,9 @@ llvm::Error request_runInTerminal(DAP &dap,
 
   dap.debugger.SetAsync(false);
   lldb::SBError error;
+  llvm::errs() << "Attaching to target\n";
   dap.target.Attach(attach_info, error);
+  llvm::errs() << "Attached to target\n";
 
   if (error.Fail())
     return llvm::createStringError(llvm::inconvertibleErrorCode(),
@@ -4860,11 +4865,6 @@ EXAMPLES:
 static void LaunchRunInTerminalTarget(llvm::opt::Arg &target_arg,
                                       llvm::StringRef comm_file,
                                       lldb::pid_t debugger_pid, char *argv[]) {
-#if defined(_WIN32)
-  llvm::errs() << "runInTerminal is only supported on POSIX systems\n";
-  exit(EXIT_FAILURE);
-#else
-
   // On Linux with the Yama security module enabled, a process can only attach
   // to its descendants by default. In the runInTerminal case the target
   // process is launched by the client so we need to allow tracing explicitly.
@@ -4899,7 +4899,6 @@ static void LaunchRunInTerminalTarget(llvm::opt::Arg &target_arg,
   comm_channel.NotifyError(error);
   llvm::errs() << error << "\n";
   exit(EXIT_FAILURE);
-#endif
 }
 
 /// used only by TestVSCode_redirection_to_console.py
