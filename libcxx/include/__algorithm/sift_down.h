@@ -116,7 +116,7 @@ _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 _RandomAccessIterator __floy
     __hole  = __child_i;
 
     // if __hole is now a leaf, we're done
-    if (__child > __len / 2 - 2)
+    if (__child > __len / 2)
       return __hole;
   }
 }
