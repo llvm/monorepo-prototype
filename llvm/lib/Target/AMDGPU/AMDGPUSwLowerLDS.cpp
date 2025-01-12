@@ -655,6 +655,10 @@ void AMDGPUSwLowerLDS::getLDSMemoryInstructions(
       } else if (AtomicCmpXchgInst *XCHG = dyn_cast<AtomicCmpXchgInst>(&Inst)) {
         if (XCHG->getPointerAddressSpace() == AMDGPUAS::LOCAL_ADDRESS)
           LDSInstructions.insert(&Inst);
+      } else if (AddrSpaceCastInst *AscI = dyn_cast<AddrSpaceCastInst>(&Inst)) {
+        if ((AscI->getSrcAddressSpace() == AMDGPUAS::LOCAL_ADDRESS) &&
+            (AscI->getDestAddressSpace() == AMDGPUAS::FLAT_ADDRESS))
+          LDSInstructions.insert(&Inst);
       } else
         continue;
     }
@@ -722,6 +726,16 @@ void AMDGPUSwLowerLDS::translateLDSMemoryOperationsToGlobalMemory(
       AsanInfo.Instructions.insert(NewXCHG);
       XCHG->replaceAllUsesWith(NewXCHG);
       XCHG->eraseFromParent();
+    } else if (AddrSpaceCastInst *AscI = dyn_cast<AddrSpaceCastInst>(Inst)) {
+      Value *AIOperand = AscI->getPointerOperand();
+      Value *Gep =
+          getTranslatedGlobalMemoryGEPOfLDSPointer(LoadMallocPtr, AIOperand);
+      Value *NewAI = IRB.CreateAddrSpaceCast(Gep, AscI->getType());
+      // Note: No need to add the instruction to AsanInfo instructions to be
+      // instrumented list. FLAT_ADDRESS ptr would have been already
+      // instrumented by asan pass prior to this pass.
+      AscI->replaceAllUsesWith(NewAI);
+      AscI->eraseFromParent();
     } else
       report_fatal_error("Unimplemented LDS lowering instruction");
   }
