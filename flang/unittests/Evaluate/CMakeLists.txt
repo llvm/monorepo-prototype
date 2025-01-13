@@ -33,6 +33,7 @@ add_flang_nongtest_unittest(intrinsics
   FortranDecimal
   FortranSemantics
   FortranParser
+  flang_rt
 )
 
 add_flang_nongtest_unittest(logical
@@ -60,14 +61,14 @@ if (FLANG_INCLUDE_RUNTIME)
     NonGTestTesting
     FortranSemantics
     FortranEvaluate
-    FortranRuntime
+    flang_rt
   )
 
   add_flang_nongtest_unittest(ISO-Fortran-binding
     NonGTestTesting
     FortranEvaluate
     FortranSemantics
-    FortranRuntime
+    flang_rt
   )
 endif ()
 
