@@ -394,8 +394,10 @@ define <6 x i32> @umulo_v6i32(<6 x i32> %a0, <6 x i32> %a1, ptr %p2) nounwind {
 ; SSE2-NEXT:    pshufd {{.*#+}} xmm3 = xmm3[0,2,2,3]
 ; SSE2-NEXT:    pshufd {{.*#+}} xmm2 = xmm2[0,2,2,3]
 ; SSE2-NEXT:    punpckldq {{.*#+}} xmm3 = xmm3[0],xmm2[0],xmm3[1],xmm2[1]
-; SSE2-NEXT:    pshufd {{.*#+}} xmm2 = mem[0,0,0,0]
-; SSE2-NEXT:    pshufd {{.*#+}} xmm6 = mem[0,0,0,0]
+; SSE2-NEXT:    movd {{.*#+}} xmm2 = mem[0],zero,zero,zero
+; SSE2-NEXT:    pshufd {{.*#+}} xmm2 = xmm2[0,0,0,0]
+; SSE2-NEXT:    movd {{.*#+}} xmm6 = mem[0],zero,zero,zero
+; SSE2-NEXT:    pshufd {{.*#+}} xmm6 = xmm6[0,0,0,0]
 ; SSE2-NEXT:    pmuludq %xmm2, %xmm6
 ; SSE2-NEXT:    pshufd {{.*#+}} xmm2 = xmm6[1,3,2,3]
 ; SSE2-NEXT:    pshufd {{.*#+}} xmm7 = xmm0[1,3,2,3]
@@ -444,8 +446,10 @@ define <6 x i32> @umulo_v6i32(<6 x i32> %a0, <6 x i32> %a1, ptr %p2) nounwind {
 ; SSSE3-NEXT:    pshufd {{.*#+}} xmm3 = xmm3[0,2,2,3]
 ; SSSE3-NEXT:    pshufd {{.*#+}} xmm2 = xmm2[0,2,2,3]
 ; SSSE3-NEXT:    punpckldq {{.*#+}} xmm3 = xmm3[0],xmm2[0],xmm3[1],xmm2[1]
-; SSSE3-NEXT:    pshufd {{.*#+}} xmm2 = mem[0,0,0,0]
-; SSSE3-NEXT:    pshufd {{.*#+}} xmm6 = mem[0,0,0,0]
+; SSSE3-NEXT:    movd {{.*#+}} xmm2 = mem[0],zero,zero,zero
+; SSSE3-NEXT:    pshufd {{.*#+}} xmm2 = xmm2[0,0,0,0]
+; SSSE3-NEXT:    movd {{.*#+}} xmm6 = mem[0],zero,zero,zero
+; SSSE3-NEXT:    pshufd {{.*#+}} xmm6 = xmm6[0,0,0,0]
 ; SSSE3-NEXT:    pmuludq %xmm2, %xmm6
 ; SSSE3-NEXT:    pshufd {{.*#+}} xmm2 = xmm6[1,3,2,3]
 ; SSSE3-NEXT:    pshufd {{.*#+}} xmm7 = xmm0[1,3,2,3]

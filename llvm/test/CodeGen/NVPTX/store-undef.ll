@@ -71,7 +71,7 @@ define void @test_store_undef(ptr %out) {
 define void @test_store_def(i64 %param0, i32 %param1, ptr %out) {
 ; CHECK-LABEL: test_store_def(
 ; CHECK:       {
-; CHECK-NEXT:    .reg .b32 %r<6>;
+; CHECK-NEXT:    .reg .b32 %r<5>;
 ; CHECK-NEXT:    .reg .b64 %rd<3>;
 ; CHECK-EMPTY:
 ; CHECK-NEXT:  // %bb.0:
@@ -79,7 +79,7 @@ define void @test_store_def(i64 %param0, i32 %param1, ptr %out) {
 ; CHECK-NEXT:    ld.param.u32 %r1, [test_store_def_param_1];
 ; CHECK-NEXT:    ld.param.u64 %rd2, [test_store_def_param_2];
 ; CHECK-NEXT:    st.v4.u32 [%rd2+16], {%r2, %r1, %r3, %r4};
-; CHECK-NEXT:    st.v2.u32 [%rd2+8], {%r5, %r1};
+; CHECK-NEXT:    st.v2.u32 [%rd2+8], {%r1, %r1};
 ; CHECK-NEXT:    st.u64 [%rd2], %rd1;
 ; CHECK-NEXT:    ret;
   %V2 = insertelement <2 x i32> undef, i32 %param1, i32 1

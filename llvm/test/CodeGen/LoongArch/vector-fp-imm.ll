@@ -128,8 +128,7 @@ define void @test_f2(ptr %P, ptr %S) nounwind {
 ; LA64D:       # %bb.0:
 ; LA64D-NEXT:    addi.d $sp, $sp, -16
 ; LA64D-NEXT:    ld.d $a0, $a0, 0
-; LA64D-NEXT:    st.d $a0, $sp, 0
-; LA64D-NEXT:    vld $vr0, $sp, 0
+; LA64D-NEXT:    vinsgr2vr.d $vr0, $a0, 0
 ; LA64D-NEXT:    lu12i.w $a0, 260096
 ; LA64D-NEXT:    lu52i.d $a0, $a0, 1024
 ; LA64D-NEXT:    vreplgr2vr.d $vr1, $a0

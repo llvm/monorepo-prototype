@@ -121,7 +121,7 @@ define <4 x i1> @t1_all_odd_ne(<4 x i32> %X) nounwind {
 ; CHECK-AVX512VL-NEXT:    vpmulld {{\.?LCPI[0-9]+_[0-9]+}}(%rip){1to4}, %xmm0, %xmm0
 ; CHECK-AVX512VL-NEXT:    vpminud {{\.?LCPI[0-9]+_[0-9]+}}(%rip), %xmm0, %xmm1
 ; CHECK-AVX512VL-NEXT:    vpcmpeqd %xmm1, %xmm0, %xmm0
-; CHECK-AVX512VL-NEXT:    vpternlogq $15, %xmm0, %xmm0, %xmm0
+; CHECK-AVX512VL-NEXT:    vpternlogq {{.*#+}} xmm0 = ~xmm0
 ; CHECK-AVX512VL-NEXT:    vpcmpeqd %xmm1, %xmm1, %xmm1
 ; CHECK-AVX512VL-NEXT:    vpblendd {{.*#+}} xmm0 = xmm0[0],xmm1[1],xmm0[2],xmm1[3]
 ; CHECK-AVX512VL-NEXT:    retq
@@ -243,7 +243,8 @@ define <2 x i1> @t3_wide(<2 x i64> %X) nounwind {
 ; CHECK-AVX1-NEXT:    vpaddq %xmm1, %xmm0, %xmm0
 ; CHECK-AVX1-NEXT:    vpsllq $32, %xmm0, %xmm0
 ; CHECK-AVX1-NEXT:    vpaddq %xmm0, %xmm2, %xmm0
-; CHECK-AVX1-NEXT:    vpxor {{\.?LCPI[0-9]+_[0-9]+}}(%rip), %xmm0, %xmm0
+; CHECK-AVX1-NEXT:    vmovq {{.*#+}} xmm1 = [9223372036854775808,0]
+; CHECK-AVX1-NEXT:    vpxor %xmm1, %xmm0, %xmm0
 ; CHECK-AVX1-NEXT:    movabsq $-3074457345618258603, %rax # imm = 0xD555555555555555
 ; CHECK-AVX1-NEXT:    vmovq %rax, %xmm1
 ; CHECK-AVX1-NEXT:    vpcmpgtq %xmm1, %xmm0, %xmm0
@@ -262,7 +263,8 @@ define <2 x i1> @t3_wide(<2 x i64> %X) nounwind {
 ; CHECK-AVX2-NEXT:    vpaddq %xmm1, %xmm0, %xmm0
 ; CHECK-AVX2-NEXT:    vpsllq $32, %xmm0, %xmm0
 ; CHECK-AVX2-NEXT:    vpaddq %xmm0, %xmm2, %xmm0
-; CHECK-AVX2-NEXT:    vpxor {{\.?LCPI[0-9]+_[0-9]+}}(%rip), %xmm0, %xmm0
+; CHECK-AVX2-NEXT:    vmovq {{.*#+}} xmm1 = [9223372036854775808,0]
+; CHECK-AVX2-NEXT:    vpxor %xmm1, %xmm0, %xmm0
 ; CHECK-AVX2-NEXT:    movabsq $-3074457345618258603, %rax # imm = 0xD555555555555555
 ; CHECK-AVX2-NEXT:    vmovq %rax, %xmm1
 ; CHECK-AVX2-NEXT:    vpcmpgtq %xmm1, %xmm0, %xmm0
