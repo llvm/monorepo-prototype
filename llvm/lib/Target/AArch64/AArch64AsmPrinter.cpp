@@ -78,11 +78,6 @@ static cl::opt<PtrauthCheckMode> PtrauthAuthChecks(
     cl::desc("Check pointer authentication auth/resign failures"),
     cl::init(Default));
 
-static cl::opt<bool> EnableImportCallOptimization(
-    "aarch64-win-import-call-optimization", cl::Hidden,
-    cl::desc("Enable import call optimization for AArch64 Windows"),
-    cl::init(false));
-
 #define DEBUG_TYPE "asm-printer"
 
 namespace {
@@ -95,6 +90,7 @@ class AArch64AsmPrinter : public AsmPrinter {
 #ifndef NDEBUG
   unsigned InstsEmitted;
 #endif
+  bool EnableImportCallOptimization = false;
   DenseMap<MCSection *, std::vector<std::pair<MCSymbol *, MCSymbol *>>>
       SectionToImportedFunctionCalls;
 
@@ -340,6 +336,9 @@ void AArch64AsmPrinter::emitStartOfAsmFile(Module &M) {
     OutStreamer->emitSymbolAttribute(S, MCSA_Global);
     OutStreamer->emitAssignment(
         S, MCConstantExpr::create(Feat00Value, MMI->getContext()));
+
+    if (M.getModuleFlag("import-call-optimization"))
+      EnableImportCallOptimization = true;
   }
 
   if (!TT.isOSBinFormatELF())
@@ -945,7 +944,7 @@ void AArch64AsmPrinter::emitEndOfAsmFile(Module &M) {
 
   // If import call optimization is enabled, emit the appropriate section.
   // We do this whether or not we recorded any import calls.
-  if (EnableImportCallOptimization && TT.isOSBinFormatCOFF()) {
+  if (EnableImportCallOptimization) {
     OutStreamer->switchSection(getObjFileLowering().getImportCallSection());
 
     // Section always starts with some magic.
@@ -3109,8 +3108,7 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr *MI) {
 
 void AArch64AsmPrinter::recordIfImportCall(
     const llvm::MachineInstr *BranchInst) {
-  if (!EnableImportCallOptimization ||
-      !TM.getTargetTriple().isOSBinFormatCOFF())
+  if (!EnableImportCallOptimization)
     return;
 
   auto [GV, OpFlags] = BranchInst->getMF()->tryGetCalledGlobal(BranchInst);
