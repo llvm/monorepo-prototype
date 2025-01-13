@@ -8,6 +8,12 @@
 
 macro(enable_cuda_compilation name files)
   if (FLANG_RT_EXPERIMENTAL_OFFLOAD_SUPPORT STREQUAL "CUDA")
+    if (NOT FLANG_RT_ENABLE_STATIC)
+      message(FATAL_ERROR
+        "FLANG_RT_ENABLE_STATIC is required for CUDA build of Flang-RT"
+        )
+    endif()
+
     enable_language(CUDA)
 
     set_target_properties(${name}
@@ -66,6 +72,12 @@ endmacro()
 macro(enable_omp_offload_compilation name files)
   if (FLANG_RT_EXPERIMENTAL_OFFLOAD_SUPPORT STREQUAL "OpenMP")
     # OpenMP offload build only works with Clang compiler currently.
+
+    if (FLANG_RT_ENABLE_SHARED)
+      message(FATAL_ERROR
+        "FLANG_RT_ENABLE_SHARED is not supported for OpenMP offload build of Flang-RT"
+        )
+    endif()
 
     if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" AND
         "${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
