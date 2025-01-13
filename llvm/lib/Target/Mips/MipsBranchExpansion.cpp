@@ -751,9 +751,8 @@ bool MipsBranchExpansion::handleMFLOSlot(Pred Predicate, Safe SafeInSlot) {
   for (MachineFunction::iterator FI = MFp->begin(); FI != MFp->end(); ++FI) {
     for (Iter I = FI->begin(); I != FI->end(); ++I) {
 
-      if (!Predicate(*I) && !hasPendingMFLO) {
+      if (!Predicate(*I) && !hasPendingMFLO)
         continue;
-      }
 
       Iter IInSlot;
       bool LastInstInFunction =
@@ -767,6 +766,8 @@ bool MipsBranchExpansion::handleMFLOSlot(Pred Predicate, Safe SafeInSlot) {
         std::pair<Iter, bool> Res = getNextMachineInstr(std::next(I), &*FI);
         LastInstInFunction |= Res.second;
         IInSlot = Res.first;
+        if (LastInstInFunction)
+          continue;
         if (!SafeInSlot(*IInSlot, *I)) {
           Changed = true;
           TII->insertNop(*(I->getParent()), std::next(I), I->getDebugLoc())
