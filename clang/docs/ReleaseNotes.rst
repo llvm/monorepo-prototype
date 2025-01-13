@@ -788,6 +788,9 @@ Improvements to Clang's diagnostics
       require(scope); // Warning!  Requires mu1.
     }
 
+- A new off-by-default warning ``-Wms-bitfield-compatibility`` has been added to alert to cases where bit-field
+  packing may differ under the MS struct ABI (#GH117428).
+
 Improvements to Clang's time-trace
 ----------------------------------
 
