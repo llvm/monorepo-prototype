@@ -347,9 +347,6 @@ struct VPTransformState {
     /// vector loop.
     BasicBlock *ExitBB = nullptr;
 
-    /// The uncountable early exit block in the original scalar loop.
-    BasicBlock *UncountableEarlyExitBB = nullptr;
-
     /// A mapping of each VPBasicBlock to the corresponding BasicBlock. In case
     /// of replication, maps the BasicBlock of the last replica created.
     SmallDenseMap<VPBasicBlock *, BasicBlock *> VPBB2IRBB;
@@ -3916,6 +3913,9 @@ public:
   /// VPlanHCFG, as the definition of the type needs access to the definitions
   /// of VPBlockShallowTraversalWrapper.
   auto getExitBlocks();
+
+  /// Returns true if \p VPBB is an exit block.
+  bool isExitBlock(VPBlockBase *VPBB);
 
   /// The trip count of the original loop.
   VPValue *getTripCount() const {

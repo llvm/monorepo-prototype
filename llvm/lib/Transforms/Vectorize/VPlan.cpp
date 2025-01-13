@@ -501,16 +501,15 @@ void VPBasicBlock::execute(VPTransformState *State) {
     UnreachableInst *Terminator = State->Builder.CreateUnreachable();
     // Register NewBB in its loop. In innermost loops its the same for all
     // BB's.
-    if (this == State->Plan->getEarlyExit()) {
-      // If this is the vector early exit block then it has a single successor,
-      // which is the uncountable early exit block of the original loop. The
-      // parent loop for the exit block may not be the same as the parent loop
-      // of the vectorised loop, so we have to treat this differently.
-      Loop *EEL = State->LI->getLoopFor(State->CFG.UncountableEarlyExitBB);
-      if (EEL)
-        EEL->addBasicBlockToLoop(NewBB, *State->LI);
-    } else if (State->CurrentParentLoop)
-      State->CurrentParentLoop->addBasicBlockToLoop(NewBB, *State->LI);
+    Loop *ParentLoop = State->CurrentParentLoop;
+    // If this block has a sole successor that is an exit block then it needs
+    // adding to the same parent loop as the exit block.
+    VPBlockBase *SuccVPBB = getSingleSuccessor();
+    if (SuccVPBB && State->Plan->isExitBlock(SuccVPBB))
+      ParentLoop = State->LI->getLoopFor(
+          cast<VPIRBasicBlock>(SuccVPBB)->getIRBasicBlock());
+    if (ParentLoop)
+      ParentLoop->addBasicBlockToLoop(NewBB, *State->LI);
     State->Builder.SetInsertPoint(Terminator);
 
     State->CFG.PrevBB = NewBB;

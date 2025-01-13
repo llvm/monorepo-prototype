@@ -7781,9 +7781,6 @@ DenseMap<const SCEV *, Value *> LoopVectorizationPlanner::executePlan(
     State.LVer->prepareNoAliasMetadata();
   }
 
-  // Set the uncountable early exit block in the VPTransformState.
-  State.CFG.UncountableEarlyExitBB = ILV.Legal->getUncountableEarlyExitBlock();
-
   ILV.printDebugTracesAtStart();
 
   //===------------------------------------------------===//
@@ -8968,9 +8965,6 @@ static void addScalarResumePhis(VPRecipeBuilder &Builder, VPlan &Plan) {
     // start value provides the value if the loop is bypassed.
     bool IsFOR = isa<VPFirstOrderRecurrencePHIRecipe>(VectorPhiR);
     auto *ResumeFromVectorLoop = VectorPhiR->getBackedgeValue();
-    assert(!Plan.getEarlyExit() &&
-           "Cannot handle reductions or first-order recurrences with "
-           "uncountable early exits");
     if (IsFOR)
       ResumeFromVectorLoop = MiddleBuilder.createNaryOp(
           VPInstruction::ExtractFromEnd, {ResumeFromVectorLoop, OneVPV}, {},
@@ -9119,7 +9113,7 @@ addUsersInExitBlocks(VPlan &Plan,
       if (PredVPBB != MiddleVPBB) {
         assert(ExitIRI->getParent()->getNumPredecessors() <= 2);
 
-        // Cache the early exit mask
+        // Lookup and cache the early exit mask.
         if (!EarlyExitMask) {
           VPBasicBlock *MiddleSplitVPBB =
               cast<VPBasicBlock>(VectorEarlyExitVPBB->getSinglePredecessor());
