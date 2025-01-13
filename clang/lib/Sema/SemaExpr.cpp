@@ -11787,7 +11787,7 @@ static std::optional<bool> isTautologicalBoundsCheck(Sema &S, const Expr *LHS,
                                                      const Expr *RHS,
                                                      BinaryOperatorKind Opc) {
   if (!LHS->getType()->isPointerType() ||
-      S.getLangOpts().isSignedOverflowDefined())
+      S.getLangOpts().PointerOverflowDefined)
     return std::nullopt;
 
   // Canonicalize to >= or < predicate.

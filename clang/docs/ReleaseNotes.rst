@@ -58,6 +58,12 @@ code bases.
   containing strict-aliasing violations. The new default behavior can be
   disabled using ``-fno-pointer-tbaa``.
 
+- The ``-fwrapv`` flag now only makes signed integer overflow well-defined,
+  without affecting pointer overflow, which is controlled by a new
+  ``-fwrapv-pointer`` flag. The ``-fno-strict-overflow`` flag now implies
+  both ``-fwrapv`` and ``-fwrapv-pointer`` and as such retains its old meaning.
+  The new behavior matches GCC.
+
 C/C++ Language Potentially Breaking Changes
 -------------------------------------------
 
@@ -467,6 +473,11 @@ New Compiler Flags
 
 - clang-cl and clang-dxc now support ``-fdiagnostics-color=[auto|never|always]``
   in addition to ``-f[no-]color-diagnostics``.
+
+- The new ``-fwrapv-pointer`` flag opts-in to a language dialect where pointer
+  overflow is well-defined. The ``-fwrapv`` flag previously implied
+  ``-fwrapv-pointer`` as well, but no longer does. ``-fno-strict-overflow``
+  implies ``-fwrapv -fwrapv-pointer``. The flags now match GCC.
 
 Deprecated Compiler Flags
 -------------------------
