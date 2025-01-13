@@ -18,12 +18,24 @@
 #include <unistd.h>
 #endif
 
-using lldb_private::Pipe;
-using lldb_private::Status;
 using llvm::createStringError;
 using llvm::Error;
 using llvm::Expected;
+using llvm::inconvertibleErrorCode;
 using llvm::StringRef;
+
+namespace {
+static bool SetCloexecFlag(int fd) {
+#if defined(FD_CLOEXEC)
+  int flags = ::fcntl(fd, F_GETFD);
+  if (flags == -1)
+    return false;
+  return (::fcntl(fd, F_SETFD, flags | FD_CLOEXEC) == 0);
+#else
+  return true;
+#endif
+}
+} // namespace
 
 namespace lldb_dap {
 
@@ -43,8 +55,15 @@ Error OutputRedirector::RedirectTo(std::function<void(StringRef)> callback) {
   if (::pipe(new_fd) == -1) {
 #endif
     int error = errno;
-    return createStringError(llvm::inconvertibleErrorCode(),
+    return createStringError(inconvertibleErrorCode(),
                              "Couldn't create new pipe: %s", strerror(error));
+  }
+
+  if (!SetCloexecFlag(new_fd[0]) || !SetCloexecFlag(new_fd[1])) {
+    int error = errno;
+    return createStringError(inconvertibleErrorCode(),
+                             "Failed to set FD_CLOEXEC on pipe: %s",
+                             strerror(error));
   }
 
   int read_fd = new_fd[0];
