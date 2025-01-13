@@ -11,6 +11,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "AMDGPUWaitSGPRHazards.h"
 #include "AMDGPU.h"
 #include "GCNSubtarget.h"
 #include "MCTargetDesc/AMDGPUMCTargetDesc.h"
@@ -41,26 +42,19 @@ static cl::opt<unsigned> GlobalCullSGPRHazardsMemWaitThreshold(
 
 namespace {
 
-class AMDGPUWaitSGPRHazards : public MachineFunctionPass {
+class AMDGPUWaitSGPRHazards {
 public:
-  static char ID;
-
   const SIInstrInfo *TII;
   const SIRegisterInfo *TRI;
   const MachineRegisterInfo *MRI;
-  bool Wave64;
+  unsigned DsNopCount;
 
   bool EnableSGPRHazardWaits;
   bool CullSGPRHazardsOnFunctionBoundary;
   bool CullSGPRHazardsAtMemWait;
   unsigned CullSGPRHazardsMemWaitThreshold;
 
-  AMDGPUWaitSGPRHazards() : MachineFunctionPass(ID) {}
-
-  void getAnalysisUsage(AnalysisUsage &AU) const override {
-    AU.setPreservesCFG();
-    MachineFunctionPass::getAnalysisUsage(AU);
-  }
+  AMDGPUWaitSGPRHazards() {}
 
   // Return the numeric ID 0-127 for a given SGPR.
   static std::optional<unsigned> sgprNumber(Register Reg,
@@ -166,7 +160,7 @@ public:
   void insertHazardCull(MachineBasicBlock &MBB,
                         MachineBasicBlock::instr_iterator &MI) {
     assert(!MI->isBundled());
-    unsigned Count = Wave64 ? WAVE64_NOPS : WAVE32_NOPS;
+    unsigned Count = DsNopCount;
     while (Count--)
       BuildMI(MBB, MI, MI->getDebugLoc(), TII->get(AMDGPU::DS_NOP));
   }
@@ -187,7 +181,7 @@ public:
 
       // Clear tracked SGPRs if sufficient DS_NOPs occur
       if (MI->getOpcode() == AMDGPU::DS_NOP) {
-        if (++DsNops >= (Wave64 ? WAVE64_NOPS : WAVE32_NOPS))
+        if (++DsNops >= DsNopCount)
           State.Tracked.reset();
         continue;
       }
@@ -401,7 +395,7 @@ public:
     return Changed;
   }
 
-  bool runOnMachineFunction(MachineFunction &MF) override {
+  bool run(MachineFunction &MF) {
     const GCNSubtarget &ST = MF.getSubtarget<GCNSubtarget>();
     if (!ST.hasVALUReadSGPRHazard())
       return false;
@@ -431,16 +425,13 @@ public:
     if (!EnableSGPRHazardWaits)
       return false;
 
-    LLVM_DEBUG(dbgs() << "AMDGPUWaitSGPRHazards running on " << MF.getName()
-                      << "\n");
-
     TII = ST.getInstrInfo();
     TRI = ST.getRegisterInfo();
     MRI = &(MF.getRegInfo());
-    Wave64 = ST.isWave64();
+    DsNopCount = ST.isWave64() ? WAVE64_NOPS : WAVE32_NOPS;
 
     auto CallingConv = MF.getFunction().getCallingConv();
-    if (!AMDGPU::isEntryFunctionCC(CallingConv) && !MF.empty() &&
+    if (!AMDGPU::isEntryFunctionCC(CallingConv) &&
         !CullSGPRHazardsOnFunctionBoundary) {
       // Callee must consider all SGPRs as tracked.
       LLVM_DEBUG(dbgs() << "Is called function, track all SGPRs.\n");
@@ -468,12 +459,13 @@ public:
         // Propagate to all successor blocks
         for (auto Succ : MBB.successors()) {
           // We only need to merge hazards at CFG merge points.
+          auto &SuccState = BlockState[Succ];
           if (Succ->getSinglePredecessor() && !Succ->isEntryBlock()) {
-            if (BlockState[Succ].In != NewState) {
-              BlockState[Succ].In = NewState;
+            if (SuccState.In != NewState) {
+              SuccState.In = NewState;
               Worklist.insert(Succ);
             }
-          } else if (BlockState[Succ].In.merge(NewState)) {
+          } else if (SuccState.In.merge(NewState)) {
             Worklist.insert(Succ);
           }
         }
@@ -492,11 +484,35 @@ public:
   }
 };
 
+class AMDGPUWaitSGPRHazardsLegacy : public MachineFunctionPass {
+public:
+  static char ID;
+
+  AMDGPUWaitSGPRHazardsLegacy() : MachineFunctionPass(ID) {}
+
+  bool runOnMachineFunction(MachineFunction &MF) override {
+    return AMDGPUWaitSGPRHazards().run(MF);
+  }
+
+  void getAnalysisUsage(AnalysisUsage &AU) const override {
+    AU.setPreservesCFG();
+    MachineFunctionPass::getAnalysisUsage(AU);
+  }
+};
+
 } // namespace
 
-char AMDGPUWaitSGPRHazards::ID = 0;
+char AMDGPUWaitSGPRHazardsLegacy::ID = 0;
 
-char &llvm::AMDGPUWaitSGPRHazardsID = AMDGPUWaitSGPRHazards::ID;
+char &llvm::AMDGPUWaitSGPRHazardsLegacyID = AMDGPUWaitSGPRHazardsLegacy::ID;
 
-INITIALIZE_PASS(AMDGPUWaitSGPRHazards, DEBUG_TYPE,
+INITIALIZE_PASS(AMDGPUWaitSGPRHazardsLegacy, DEBUG_TYPE,
                 "AMDGPU Insert waits for SGPR read hazards", false, false)
+
+PreservedAnalyses
+AMDGPUWaitSGPRHazardsPass::run(MachineFunction &MF,
+                               MachineFunctionAnalysisManager &MFAM) {
+  if (AMDGPUWaitSGPRHazards().run(MF))
+    return PreservedAnalyses::none();
+  return PreservedAnalyses::all();
+}
