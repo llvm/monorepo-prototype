@@ -51,7 +51,7 @@ public:
 
     switch (combinedInfo) {
     case GenericLoopCombinedInfo::Standalone:
-      rewriteToSimdLoop(loopOp, rewriter);
+      rewriteStandaloneLoop(loopOp, rewriter);
       break;
     case GenericLoopCombinedInfo::TargetParallelLoop:
       assert(false);
@@ -85,7 +85,10 @@ public:
              << loopOp->getName() << " operation";
     };
 
-    if (loopOp.getBindKind())
+    // For standalone directives, `bind` is already supported. Other combined
+    // forms will be supported in a follow-up PR.
+    if (combinedInfo != GenericLoopCombinedInfo::Standalone &&
+        loopOp.getBindKind())
       return todo("bind");
 
     if (loopOp.getOrder())
@@ -117,7 +120,27 @@ private:
     return result;
   }
 
-  /// Rewrites standalone `loop` directives to equivalent `simd` constructs.
+  void rewriteStandaloneLoop(mlir::omp::LoopOp loopOp,
+                             mlir::ConversionPatternRewriter &rewriter) const {
+    using namespace mlir::omp;
+    std::optional<ClauseBindKind> bindKind = loopOp.getBindKind();
+
+    if (!bindKind.has_value())
+      return rewriteToSimdLoop(loopOp, rewriter);
+
+    switch (*loopOp.getBindKind()) {
+    case ClauseBindKind::Parallel:
+      return rewriteToWsloop(loopOp, rewriter);
+    case ClauseBindKind::Teams:
+      return rewriteToDistrbute(loopOp, rewriter);
+    case ClauseBindKind::Thread:
+      return rewriteToSimdLoop(loopOp, rewriter);
+    }
+  }
+
+  /// Rewrites standalone `loop` (with `bind` clause with `bind(parallel)`)
+  /// directives to equivalent `simd` constructs.
+  ///
   /// The reasoning behind this decision is that according to the spec (version
   /// 5.2, section 11.7.1):
   ///
@@ -145,30 +168,51 @@ private:
   /// the directive.
   void rewriteToSimdLoop(mlir::omp::LoopOp loopOp,
                          mlir::ConversionPatternRewriter &rewriter) const {
-    loopOp.emitWarning("Detected standalone OpenMP `loop` directive, the "
-                       "associated loop will be rewritten to `simd`.");
-    mlir::omp::SimdOperands simdClauseOps;
-    simdClauseOps.privateVars = loopOp.getPrivateVars();
+    loopOp.emitWarning(
+        "Detected standalone OpenMP `loop` directive with thread binding, "
+        "the associated loop will be rewritten to `simd`.");
+    rewriteToSingleWrapperOp<mlir::omp::SimdOp, mlir::omp::SimdOperands>(
+        loopOp, rewriter);
+  }
+
+  void rewriteToDistrbute(mlir::omp::LoopOp loopOp,
+                          mlir::ConversionPatternRewriter &rewriter) const {
+    rewriteToSingleWrapperOp<mlir::omp::DistributeOp,
+                             mlir::omp::DistributeOperands>(loopOp, rewriter);
+  }
+
+  void rewriteToWsloop(mlir::omp::LoopOp loopOp,
+                       mlir::ConversionPatternRewriter &rewriter) const {
+    rewriteToSingleWrapperOp<mlir::omp::WsloopOp, mlir::omp::WsloopOperands>(
+        loopOp, rewriter);
+  }
+
+  template <typename OpTy, typename OpOperandsTy>
+  void
+  rewriteToSingleWrapperOp(mlir::omp::LoopOp loopOp,
+                           mlir::ConversionPatternRewriter &rewriter) const {
+    OpOperandsTy distributeClauseOps;
+    distributeClauseOps.privateVars = loopOp.getPrivateVars();
 
     auto privateSyms = loopOp.getPrivateSyms();
     if (privateSyms)
-      simdClauseOps.privateSyms.assign(privateSyms->begin(),
-                                       privateSyms->end());
+      distributeClauseOps.privateSyms.assign(privateSyms->begin(),
+                                             privateSyms->end());
 
-    Fortran::common::openmp::EntryBlockArgs simdArgs;
-    simdArgs.priv.vars = simdClauseOps.privateVars;
+    Fortran::common::openmp::EntryBlockArgs distributeArgs;
+    distributeArgs.priv.vars = distributeClauseOps.privateVars;
 
-    auto simdOp =
-        rewriter.create<mlir::omp::SimdOp>(loopOp.getLoc(), simdClauseOps);
-    mlir::Block *simdBlock =
-        genEntryBlock(rewriter, simdArgs, simdOp.getRegion());
+    auto distributeOp =
+        rewriter.create<OpTy>(loopOp.getLoc(), distributeClauseOps);
+    mlir::Block *distributeBlock =
+        genEntryBlock(rewriter, distributeArgs, distributeOp.getRegion());
 
     mlir::IRMapping mapper;
     mlir::Block &loopBlock = *loopOp.getRegion().begin();
 
-    for (auto [loopOpArg, simdopArg] :
-         llvm::zip_equal(loopBlock.getArguments(), simdBlock->getArguments()))
-      mapper.map(loopOpArg, simdopArg);
+    for (auto [loopOpArg, distributeOpArg] : llvm::zip_equal(
+             loopBlock.getArguments(), distributeBlock->getArguments()))
+      mapper.map(loopOpArg, distributeOpArg);
 
     rewriter.clone(*loopOp.begin(), mapper);
   }
