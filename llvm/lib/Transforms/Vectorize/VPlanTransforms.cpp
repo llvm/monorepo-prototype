@@ -1537,25 +1537,25 @@ static VPRecipeBase *createEVLRecipe(VPValue *HeaderMask,
         VPValue *NewMask = GetNewMask(S->getMask());
         return new VPWidenStoreEVLRecipe(*S, EVL, NewMask);
       })
-      .Case<VPWidenRecipe>([&](VPWidenRecipe *W) -> VPRecipeBase * {
-        unsigned Opcode = W->getOpcode();
-        if (!Instruction::isBinaryOp(Opcode) && !Instruction::isUnaryOp(Opcode))
-          return nullptr;
-        return new VPWidenEVLRecipe(*W, EVL);
-      })
       .Case<VPReductionRecipe>([&](VPReductionRecipe *Red) {
         VPValue *NewMask = GetNewMask(Red->getCondOp());
         return new VPReductionEVLRecipe(*Red, EVL, NewMask);
       })
-      .Case<VPWidenIntrinsicRecipe, VPWidenCastRecipe>(
-          [&](auto *CR) -> VPRecipeBase * {
-            Intrinsic::ID VPID;
-            if (auto *CallR = dyn_cast<VPWidenIntrinsicRecipe>(CR)) {
+      .Case<VPWidenIntrinsicRecipe, VPWidenCastRecipe, VPWidenRecipe>(
+          [&](auto *R) -> VPRecipeBase * {
+            Intrinsic::ID VPID = Intrinsic::not_intrinsic;
+            if (auto *CallR = dyn_cast<VPWidenIntrinsicRecipe>(R)) {
               VPID =
                   VPIntrinsic::getForIntrinsic(CallR->getVectorIntrinsicID());
-            } else {
-              auto *CastR = cast<VPWidenCastRecipe>(CR);
+            } else if (auto *CastR = dyn_cast<VPWidenCastRecipe>(R)) {
               VPID = VPIntrinsic::getForOpcode(CastR->getOpcode());
+            } else if (auto *W = dyn_cast<VPWidenRecipe>(R)) {
+              unsigned Opcode = W->getOpcode();
+              // TODO: Support other opcodes
+              if (!Instruction::isBinaryOp(Opcode) &&
+                  !Instruction::isUnaryOp(Opcode))
+                return nullptr;
+              VPID = VPIntrinsic::getForOpcode(Opcode);
             }
 
             // Not all intrinsics have a corresponding VP intrinsic.
@@ -1565,11 +1565,11 @@ static VPRecipeBase *createEVLRecipe(VPValue *HeaderMask,
                    VPIntrinsic::getVectorLengthParamPos(VPID) &&
                    "Expected VP intrinsic to have mask and EVL");
 
-            SmallVector<VPValue *> Ops(CR->operands());
+            SmallVector<VPValue *> Ops(R->operands());
             Ops.push_back(&AllOneMask);
             Ops.push_back(&EVL);
             return new VPWidenIntrinsicRecipe(
-                VPID, Ops, TypeInfo.inferScalarType(CR), CR->getDebugLoc());
+                VPID, Ops, TypeInfo.inferScalarType(R), R->getDebugLoc());
           })
       .Case<VPWidenSelectRecipe>([&](VPWidenSelectRecipe *Sel) {
         SmallVector<VPValue *> Ops(Sel->operands());
