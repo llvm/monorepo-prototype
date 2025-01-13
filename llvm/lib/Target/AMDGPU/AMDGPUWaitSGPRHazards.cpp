@@ -427,7 +427,7 @@ public:
 
     TII = ST.getInstrInfo();
     TRI = ST.getRegisterInfo();
-    MRI = &(MF.getRegInfo());
+    MRI = &MF.getRegInfo();
     DsNopCount = ST.isWave64() ? WAVE64_NOPS : WAVE32_NOPS;
 
     auto CallingConv = MF.getFunction().getCallingConv();
