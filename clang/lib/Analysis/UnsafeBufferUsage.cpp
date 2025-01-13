@@ -431,6 +431,151 @@ AST_MATCHER(CXXConstructExpr, isSafeSpanTwoParamConstruct) {
   return false;
 }
 
+class MaxValueEval : public ConstStmtVisitor<MaxValueEval, llvm::APInt> {
+
+  ASTContext &Context;
+  llvm::APInt Max;
+  unsigned bit_width;
+
+public:
+  typedef ConstStmtVisitor<MaxValueEval, llvm::APInt> VisitorBase;
+
+  explicit MaxValueEval(ASTContext &Ctx, const Expr *exp) : Context(Ctx) {
+    bit_width = Ctx.getIntWidth(exp->getType());
+    Max = llvm::APInt::getSignedMaxValue(bit_width);
+    // val.clear();
+  }
+
+  llvm::APInt findMatch(Expr *exp) { return TraverseStmt(exp); }
+
+  llvm::APInt TraverseStmt(Stmt *S) {
+    if (Expr *E = dyn_cast<Expr>(S)) {
+      Expr::EvalResult EVResult;
+      if (EvaluateExpression(E, EVResult)) {
+        return EVResult.Val.getInt();
+      } else if (ImplicitCastExpr *ICE = dyn_cast<ImplicitCastExpr>(E)) {
+        return TraverseImplicitCastExpr(ICE);
+      } else if (DeclRefExpr *DRE = dyn_cast<DeclRefExpr>(E)) {
+        return Max;
+      } else if (ArraySubscriptExpr *ASE = dyn_cast<ArraySubscriptExpr>(E)) {
+        return Max;
+      } else if (BinaryOperator *BO = dyn_cast<BinaryOperator>(E)) {
+        return TraverseBinaryOperator(BO);
+      } else if (IntegerLiteral *IL = dyn_cast<IntegerLiteral>(E)) {
+        return IL->getValue();
+      }
+    }
+    return Max;
+  }
+
+  llvm::APInt TraverseImplicitCastExpr(ImplicitCastExpr *E) {
+    Expr::EvalResult EVResult;
+    if (EvaluateExpression(E, EVResult)) {
+      return EVResult.Val.getInt();
+    } else {
+      Expr *eExpr = E->getSubExpr();
+      llvm::APInt subEValue = TraverseStmt(eExpr);
+      switch (E->getCastKind()) {
+      case CK_LValueToRValue:
+        return subEValue;
+      case CK_IntegralCast: {
+        Expr *eExpr = E->getSubExpr();
+        clang::IntegerLiteral *intLiteral = clang::IntegerLiteral::Create(
+            Context, subEValue, eExpr->getType(), {});
+        E->setSubExpr(intLiteral);
+        bool evaluated = EvaluateExpression(E, EVResult);
+        E->setSubExpr(eExpr);
+        if (evaluated) {
+          return EVResult.Val.getInt();
+        }
+        break;
+      }
+      default:
+        break;
+      }
+      return Max;
+    }
+  }
+
+  bool EvaluateExpression(Expr *exp, Expr::EvalResult &EVResult) {
+    if (exp->EvaluateAsInt(EVResult, Context)) {
+      return true;
+    }
+    return false;
+  }
+
+  llvm::APInt TraverseBinaryOperator(BinaryOperator *E) {
+    unsigned bwidth = Context.getIntWidth(E->getType());
+
+    auto evaluateSubExpr = [&, bwidth](Expr *E) -> llvm::APInt {
+      llvm::APInt Result = TraverseStmt(E);
+      unsigned width = Result.getBitWidth();
+
+      // Fix the bit length.
+      if (bwidth < width)
+        Result = Result.trunc(bwidth);
+      else if (bwidth > width)
+        Result =
+            APInt(bwidth, Result.getLimitedValue(), Result.isSignedIntN(width));
+      return Result;
+    };
+
+    Expr::EvalResult EVResult;
+    if (EvaluateExpression(E, EVResult)) {
+      return EVResult.Val.getInt();
+    } else {
+      Expr *LHSExpr = E->getLHS()->IgnoreParenCasts();
+      Expr *RHSExpr = E->getRHS()->IgnoreParenCasts();
+
+      unsigned bwidth = Context.getIntWidth(E->getType());
+
+      llvm::APInt LHS = evaluateSubExpr(LHSExpr);
+      llvm::APInt RHS = evaluateSubExpr(RHSExpr);
+
+      llvm::APInt Result = Max;
+
+      switch (E->getOpcode()) {
+      case BO_And:
+      case BO_AndAssign:
+        Result = LHS & RHS;
+        break;
+
+      case BO_Or:
+      case BO_OrAssign:
+        Result = LHS | RHS;
+        break;
+
+      case BO_Shl:
+      case BO_ShlAssign:
+        if (RHS != Max.getLimitedValue())
+          Result = LHS << RHS.getLimitedValue();
+        break;
+
+      case BO_Shr:
+      case BO_ShrAssign:
+        if (RHS == Max.getLimitedValue())
+          Result = LHS;
+        else
+          Result = LHS.getLimitedValue() >> RHS.getLimitedValue();
+        break;
+
+      case BO_Rem:
+      case BO_RemAssign:
+        if (LHS.getLimitedValue() < RHS.getLimitedValue())
+          Result = LHS;
+        else
+          Result = --RHS;
+        break;
+
+      default:
+        break;
+      }
+      return Result;
+    }
+    return Max;
+  }
+};
+
 AST_MATCHER(ArraySubscriptExpr, isSafeArraySubscript) {
   // FIXME: Proper solution:
   //  - refactor Sema::CheckArrayAccess
@@ -453,11 +598,12 @@ AST_MATCHER(ArraySubscriptExpr, isSafeArraySubscript) {
     return false;
   }
 
-  if (const auto *IdxLit = dyn_cast<IntegerLiteral>(Node.getIdx())) {
-    const APInt ArrIdx = IdxLit->getValue();
-    if (ArrIdx.isNonNegative() && ArrIdx.getLimitedValue() < limit)
-      return true;
-  }
+  MaxValueEval Vis(Finder->getASTContext(), Node.getIdx());
+  APInt result = Vis.findMatch(const_cast<Expr *>(Node.getIdx()));
+
+  if (result.isNonNegative() && result.getLimitedValue() < limit)
+    return true;
+
   return false;
 }
 
