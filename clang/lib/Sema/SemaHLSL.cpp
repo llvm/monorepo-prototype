@@ -24,6 +24,8 @@
 #include "clang/Basic/LLVM.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/TargetInfo.h"
+#include "clang/Parse/Parser.h"
+#include "clang/Sema/HLSLRootSignature.h"
 #include "clang/Sema/Initialization.h"
 #include "clang/Sema/ParsedAttr.h"
 #include "clang/Sema/Sema.h"
@@ -712,6 +714,26 @@ void SemaHLSL::handleNumThreadsAttr(Decl *D, const ParsedAttr &AL) {
 
 static bool isValidWaveSizeValue(unsigned Value) {
   return llvm::isPowerOf2_32(Value) && Value >= 4 && Value <= 128;
+}
+
+void SemaHLSL::handleHLSLRootSignature(Decl *D, const ParsedAttr &AL) {
+
+  unsigned NumArgs = AL.getNumArgs();
+  if (NumArgs == 0 || NumArgs > 1)
+    return;
+
+  StringRef Signature;
+  if (!SemaRef.checkStringLiteralArgumentAttr(AL, 0, Signature))
+    return;
+
+  HLSLRootSignatureAttr *NewAttr = ::new (getASTContext())
+      HLSLRootSignatureAttr(getASTContext(), AL, Signature);
+
+  RootSignaturParser Parser(NewAttr, Signature);
+  Parser.ParseRootDefinition();
+
+  if (NewAttr)
+    D->addAttr(NewAttr);
 }
 
 void SemaHLSL::handleWaveSizeAttr(Decl *D, const ParsedAttr &AL) {
