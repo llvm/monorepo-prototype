@@ -3392,8 +3392,6 @@ static void findStoresToUninstrumentedArgAllocas(
 }
 
 StringRef getAllocaName(AllocaInst *AI) {
-  StringRef Name = AI->getName();
-
   // Alloca could have been renamed for uniqueness. Its true name will have been
   // recorded as an annotation.
   if (AI->hasMetadata(LLVMContext::MD_annotation)) {
@@ -3404,14 +3402,14 @@ StringRef getAllocaName(AllocaInst *AI) {
         for (int i = 0; i < Tuple->getNumOperands(); i++) {
           if (auto stringMetadata = dyn_cast<MDString>(Tuple->getOperand(i))) {
             if (stringMetadata->getString() == "alloca_name_altered") {
-              Name = ((MDString *)Tuple->getOperand(i + 1).get())->getString();
+              return ((MDString *)Tuple->getOperand(i + 1).get())->getString();
             }
           }
         }
       }
     }
   }
-  return Name;
+  return AI->getName();
 }
 
 void FunctionStackPoisoner::processStaticAllocas() {
