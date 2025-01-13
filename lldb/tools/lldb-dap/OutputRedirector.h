@@ -39,7 +39,7 @@ public:
 
 private:
   std::atomic<bool> m_stopped = false;
-  lldb_private::Pipe m_pipe;
+  std::atomic<int> m_fd = -1;
   std::thread m_forwarder;
 };
 

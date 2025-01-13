@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===/
 
+#include "OutputRedirector.h"
+#include "DAP.h"
+#include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Error.h"
 #include <system_error>
 #if defined(_WIN32)
@@ -14,10 +17,6 @@
 #else
 #include <unistd.h>
 #endif
-
-#include "DAP.h"
-#include "OutputRedirector.h"
-#include "llvm/ADT/StringRef.h"
 
 using lldb_private::Pipe;
 using lldb_private::Status;
@@ -29,28 +28,40 @@ using llvm::StringRef;
 namespace lldb_dap {
 
 Expected<int> OutputRedirector::GetWriteFileDescriptor() {
-  if (!m_pipe.CanWrite())
+  if (m_fd == -1)
     return createStringError(std::errc::bad_file_descriptor,
                              "write handle is not open for writing");
-  return m_pipe.GetWriteFileDescriptor();
+
+  return m_fd;
 }
 
 Error OutputRedirector::RedirectTo(std::function<void(StringRef)> callback) {
-  Status status = m_pipe.CreateNew(/*child_process_inherit=*/false);
-  if (status.Fail())
-    return status.takeError();
+  int new_fd[2] = {0};
+#if defined(_WIN32)
+  if (::_pipe(new_fd, 4096, O_TEXT) == -1) {
+#else
+  if (::pipe(new_fd) == -1) {
+#endif
+    int error = errno;
+    return createStringError(llvm::inconvertibleErrorCode(),
+                             "Couldn't create new pipe: %s", strerror(error));
+  }
 
-  m_forwarder = std::thread([this, callback]() {
+  int read_fd = new_fd[0];
+  m_fd = new_fd[1];
+
+  m_forwarder = std::thread([this, read_fd, callback]() {
     char buffer[OutputBufferSize];
-    while (m_pipe.CanRead() && !m_stopped) {
-      size_t bytes_read;
-      Status status = m_pipe.Read(&buffer, sizeof(buffer), bytes_read);
-      if (status.Fail())
-        continue;
-
+    while (!m_stopped) {
+      ssize_t bytes_read = ::read(read_fd, &buffer, sizeof(buffer));
       // EOF detected
       if (bytes_read == 0 || m_stopped)
         break;
+      if (bytes_read == -1) {
+        if (errno == EAGAIN || errno == EINTR)
+          continue;
+        break;
+      }
 
       callback(StringRef(buffer, bytes_read));
     }
@@ -62,14 +73,14 @@ Error OutputRedirector::RedirectTo(std::function<void(StringRef)> callback) {
 void OutputRedirector::Stop() {
   m_stopped = true;
 
-  if (m_pipe.CanWrite()) {
+  if (m_fd != -1) {
     // Closing the pipe may not be sufficient to wake up the thread in case the
     // write descriptor is duplicated (to stdout/err or to another process).
     // Write a null byte to ensure the read call returns.
     char buf[] = "\0";
-    size_t bytes_written;
-    m_pipe.Write(buf, sizeof(buf), bytes_written);
-    m_pipe.CloseWriteFileDescriptor();
+    ::write(m_fd, buf, sizeof(buf));
+    ::close(m_fd);
+    m_fd = -1;
     m_forwarder.join();
   }
 }
