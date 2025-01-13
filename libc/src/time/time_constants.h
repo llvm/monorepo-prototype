@@ -18,7 +18,7 @@ namespace LIBC_NAMESPACE_DECL {
 namespace time_constants {
 
 enum Month : int {
-  JANUARY,
+  JANUARY = 0,
   FEBRUARY,
   MARCH,
   APRIL,
@@ -30,6 +30,16 @@ enum Month : int {
   OCTOBER,
   NOVEMBER,
   DECEMBER
+};
+
+enum WeekDay : int {
+  SUNDAY = 0,
+  MONDAY,
+  TUESDAY,
+  WEDNESDAY,
+  THURSDAY,
+  FRIDAY,
+  SATURDAY
 };
 
 constexpr int SECONDS_PER_MIN = 60;
@@ -48,6 +58,8 @@ constexpr int NUMBER_OF_SECONDS_IN_LEAP_YEAR =
 constexpr int TIME_YEAR_BASE = 1900;
 constexpr int EPOCH_YEAR = 1970;
 constexpr int EPOCH_WEEK_DAY = 4;
+
+constexpr int ISO_FIRST_DAY_OF_YEAR = 4;
 
 // For asctime the behavior is undefined if struct tm's tm_wday or tm_mon are
 // not within the normal ranges as defined in <time.h>, or if struct tm's
