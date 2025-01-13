@@ -15,7 +15,6 @@
 #include "AllocationOrder.h"
 #include "InterferenceCache.h"
 #include "RegAllocBase.h"
-#include "RegAllocEvictionAdvisor.h"
 #include "RegAllocPriorityAdvisor.h"
 #include "SplitKit.h"
 #include "llvm/ADT/ArrayRef.h"
@@ -46,6 +45,7 @@
 #include "llvm/CodeGen/MachineOperand.h"
 #include "llvm/CodeGen/MachineOptimizationRemarkEmitter.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
+#include "llvm/CodeGen/RegAllocEvictionAdvisor.h"
 #include "llvm/CodeGen/RegAllocRegistry.h"
 #include "llvm/CodeGen/RegisterClassInfo.h"
 #include "llvm/CodeGen/SlotIndexes.h"
@@ -164,7 +164,7 @@ INITIALIZE_PASS_DEPENDENCY(LiveRegMatrixWrapperLegacy)
 INITIALIZE_PASS_DEPENDENCY(EdgeBundlesWrapperLegacy)
 INITIALIZE_PASS_DEPENDENCY(SpillPlacementWrapperLegacy)
 INITIALIZE_PASS_DEPENDENCY(MachineOptimizationRemarkEmitterPass)
-INITIALIZE_PASS_DEPENDENCY(RegAllocEvictionAdvisorAnalysis)
+INITIALIZE_PASS_DEPENDENCY(RegAllocEvictionAdvisorAnalysisLegacy)
 INITIALIZE_PASS_DEPENDENCY(RegAllocPriorityAdvisorAnalysis)
 INITIALIZE_PASS_END(RAGreedy, "greedy",
                 "Greedy Register Allocator", false, false)
@@ -219,7 +219,7 @@ void RAGreedy::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<EdgeBundlesWrapperLegacy>();
   AU.addRequired<SpillPlacementWrapperLegacy>();
   AU.addRequired<MachineOptimizationRemarkEmitterPass>();
-  AU.addRequired<RegAllocEvictionAdvisorAnalysis>();
+  AU.addRequired<RegAllocEvictionAdvisorAnalysisLegacy>();
   AU.addRequired<RegAllocPriorityAdvisorAnalysis>();
   MachineFunctionPass::getAnalysisUsage(AU);
 }
@@ -2750,6 +2750,7 @@ bool RAGreedy::runOnMachineFunction(MachineFunction &mf) {
   Bundles = &getAnalysis<EdgeBundlesWrapperLegacy>().getEdgeBundles();
   SpillPlacer = &getAnalysis<SpillPlacementWrapperLegacy>().getResult();
   DebugVars = &getAnalysis<LiveDebugVariablesWrapperLegacy>().getLDV();
+  auto &LSS = getAnalysis<LiveStacksWrapperLegacy>().getLS();
 
   initializeCSRCost();
 
@@ -2764,13 +2765,17 @@ bool RAGreedy::runOnMachineFunction(MachineFunction &mf) {
                                : TRI->reverseLocalAssignment();
 
   ExtraInfo.emplace();
-  EvictAdvisor =
-      getAnalysis<RegAllocEvictionAdvisorAnalysis>().getAdvisor(*MF, *this);
+
+  auto &EvictAdvisorProvider =
+      getAnalysis<RegAllocEvictionAdvisorAnalysisLegacy>().getProvider();
+  EvictAdvisor = EvictAdvisorProvider.getAdvisor(*MF, *this, MBFI, Loops);
+
   PriorityAdvisor =
       getAnalysis<RegAllocPriorityAdvisorAnalysis>().getAdvisor(*MF, *this);
 
   VRAI = std::make_unique<VirtRegAuxInfo>(*MF, *LIS, *VRM, *Loops, *MBFI);
-  SpillerInstance.reset(createInlineSpiller(*this, *MF, *VRM, *VRAI));
+  SpillerInstance.reset(
+      createInlineSpiller({*LIS, LSS, *DomTree, *MBFI}, *MF, *VRM, *VRAI));
 
   VRAI->calculateSpillWeightsAndHints();
 
