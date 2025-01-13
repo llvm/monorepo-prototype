@@ -53,6 +53,7 @@
 #include "clang/StaticAnalyzer/Core/PathSensitive/LoopUnrolling.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/LoopWidening.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/MemRegion.h"
+#include "clang/StaticAnalyzer/Core/PathSensitive/MemSpaces.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/ProgramState.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/ProgramStateTrait.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/ProgramState_Fwd.h"
@@ -3514,6 +3515,15 @@ ProgramStateRef ExprEngine::processPointerEscapedOnBind(
         !isa<StackSpaceRegion, StaticGlobalSpaceRegion>(MR->getMemorySpace())) {
       Escaped.push_back(LocAndVal.second);
       continue;
+    }
+
+    // Case (2) continued.
+    if (isa<UnknownSpaceRegion>(MR)) {
+      const MemSpaceRegion *MS = memspace::getMemSpaceTrait(State, MR);
+      if (!isa<StackSpaceRegion, StaticGlobalSpaceRegion>(MS)) {
+        Escaped.push_back(LocAndVal.second);
+        continue;
+      }
     }
 
     // Case (3).

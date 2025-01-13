@@ -19,6 +19,7 @@
 #include "clang/StaticAnalyzer/Core/CheckerManager.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/CallEvent.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/CheckerContext.h"
+#include "clang/StaticAnalyzer/Core/PathSensitive/MemSpaces.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/ProgramState.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/Support/raw_ostream.h"
@@ -61,7 +62,7 @@ private:
                              ASTContext &Ctx);
   static SmallVector<const MemRegion *, 4>
   getCapturedStackRegions(const BlockDataRegion &B, CheckerContext &C);
-  static bool isNotInCurrentFrame(const MemRegion *R, CheckerContext &C);
+  static bool isNotInCurrentFrame(const MemSpaceRegion *MS, CheckerContext &C);
 };
 } // namespace
 
@@ -117,9 +118,9 @@ SourceRange StackAddrEscapeChecker::genName(raw_ostream &os, const MemRegion *R,
   return range;
 }
 
-bool StackAddrEscapeChecker::isNotInCurrentFrame(const MemRegion *R,
+bool StackAddrEscapeChecker::isNotInCurrentFrame(const MemSpaceRegion *MS,
                                                  CheckerContext &C) {
-  const StackSpaceRegion *S = cast<StackSpaceRegion>(R->getMemorySpace());
+  const StackSpaceRegion *S = cast<StackSpaceRegion>(MS);
   return S->getStackFrame() != C.getStackFrame();
 }
 
@@ -138,10 +139,11 @@ SmallVector<const MemRegion *, 4>
 StackAddrEscapeChecker::getCapturedStackRegions(const BlockDataRegion &B,
                                                 CheckerContext &C) {
   SmallVector<const MemRegion *, 4> Regions;
+  ProgramStateRef State = C.getState();
   for (auto Var : B.referenced_vars()) {
-    SVal Val = C.getState()->getSVal(Var.getCapturedRegion());
+    SVal Val = State->getSVal(Var.getCapturedRegion());
     const MemRegion *Region = Val.getAsRegion();
-    if (Region && isa<StackSpaceRegion>(Region->getMemorySpace()))
+    if (Region && memspace::isMemSpaceOrTrait<StackSpaceRegion>(State, Region))
       Regions.push_back(Region);
   }
   return Regions;
@@ -212,7 +214,7 @@ void StackAddrEscapeChecker::checkAsyncExecutedBlockCaptures(
 void StackAddrEscapeChecker::checkReturnedBlockCaptures(
     const BlockDataRegion &B, CheckerContext &C) const {
   for (const MemRegion *Region : getCapturedStackRegions(B, C)) {
-    if (isNotInCurrentFrame(Region, C))
+    if (isNotInCurrentFrame(Region->getMemorySpace(), C))
       continue;
     ExplodedNode *N = C.generateNonFatalErrorNode();
     if (!N)
@@ -265,7 +267,14 @@ void StackAddrEscapeChecker::checkPreStmt(const ReturnStmt *RS,
   if (const BlockDataRegion *B = dyn_cast<BlockDataRegion>(R))
     checkReturnedBlockCaptures(*B, C);
 
-  if (!isa<StackSpaceRegion>(R->getMemorySpace()) || isNotInCurrentFrame(R, C))
+  if (isa<UnknownSpaceRegion>(R)) {
+    const MemSpaceRegion *MS = memspace::getMemSpaceTrait(C.getState(), R);
+    if (!isa_and_nonnull<StackSpaceRegion>(MS) || isNotInCurrentFrame(MS, C))
+      return;
+  }
+
+  const MemSpaceRegion *MS = R->getMemorySpace();
+  if (!isa<StackSpaceRegion>(MS) || isNotInCurrentFrame(MS, C))
     return;
 
   // Returning a record by value is fine. (In this case, the returned
@@ -468,7 +477,8 @@ void StackAddrEscapeChecker::checkEndFunction(const ReturnStmt *RS,
       if (!isa_and_nonnull<GlobalsSpaceRegion>(
               getStackOrGlobalSpaceRegion(Region)))
         return true;
-      if (VR && VR->hasStackStorage() && !isNotInCurrentFrame(VR, Ctx))
+      if (VR && VR->hasStackStorage() &&
+          !isNotInCurrentFrame(VR->getMemorySpace(), Ctx))
         V.emplace_back(Region, VR);
       return true;
     }

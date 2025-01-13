@@ -21,6 +21,7 @@
 #include "clang/StaticAnalyzer/Core/PathSensitive/CallEvent.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/CheckerContext.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/MemRegion.h"
+#include "clang/StaticAnalyzer/Core/PathSensitive/MemSpaces.h"
 
 using namespace clang;
 using namespace ento;
@@ -45,10 +46,15 @@ void PutenvStackArrayChecker::checkPostCall(const CallEvent &Call,
   SVal ArgV = Call.getArgSVal(0);
   const Expr *ArgExpr = Call.getArgExpr(0);
 
-  const auto *SSR =
-      dyn_cast<StackSpaceRegion>(ArgV.getAsRegion()->getMemorySpace());
+  const MemRegion *MR = ArgV.getAsRegion();
+
+  const auto *SSR = dyn_cast<StackSpaceRegion>(MR->getMemorySpace());
+  if (!SSR)
+    SSR = dyn_cast_if_present<StackSpaceRegion>(
+        memspace::getMemSpaceTrait(C.getState(), MR));
   if (!SSR)
     return;
+
   const auto *StackFrameFuncD =
       dyn_cast_or_null<FunctionDecl>(SSR->getStackFrame()->getDecl());
   if (StackFrameFuncD && StackFrameFuncD->isMain())
