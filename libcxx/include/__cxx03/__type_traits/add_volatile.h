@@ -18,7 +18,7 @@
 _LIBCPP_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-struct _LIBCPP_TEMPLATE_VIS add_volatile {
+struct _LIBCPP_TEMPLATE_VIS _LIBCPP_DIAGNOSE_SPECIALIZATIONS add_volatile {
   typedef _LIBCPP_NODEBUG volatile _Tp type;
 };
 

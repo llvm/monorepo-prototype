@@ -18,7 +18,7 @@
 _LIBCPP_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-struct _LIBCPP_TEMPLATE_VIS add_const {
+struct _LIBCPP_TEMPLATE_VIS _LIBCPP_DIAGNOSE_SPECIALIZATIONS add_const {
   typedef _LIBCPP_NODEBUG const _Tp type;
 };
 

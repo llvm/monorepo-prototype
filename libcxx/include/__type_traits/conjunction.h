@@ -56,7 +56,7 @@ template <class _Arg, class... _Args>
 struct conjunction<_Arg, _Args...> : conditional_t<!bool(_Arg::value), _Arg, conjunction<_Args...>> {};
 
 template <class... _Args>
-inline constexpr bool conjunction_v = conjunction<_Args...>::value;
+_LIBCPP_NO_SPECIALIZATIONS inline constexpr bool conjunction_v = conjunction<_Args...>::value;
 
 #endif // _LIBCPP_STD_VER >= 17
 
