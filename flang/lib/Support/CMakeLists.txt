@@ -1,3 +1,11 @@
+#===-- lib/Support/CMakeLists.txt ------------------------------------------===#
+#
+# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+# See https://llvm.org/LICENSE.txt for license information.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+#
+#===------------------------------------------------------------------------===#
+
 find_first_existing_vc_file("${LLVM_MAIN_SRC_DIR}" llvm_vc)
 find_first_existing_vc_file("${FLANG_SOURCE_DIR}" flang_vc)
 
@@ -34,7 +42,7 @@ if(FLANG_VENDOR)
     PROPERTIES COMPILE_DEFINITIONS "FLANG_VENDOR=\"${FLANG_VENDOR} \"")
 endif()
 
-add_flang_library(FortranCommon
+add_flang_library(FortranSupport
   Fortran.cpp
   Fortran-features.cpp
   default-kinds.cpp

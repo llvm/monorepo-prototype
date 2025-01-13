@@ -5,16 +5,13 @@ add_flang_library(flangPasses
   CommandLineOpts.cpp
   Pipelines.cpp
 
-  DEPENDS
-  FortranCommon
-
   LINK_LIBS
   FIRCodeGen
   FIRTransforms
   FlangOpenMPTransforms
   ${dialect_libs}
   ${extension_libs}
-  FortranCommon
+  FortranSupport
   HLFIRTransforms
   MLIRPass
   MLIRReconcileUnrealizedCasts
