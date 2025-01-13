@@ -107,6 +107,8 @@ Changes to the LLVM IR
 
 * Fast math flags are now permitted on `fptrunc` and `fpext`.
 
+* The `nocapture` attribute has been replaced by `captures(none)`.
+
 Changes to LLVM infrastructure
 ------------------------------
 
