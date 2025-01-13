@@ -1879,6 +1879,7 @@ void ASTStmtReader::VisitCXXDefaultArgExpr(CXXDefaultArgExpr *E) {
   E->UsedContext = readDeclAs<DeclContext>();
   E->CXXDefaultArgExprBits.Loc = readSourceLocation();
   E->CXXDefaultArgExprBits.HasRewrittenInit = Record.readInt();
+  E->CXXDefaultArgExprBits.HasRebuiltInit = Record.readInt();
   if (E->CXXDefaultArgExprBits.HasRewrittenInit)
     *E->getTrailingObjects<Expr *>() = Record.readSubExpr();
 }
@@ -1886,6 +1887,7 @@ void ASTStmtReader::VisitCXXDefaultArgExpr(CXXDefaultArgExpr *E) {
 void ASTStmtReader::VisitCXXDefaultInitExpr(CXXDefaultInitExpr *E) {
   VisitExpr(E);
   E->CXXDefaultInitExprBits.HasRewrittenInit = Record.readInt();
+  E->CXXDefaultInitExprBits.HasRebuiltInit = Record.readInt();
   E->Field = readDeclAs<FieldDecl>();
   E->UsedContext = readDeclAs<DeclContext>();
   E->CXXDefaultInitExprBits.Loc = readSourceLocation();
@@ -4152,12 +4154,14 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
 
     case EXPR_CXX_DEFAULT_ARG:
       S = CXXDefaultArgExpr::CreateEmpty(
-          Context, /*HasRewrittenInit=*/Record[ASTStmtReader::NumExprFields]);
+          Context, /*HasRewrittenInit=*/Record[ASTStmtReader::NumExprFields],
+          /*HasRebuiltInit=*/Record[ASTStmtReader::NumExprFields + 1]);
       break;
 
     case EXPR_CXX_DEFAULT_INIT:
       S = CXXDefaultInitExpr::CreateEmpty(
-          Context, /*HasRewrittenInit=*/Record[ASTStmtReader::NumExprFields]);
+          Context, /*HasRewrittenInit=*/Record[ASTStmtReader::NumExprFields],
+          /*HasRebuiltInit=*/Record[ASTStmtReader::NumExprFields + 1]);
       break;
 
     case EXPR_CXX_BIND_TEMPORARY:
