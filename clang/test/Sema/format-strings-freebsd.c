@@ -8,12 +8,18 @@ int freebsd_kernel_printf(const char *, ...) __attribute__((__format__(__freebsd
 
 void check_freebsd_kernel_extensions(int i, long l, char *s, short h)
 {
-  // %b expects an int and a char *
+  // %b expects a char *
   freebsd_kernel_printf("reg=%b\n", i, "\10\2BITTWO\1BITONE\n"); // no-warning
   freebsd_kernel_printf("reg=%b\n", l, "\10\2BITTWO\1BITONE\n"); // expected-warning{{format specifies type 'int' but the argument has type 'long'}}
   freebsd_kernel_printf("reg=%b\n", i, l); // expected-warning{{format specifies type 'char *' but the argument has type 'long'}}
   freebsd_kernel_printf("reg=%b\n", i); // expected-warning{{more '%' conversions than data arguments}}
   freebsd_kernel_printf("reg=%b\n", i, "\10\2BITTWO\1BITONE\n", l); // expected-warning{{data argument not used by format string}}
+
+  freebsd_kernel_printf("reg=%llb\n", i, "\10\2BITTWO\1BITONE\n"); // expected-warning{{format specifies type 'long long' but the argument has type 'int'}}
+  freebsd_kernel_printf("reg=%llb\n", ll, "\10\2BITTWO\1BITONE\n"); // no-warning
+  freebsd_kernel_printf("reg=%llb\n", ll, i); // expected-warning{{format specifies type 'char *' but the argument has type 'long long'}}
+  freebsd_kernel_printf("reg=%llb\n", ll); // expected-warning{{more '%' conversions than data arguments}}
+  freebsd_kernel_printf("reg=%llb\n", ll, "\10\2BITTWO\1BITONE\n", l); // expected-warning{{data argument not used by format string}}
 
   // %D expects an unsigned char * and a char *
   freebsd_kernel_printf("%6D", s, ":"); // no-warning
