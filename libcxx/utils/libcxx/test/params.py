@@ -71,6 +71,8 @@ _warningFlags = [
 
     # This doesn't make sense in real code, but we have to test it because the standard requires us to not break
     "-Wno-self-move",
+
+    "-Wno-nullability-completeness",
 ]
 
 _allStandards = ["c++03", "c++11", "c++14", "c++17", "c++20", "c++23", "c++26"]
