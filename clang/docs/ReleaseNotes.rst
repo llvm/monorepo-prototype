@@ -1250,6 +1250,9 @@ Improvements
 - Improved the handling of the ``ownership_returns`` attribute. Now, Clang reports an
   error if the attribute is attached to a function that returns a non-pointer value.
   Fixes (#GH99501)
+- Improved ``misc-redundant-expression`` checker potentially reducing number of false
+  positive detects where same value might have appeared after macro substitution in
+  binary operator.
 
 Moved checkers
 ^^^^^^^^^^^^^^
