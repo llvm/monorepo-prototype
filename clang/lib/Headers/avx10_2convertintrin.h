@@ -274,6 +274,10 @@ _mm256_maskz_cvtx2ps_ph(__mmask16 __U, __m256 __A, __m256 __B) {
 ///    single-precision (32-bit) floating-point elements to a 256-bit vector
 ///    containing FP16 elements. Rounding mode \a __R needs to be provided.
 ///
+/// \code
+/// __mm256h _mm256_cvtx_round2ps_ph(__m256 __A, __m256 __B, const int __R)
+/// \endcode
+///
 /// \code{.operation}
 /// FOR i := 0 to 15 
 /// 	IF i < 8
@@ -313,6 +317,10 @@ _mm256_maskz_cvtx2ps_ph(__mmask16 __U, __m256 __A, __m256 __B) {
 ///    containing FP16 elements. Merging mask \a __U is used to determine if given
 ///    element should be taken from \a __W instead. Rounding mode \a __R needs to
 ///    be provided.
+///
+/// \code
+/// __mm256h _mm256_mask_cvtx_round2ps_ph(__m256h W, __mmask16 U, __m256 __A, __m256 __B, const int __R)
+/// \endcode
 ///
 /// \code{.operation}
 /// FOR i := 0 to 15
@@ -360,6 +368,10 @@ _mm256_maskz_cvtx2ps_ph(__mmask16 __U, __m256 __A, __m256 __B) {
 ///    single-precision (32-bit) floating-point elements to a 256-bit vector
 ///    containing FP16 elements. Zeroing mask \a __U is used to determine if given
 ///    element should be zeroed instead. Rounding mode \a __R needs to be provided.
+///
+/// \code
+/// __mm256h _mm256_maskz_cvtx_round2ps_ph(__mmask16 U, __m256 __A, __m256 __B, const int __R)
+/// \endcode
 ///
 /// \code{.operation}
 /// FOR i := 0 to 15 
