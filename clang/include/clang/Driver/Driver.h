@@ -861,6 +861,9 @@ void applyOverrideOptions(SmallVectorImpl<const char *> &Args,
                           llvm::StringSet<> &SavedStrings,
                           raw_ostream *OS = nullptr);
 
+bool shouldEnableVectorizerAtOLevel(const llvm::opt::ArgList &Args,
+                                    bool isSlpVec);
+
 } // end namespace driver
 } // end namespace clang
 
