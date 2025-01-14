@@ -108,7 +108,7 @@ void StringViewSubstrCheck::check(const MatchFinder::MatchResult &Result) {
     return;
   }
 
-  bool isFullCopy = false;
+  bool IsFullCopy = false;
 
   // Check for length() or length() - expr pattern
   if (const auto *BinOp = dyn_cast<BinaryOperator>(LengthArg)) {
@@ -138,7 +138,7 @@ void StringViewSubstrCheck::check(const MatchFinder::MatchResult &Result) {
             }
 
             if (IsZero) {
-              isFullCopy = true;
+              IsFullCopy = true;
             } else {
               // remove_suffix case (works for both self and different vars)
               std::string RHSText =
@@ -179,12 +179,12 @@ void StringViewSubstrCheck::check(const MatchFinder::MatchResult &Result) {
             dyn_cast<DeclRefExpr>(LengthObject->IgnoreParenImpCasts());
 
         if (LengthDRE && LengthDRE->getDecl() == SourceDRE->getDecl()) {
-          isFullCopy = true;
+          IsFullCopy = true;
         }
       }
     }
   }
-  if (isFullCopy) {
+  if (IsFullCopy) {
     if (IsSameVar) {
       // Remove redundant self-copy, including the semicolon
       SourceLocation EndLoc = Assignment->getEndLoc();

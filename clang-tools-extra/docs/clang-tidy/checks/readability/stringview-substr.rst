@@ -1,6 +1,6 @@
-.. title:: clang-tidy - readability-string-view-substr
+.. title:: clang-tidy - readability-stringview-substr
 
-readability-string-view-substr
+readability-stringview-substr
 ==============================
 
 Finds ``string_view substr()`` calls that can be replaced with clearer alternatives
