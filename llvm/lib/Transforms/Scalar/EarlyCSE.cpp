@@ -16,6 +16,7 @@
 #include "llvm/ADT/Hashing.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/ScopedHashTable.h"
+#include "llvm/ADT/SetVector.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/Statistic.h"
 #include "llvm/Analysis/AssumptionCache.h"
@@ -31,6 +32,7 @@
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/Dominators.h"
 #include "llvm/IR/Function.h"
+#include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/InstrTypes.h"
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Instructions.h"
@@ -1599,6 +1601,24 @@ bool EarlyCSE::processNode(DomTreeNode *Node) {
         if (InVal.IsLoad)
           if (auto *I = dyn_cast<Instruction>(Op))
             combineMetadataForCSE(I, &Inst, false);
+
+        // If the load has align and noundef metadata, preserve it via an
+        // alignment assumption. Note that this doesn't use salavageKnowledge,
+        // as we need to create the assumption for the value we replaced the
+        // load with.
+        if (Inst.hasMetadata(LLVMContext::MD_noundef)) {
+          if (auto *AlignMD = Inst.getMetadata(LLVMContext::MD_align)) {
+            Inst.setMetadata(LLVMContext::MD_align, nullptr);
+            auto *A = mdconst::extract<ConstantInt>(AlignMD->getOperand(0));
+            auto KB = computeKnownBits(Op, SQ.DL);
+            unsigned AlignFromKB = 1 << KB.countMinTrailingZeros();
+            if (AlignFromKB < A->getZExtValue()) {
+              IRBuilder B(&Inst);
+              B.CreateAlignmentAssumption(SQ.DL, Op, A);
+            }
+          }
+        }
+
         if (!Inst.use_empty())
           Inst.replaceAllUsesWith(Op);
         salvageKnowledge(&Inst, &AC);
