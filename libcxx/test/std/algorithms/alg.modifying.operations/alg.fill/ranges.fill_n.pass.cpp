@@ -18,9 +18,11 @@
 #include <cassert>
 #include <ranges>
 #include <string>
+#include <vector>
 
 #include "almost_satisfies_types.h"
 #include "test_iterators.h"
+#include "test_macros.h"
 
 template <class Iter>
 concept HasFillN = requires(Iter iter) { std::ranges::fill_n(iter, int{}, int{}); };
@@ -68,7 +70,7 @@ constexpr bool test() {
     };
 
     S a[5];
-    std::ranges::fill_n(a, 5, S {});
+    std::ranges::fill_n(a, 5, S{});
     assert(std::all_of(a, a + 5, [](S& s) { return s.copied; }));
   }
 
@@ -78,6 +80,20 @@ constexpr bool test() {
     assert(ret == a.data() + a.size());
     assert(std::all_of(a.begin(), a.end(), [](auto& s) { return s == "long long string so no SSO"; }));
   }
+
+#if TEST_STD_VER >= 23
+  { // Test vector<bool>::iterator optimization
+    for (std::size_t N = 8; N <= 256; N *= 2) {
+      // Test with both full and partial bytes
+      for (std::size_t offset : {0, 4}) {
+        std::vector<bool> in(N + 2 * offset);
+        std::vector<bool> expected(N, true);
+        std::ranges::fill_n(std::ranges::begin(in) + offset, N, true);
+        assert(std::equal(in.begin() + offset, in.end() - offset, expected.begin()));
+      }
+    }
+  }
+#endif
 
   return true;
 }
