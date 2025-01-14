@@ -56,6 +56,7 @@
 #include "llvm/Object/MachO.h"
 #include "llvm/Object/MachOUniversal.h"
 #include "llvm/Object/OffloadBinary.h"
+#include "llvm/Object/SymbolicFile.h"
 #include "llvm/Object/Wasm.h"
 #include "llvm/Option/Arg.h"
 #include "llvm/Option/ArgList.h"
@@ -80,6 +81,7 @@
 #include <cctype>
 #include <cstring>
 #include <optional>
+#include <queue>
 #include <set>
 #include <system_error>
 #include <unordered_map>
@@ -1436,11 +1438,15 @@ SymbolInfoTy objdump::createSymbolInfo(const ObjectFile &Obj,
 static SymbolInfoTy createDummySymbolInfo(const ObjectFile &Obj,
                                           const uint64_t Addr, StringRef &Name,
                                           uint8_t Type) {
+  SymbolInfoTy Ret;
   if (Obj.isXCOFF() && (SymbolDescription || TracebackTable))
-    return SymbolInfoTy(std::nullopt, Addr, Name, std::nullopt, false);
-  if (Obj.isWasm())
-    return SymbolInfoTy(Addr, Name, wasm::WASM_SYMBOL_TYPE_SECTION);
-  return SymbolInfoTy(Addr, Name, Type);
+    Ret = SymbolInfoTy(std::nullopt, Addr, Name, std::nullopt, false);
+  else if (Obj.isWasm())
+    Ret = SymbolInfoTy(Addr, Name, wasm::WASM_SYMBOL_TYPE_SECTION);
+  else
+    Ret = SymbolInfoTy(Addr, Name, Type);
+  Ret.IsDummy = true;
+  return Ret;
 }
 
 static void collectBBAddrMapLabels(
@@ -1513,8 +1519,8 @@ collectLocalBranchTargets(ArrayRef<uint8_t> Bytes, MCInstrAnalysis *MIA,
     if (MIA) {
       if (Disassembled) {
         uint64_t Target;
-        bool TargetKnown = MIA->evaluateBranch(Inst, Index, Size, Target);
-        if (TargetKnown && (Target >= Start && Target < End) &&
+        bool BranchTargetKnown = MIA->evaluateBranch(Inst, Index, Size, Target);
+        if (BranchTargetKnown && (Target >= Start && Target < End) &&
             !Labels.count(Target)) {
           // On PowerPC and AIX, a function call is encoded as a branch to 0.
           // On other PowerPC platforms (ELF), a function call is encoded as
@@ -2324,8 +2330,9 @@ disassembleObject(ObjectFile &Obj, const ObjectFile &DbgObj,
             llvm::raw_ostream *TargetOS = &FOS;
             uint64_t Target;
             bool PrintTarget = DT->InstrAnalysis->evaluateBranch(
-                Inst, SectionAddr + Index, Size, Target);
-
+                                   Inst, SectionAddr + Index, Size, Target) ||
+                               DT->InstrAnalysis->evaluateInstruction(
+                                   Inst, SectionAddr + Index, Size, Target);
             if (!PrintTarget) {
               if (std::optional<uint64_t> MaybeTarget =
                       DT->InstrAnalysis->evaluateMemoryOperandAddress(
@@ -2360,14 +2367,19 @@ disassembleObject(ObjectFile &Obj, const ObjectFile &DbgObj,
                     [=](const std::pair<uint64_t, SectionRef> &O) {
                       return O.first <= Target;
                     });
-                uint64_t TargetSecAddr = 0;
+                uint64_t TargetSecAddr = It == SectionAddresses.end() ? 0 : It->first;
+                bool FoundSymbols = false;
                 while (It != SectionAddresses.begin()) {
                   --It;
-                  if (TargetSecAddr == 0)
-                    TargetSecAddr = It->first;
-                  if (It->first != TargetSecAddr)
-                    break;
+                  if (It->first != TargetSecAddr) {
+                    if (!FoundSymbols)
+                      TargetSecAddr = It->first;
+                    else
+                      break;
+                  }
                   TargetSectionSymbols.push_back(&AllSymbols[It->second]);
+                  if (!AllSymbols[It->second].empty())
+                    FoundSymbols = true;
                 }
               } else {
                 TargetSectionSymbols.push_back(&Symbols);
@@ -2380,6 +2392,7 @@ disassembleObject(ObjectFile &Obj, const ObjectFile &DbgObj,
               // using the nearest preceding absolute symbol (if any), if there
               // are no other valid symbols.
               const SymbolInfoTy *TargetSym = nullptr;
+              std::queue<const SymbolInfoTy *> DummySymbols;
               for (const SectionSymbolsTy *TargetSymbols :
                    TargetSectionSymbols) {
                 auto It = llvm::partition_point(
@@ -2387,6 +2400,10 @@ disassembleObject(ObjectFile &Obj, const ObjectFile &DbgObj,
                     [=](const SymbolInfoTy &O) { return O.Addr <= Target; });
                 while (It != TargetSymbols->begin()) {
                   --It;
+                  if (It->IsDummy) {
+                    DummySymbols.push(&(*It));
+                    continue;
+                  }
                   // Skip mapping symbols to avoid possible ambiguity as they
                   // do not allow uniquely identifying the target address.
                   if (!It->IsMappingSymbol) {
@@ -2397,8 +2414,14 @@ disassembleObject(ObjectFile &Obj, const ObjectFile &DbgObj,
                 if (TargetSym)
                   break;
               }
+              while (!DummySymbols.empty() && !TargetSym) {
+                const SymbolInfoTy *Sym = DummySymbols.front();
+                if (!Sym->IsMappingSymbol)
+                  TargetSym = Sym;
+                DummySymbols.pop();
+              }
 
-              // Branch targets are printed just after the instructions.
+              // Branch and instruction targets are printed just after the instructions.
               // Print the labels corresponding to the target if there's any.
               bool BBAddrMapLabelAvailable = BBAddrMapLabels.count(Target);
               bool LabelAvailable = AllLabels.count(Target);
