@@ -108,9 +108,10 @@ CXXRecordDecl::DefinitionData::DefinitionData(CXXRecordDecl *D)
       ImplicitCopyAssignmentHasConstParam(true),
       HasDeclaredCopyConstructorWithConstParam(false),
       HasDeclaredCopyAssignmentWithConstParam(false),
-      IsAnyDestructorNoReturn(false), IsHLSLIntangible(false), IsLambda(false),
-      IsParsingBaseSpecifiers(false), ComputedVisibleConversions(false),
-      HasODRHash(false), Definition(D) {}
+      IsAnyDestructorNoReturn(false),
+      HasCopyConstructorForExceptionObject(false), IsHLSLIntangible(false),
+      IsLambda(false), IsParsingBaseSpecifiers(false),
+      ComputedVisibleConversions(false), HasODRHash(false), Definition(D) {}
 
 CXXBaseSpecifier *CXXRecordDecl::DefinitionData::getBasesSlowCase() const {
   return Bases.get(Definition->getASTContext().getExternalSource());

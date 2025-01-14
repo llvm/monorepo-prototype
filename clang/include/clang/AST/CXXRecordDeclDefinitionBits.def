@@ -249,6 +249,11 @@ FIELD(HasDeclaredCopyAssignmentWithConstParam, 1, MERGE_OR)
 /// base classes or fields have a no-return destructor
 FIELD(IsAnyDestructorNoReturn, 1, NO_MERGE)
 
+/// Microsoft CXX ABI specific:
+/// Whether the copy constructor is used by a `throw` expression.
+/// Used by ASTReader to restore the sidecar RecordToCopyCtor LUT.
+FIELD(HasCopyConstructorForExceptionObject, 1, MERGE_OR)
+
 /// Whether the record type is intangible (if any base classes or fields have
 /// type that is intangible). HLSL only.
 FIELD(IsHLSLIntangible, 1, NO_MERGE)
