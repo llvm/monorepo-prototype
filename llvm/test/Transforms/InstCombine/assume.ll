@@ -333,11 +333,12 @@ define i1 @nonnull3(ptr %a, i1 %control) {
 ;
 ; BUNDLES-LABEL: @nonnull3(
 ; BUNDLES-NEXT:  entry:
+; BUNDLES-NEXT:    call void @llvm.assume(i1 true) [ "dereferenceable"(ptr [[A:%.*]], i64 0) ]
 ; BUNDLES-NEXT:    br i1 [[CONTROL:%.*]], label [[TAKEN:%.*]], label [[NOT_TAKEN:%.*]]
 ; BUNDLES:       taken:
 ; BUNDLES-NEXT:    ret i1 false
 ; BUNDLES:       not_taken:
-; BUNDLES-NEXT:    [[LOAD:%.*]] = load ptr, ptr [[A:%.*]], align 8
+; BUNDLES-NEXT:    [[LOAD:%.*]] = load ptr, ptr [[A]], align 8
 ; BUNDLES-NEXT:    [[RVAL_2:%.*]] = icmp sgt ptr [[LOAD]], null
 ; BUNDLES-NEXT:    ret i1 [[RVAL_2]]
 ;
@@ -471,11 +472,12 @@ define i1 @nonnull3A(ptr %a, i1 %control) {
 ;
 ; BUNDLES-LABEL: @nonnull3A(
 ; BUNDLES-NEXT:  entry:
+; BUNDLES-NEXT:    call void @llvm.assume(i1 true) [ "dereferenceable"(ptr [[A:%.*]], i64 0) ]
 ; BUNDLES-NEXT:    br i1 [[CONTROL:%.*]], label [[TAKEN:%.*]], label [[NOT_TAKEN:%.*]]
 ; BUNDLES:       taken:
 ; BUNDLES-NEXT:    ret i1 true
 ; BUNDLES:       not_taken:
-; BUNDLES-NEXT:    [[LOAD:%.*]] = load ptr, ptr [[A:%.*]], align 8
+; BUNDLES-NEXT:    [[LOAD:%.*]] = load ptr, ptr [[A]], align 8
 ; BUNDLES-NEXT:    [[RVAL_2:%.*]] = icmp sgt ptr [[LOAD]], null
 ; BUNDLES-NEXT:    ret i1 [[RVAL_2]]
 ;
@@ -495,9 +497,10 @@ not_taken:
 define i1 @nonnull3B(ptr %a, i1 %control) {
 ; CHECK-LABEL: @nonnull3B(
 ; CHECK-NEXT:  entry:
+; CHECK-NEXT:    call void @llvm.assume(i1 true) [ "dereferenceable"(ptr [[A:%.*]], i64 0) ]
 ; CHECK-NEXT:    br i1 [[CONTROL:%.*]], label [[TAKEN:%.*]], label [[NOT_TAKEN:%.*]]
 ; CHECK:       taken:
-; CHECK-NEXT:    [[LOAD:%.*]] = load ptr, ptr [[A:%.*]], align 8
+; CHECK-NEXT:    [[LOAD:%.*]] = load ptr, ptr [[A]], align 8
 ; CHECK-NEXT:    [[CMP:%.*]] = icmp ne ptr [[LOAD]], null
 ; CHECK-NEXT:    call void @llvm.assume(i1 [[CMP]]) [ "nonnull"(ptr [[LOAD]]) ]
 ; CHECK-NEXT:    ret i1 [[CMP]]
@@ -521,9 +524,10 @@ declare i1 @tmp1(i1)
 define i1 @nonnull3C(ptr %a, i1 %control) {
 ; CHECK-LABEL: @nonnull3C(
 ; CHECK-NEXT:  entry:
+; CHECK-NEXT:    call void @llvm.assume(i1 true) [ "dereferenceable"(ptr [[A:%.*]], i64 0) ]
 ; CHECK-NEXT:    br i1 [[CONTROL:%.*]], label [[TAKEN:%.*]], label [[NOT_TAKEN:%.*]]
 ; CHECK:       taken:
-; CHECK-NEXT:    [[LOAD:%.*]] = load ptr, ptr [[A:%.*]], align 8
+; CHECK-NEXT:    [[LOAD:%.*]] = load ptr, ptr [[A]], align 8
 ; CHECK-NEXT:    [[CMP:%.*]] = icmp ne ptr [[LOAD]], null
 ; CHECK-NEXT:    [[CMP2:%.*]] = call i1 @tmp1(i1 [[CMP]])
 ; CHECK-NEXT:    br label [[EXIT:%.*]]
@@ -551,9 +555,10 @@ not_taken:
 define i1 @nonnull3D(ptr %a, i1 %control) {
 ; CHECK-LABEL: @nonnull3D(
 ; CHECK-NEXT:  entry:
+; CHECK-NEXT:    call void @llvm.assume(i1 true) [ "dereferenceable"(ptr [[A:%.*]], i64 0) ]
 ; CHECK-NEXT:    br i1 [[CONTROL:%.*]], label [[TAKEN:%.*]], label [[NOT_TAKEN:%.*]]
 ; CHECK:       taken:
-; CHECK-NEXT:    [[LOAD:%.*]] = load ptr, ptr [[A:%.*]], align 8
+; CHECK-NEXT:    [[LOAD:%.*]] = load ptr, ptr [[A]], align 8
 ; CHECK-NEXT:    [[CMP:%.*]] = icmp ne ptr [[LOAD]], null
 ; CHECK-NEXT:    [[CMP2:%.*]] = call i1 @tmp1(i1 [[CMP]])
 ; CHECK-NEXT:    br label [[EXIT:%.*]]
