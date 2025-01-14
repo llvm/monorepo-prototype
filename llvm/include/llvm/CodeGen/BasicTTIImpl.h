@@ -801,6 +801,9 @@ public:
   std::optional<unsigned> getVScaleForTuning() const { return std::nullopt; }
   bool isVScaleKnownToBeAPowerOfTwo() const { return false; }
 
+  bool isSExtCostConstant() const { return true; }
+  bool isZExtCostConstant() const { return true; }
+
   /// Estimate the overhead of scalarizing an instruction. Insert and Extract
   /// are set if the demanded result elements need to be inserted and/or
   /// extracted from vectors.

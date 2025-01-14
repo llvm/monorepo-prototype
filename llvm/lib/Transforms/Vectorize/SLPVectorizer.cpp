@@ -11500,7 +11500,8 @@ BoUpSLP::getEntryCost(const TreeEntry *E, ArrayRef<Value *> VectorizedVals,
                                 I->getOpcode());
           });
       if (IsArithmeticExtendedReduction &&
-          (VecOpcode == Instruction::ZExt || VecOpcode == Instruction::SExt))
+          (VecOpcode == Instruction::ZExt || VecOpcode == Instruction::SExt) &&
+          (TTI->isZExtCostConstant() && TTI->isSExtCostConstant()))
         return CommonCost;
       return CommonCost +
              TTI->getCastInstrCost(VecOpcode, VecTy, SrcVecTy, CCH, CostKind,

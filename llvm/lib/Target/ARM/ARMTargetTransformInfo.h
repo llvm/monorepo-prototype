@@ -109,6 +109,11 @@ public:
 
   bool enableInterleavedAccessVectorization() { return true; }
 
+  // Cost model for vector SExt and ZExt takes into account
+  // source and destination vector type for MVE and NEON.
+  bool isSExtCostConstant() const { return false; }
+  bool isZExtCostConstant() const { return false; }
+
   TTI::AddressingModeKind
     getPreferredAddressingMode(const Loop *L, ScalarEvolution *SE) const;
 

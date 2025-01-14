@@ -530,6 +530,8 @@ public:
   std::optional<unsigned> getMaxVScale() const { return std::nullopt; }
   std::optional<unsigned> getVScaleForTuning() const { return std::nullopt; }
   bool isVScaleKnownToBeAPowerOfTwo() const { return false; }
+  bool isSExtCostConstant() const { return true; }
+  bool isZExtCostConstant() const { return true; }
 
   bool
   shouldMaximizeVectorBandwidth(TargetTransformInfo::RegisterKind K) const {

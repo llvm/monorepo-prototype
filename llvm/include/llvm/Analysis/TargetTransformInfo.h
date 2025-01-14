@@ -1190,6 +1190,11 @@ public:
   /// \return true if vscale is known to be a power of 2
   bool isVScaleKnownToBeAPowerOfTwo() const;
 
+  // \return true if vector implementations assume that SExt and ZExt
+  // instructions have a fixed cost.
+  bool isSExtCostConstant() const;
+  bool isZExtCostConstant() const;
+
   /// \return True if the vectorization factor should be chosen to
   /// make the vector of the smallest element type match the size of a
   /// vector register. For wider element types, this could result in
@@ -2085,6 +2090,8 @@ public:
   virtual std::optional<unsigned> getMaxVScale() const = 0;
   virtual std::optional<unsigned> getVScaleForTuning() const = 0;
   virtual bool isVScaleKnownToBeAPowerOfTwo() const = 0;
+  virtual bool isSExtCostConstant() const = 0;
+  virtual bool isZExtCostConstant() const = 0;
   virtual bool
   shouldMaximizeVectorBandwidth(TargetTransformInfo::RegisterKind K) const = 0;
   virtual ElementCount getMinimumVF(unsigned ElemWidth,
@@ -2753,6 +2760,8 @@ public:
   bool isVScaleKnownToBeAPowerOfTwo() const override {
     return Impl.isVScaleKnownToBeAPowerOfTwo();
   }
+  bool isSExtCostConstant() const override { return Impl.isSExtCostConstant(); }
+  bool isZExtCostConstant() const override { return Impl.isZExtCostConstant(); }
   bool shouldMaximizeVectorBandwidth(
       TargetTransformInfo::RegisterKind K) const override {
     return Impl.shouldMaximizeVectorBandwidth(K);
