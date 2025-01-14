@@ -16,7 +16,8 @@ namespace llvm {
 
 void dumpOffloadSections(const object::OffloadBinary &OB);
 void dumpOffloadBinary(const object::ObjectFile &O);
-
+void dumpOffloadFatBinary(const object::ObjectFile &O, std::string ArchName,
+                          bool Disassemble);
 } // namespace llvm
 
 #endif
