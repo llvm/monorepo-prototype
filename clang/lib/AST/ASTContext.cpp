@@ -3442,6 +3442,13 @@ uint16_t ASTContext::getPointerAuthTypeDiscriminator(QualType T) {
     encodeTypeForFunctionPointerAuth(*this, Out, T);
   } else {
     T = T.getUnqualifiedType();
+    // Drop exception specification from member function pointer type.
+    if (auto *MPT = T->getAs<MemberPointerType>())
+      if (MPT->isMemberFunctionPointer()) {
+        QualType FT =
+            getFunctionTypeWithExceptionSpec(MPT->getPointeeType(), EST_None);
+        T = getMemberPointerType(FT, MPT->getClass());
+      }
     std::unique_ptr<MangleContext> MC(createMangleContext());
     MC->mangleCanonicalTypeName(T, Out);
   }
