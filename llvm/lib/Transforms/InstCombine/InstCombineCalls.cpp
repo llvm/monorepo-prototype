@@ -3226,42 +3226,6 @@ Instruction *InstCombinerImpl::visitCallInst(CallInst &CI) {
         MaybeSimplifyHint(OBU.Inputs[0]);
         MaybeSimplifyHint(OBU.Inputs[1]);
       }
-
-      if (OBU.getTagName() == "align" && OBU.Inputs.size() == 2) {
-        RetainedKnowledge RK = getKnowledgeFromBundle(
-            *cast<AssumeInst>(II), II->bundle_op_info_begin()[Idx]);
-        if (!RK || RK.AttrKind != Attribute::Alignment ||
-            !isPowerOf2_64(RK.ArgValue))
-          continue;
-        SetVector<const Instruction *> WorkList;
-        bool AlignNeeded = false;
-        WorkList.insert(II);
-        for (unsigned I = 0; I != WorkList.size(); ++I) {
-          if (auto *LI = dyn_cast<LoadInst>(WorkList[I])) {
-            if (auto *AlignMD = LI->getMetadata(LLVMContext::MD_align)) {
-              auto *A = mdconst::extract<ConstantInt>(AlignMD->getOperand(0));
-
-              if (A->getZExtValue() % RK.ArgValue != 0) {
-                AlignNeeded = true;
-                break;
-              }
-            }
-          }
-          if (isa<ICmpInst>(WorkList[I])) {
-            AlignNeeded = true;
-            break;
-          }
-          if (WorkList.size() > 16) {
-            AlignNeeded = true;
-            break;
-          }
-
-          for (const User *U : WorkList[I]->users())
-            WorkList.insert(cast<Instruction>(U));
-        }
-        auto *New = CallBase::removeOperandBundle(II, OBU.getTagID());
-        return New;
-      }
     }
 
     // Convert nonnull assume like:
