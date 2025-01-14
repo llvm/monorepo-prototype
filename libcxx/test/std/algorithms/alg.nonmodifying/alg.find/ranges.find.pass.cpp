@@ -31,6 +31,7 @@
 #include <vector>
 
 #include "almost_satisfies_types.h"
+#include "sized_allocator.h"
 #include "test_iterators.h"
 
 struct NotEqualityComparable {};
@@ -66,14 +67,14 @@ constexpr void test_iterators() {
   using ValueT = std::iter_value_t<It>;
   { // simple test
     {
-      ValueT a[] = {1, 2, 3, 4};
+      ValueT a[]                = {1, 2, 3, 4};
       std::same_as<It> auto ret = std::ranges::find(It(a), Sent(It(a + 4)), 4);
       assert(base(ret) == a + 3);
       assert(*ret == 4);
     }
     {
-      ValueT a[] = {1, 2, 3, 4};
-      auto range = std::ranges::subrange(It(a), Sent(It(a + 4)));
+      ValueT a[]                = {1, 2, 3, 4};
+      auto range                = std::ranges::subrange(It(a), Sent(It(a + 4)));
       std::same_as<It> auto ret = std::ranges::find(range, 4);
       assert(base(ret) == a + 3);
       assert(*ret == 4);
@@ -83,13 +84,13 @@ constexpr void test_iterators() {
   { // check that an empty range works
     {
       std::array<ValueT, 0> a = {};
-      auto ret = std::ranges::find(It(a.data()), Sent(It(a.data())), 1);
+      auto ret                = std::ranges::find(It(a.data()), Sent(It(a.data())), 1);
       assert(base(ret) == a.data());
     }
     {
       std::array<ValueT, 0> a = {};
-      auto range = std::ranges::subrange(It(a.data()), Sent(It(a.data())));
-      auto ret = std::ranges::find(range, 1);
+      auto range              = std::ranges::subrange(It(a.data()), Sent(It(a.data())));
+      auto ret                = std::ranges::find(range, 1);
       assert(base(ret) == a.data());
     }
   }
@@ -97,12 +98,12 @@ constexpr void test_iterators() {
   { // check that last is returned with no match
     {
       ValueT a[] = {1, 1, 1};
-      auto ret = std::ranges::find(a, a + 3, 0);
+      auto ret   = std::ranges::find(a, a + 3, 0);
       assert(ret == a + 3);
     }
     {
       ValueT a[] = {1, 1, 1};
-      auto ret = std::ranges::find(a, 0);
+      auto ret   = std::ranges::find(a, 0);
       assert(ret == a + 3);
     }
   }
@@ -119,6 +120,33 @@ public:
   TEST_CONSTEXPR TriviallyComparable(ElementT el) : el_(el) {}
   bool operator==(const TriviallyComparable&) const = default;
 };
+
+constexpr void test_bititer_with_custom_sized_types() {
+  {
+    using Alloc = sized_allocator<bool, std::uint8_t, std::int8_t>;
+    std::vector<bool, Alloc> in(100, false, Alloc(1));
+    in[in.size() - 2] = true;
+    assert(std::ranges::find(in, true) == in.end() - 2);
+  }
+  {
+    using Alloc = sized_allocator<bool, std::uint16_t, std::int16_t>;
+    std::vector<bool, Alloc> in(200, false, Alloc(1));
+    in[in.size() - 2] = true;
+    assert(std::ranges::find(in, true) == in.end() - 2);
+  }
+  {
+    using Alloc = sized_allocator<bool, std::uint32_t, std::int32_t>;
+    std::vector<bool, Alloc> in(200, false, Alloc(1));
+    in[in.size() - 2] = true;
+    assert(std::ranges::find(in, true) == in.end() - 2);
+  }
+  {
+    using Alloc = sized_allocator<bool, std::uint64_t, std::int64_t>;
+    std::vector<bool, Alloc> in(200, false, Alloc(1));
+    in[in.size() - 2] = true;
+    assert(std::ranges::find(in, true) == in.end() - 2);
+  }
+}
 
 constexpr bool test() {
   types::for_each(types::type_list<char, wchar_t, int, long, TriviallyComparable<char>, TriviallyComparable<wchar_t>>{},
@@ -148,7 +176,7 @@ constexpr bool test() {
         int comp;
         int other;
       };
-      S a[] = { {0, 0}, {0, 2}, {0, 1} };
+      S a[]    = {{0, 0}, {0, 2}, {0, 1}};
       auto ret = std::ranges::find(a, 0, &S::comp);
       assert(ret == a);
       assert(ret->comp == 0);
@@ -159,7 +187,7 @@ constexpr bool test() {
         int comp;
         int other;
       };
-      S a[] = { {0, 0}, {0, 2}, {0, 1} };
+      S a[]    = {{0, 0}, {0, 2}, {0, 1}};
       auto ret = std::ranges::find(a, a + 3, 0, &S::comp);
       assert(ret == a);
       assert(ret->comp == 0);
@@ -169,7 +197,7 @@ constexpr bool test() {
 
   {
     // check that an iterator is returned with a borrowing range
-    int a[] = {1, 2, 3, 4};
+    int a[]                     = {1, 2, 3, 4};
     std::same_as<int*> auto ret = std::ranges::find(std::views::all(a), 1);
     assert(ret == a);
     assert(*ret == 1);
@@ -178,22 +206,30 @@ constexpr bool test() {
   {
     // count invocations of the projection
     {
-      int a[] = {1, 2, 3, 4};
+      int a[]              = {1, 2, 3, 4};
       int projection_count = 0;
-      auto ret = std::ranges::find(a, a + 4, 2, [&](int i) { ++projection_count; return i; });
+      auto ret             = std::ranges::find(a, a + 4, 2, [&](int i) {
+        ++projection_count;
+        return i;
+      });
       assert(ret == a + 1);
       assert(*ret == 2);
       assert(projection_count == 2);
     }
     {
-      int a[] = {1, 2, 3, 4};
+      int a[]              = {1, 2, 3, 4};
       int projection_count = 0;
-      auto ret = std::ranges::find(a, 2, [&](int i) { ++projection_count; return i; });
+      auto ret             = std::ranges::find(a, 2, [&](int i) {
+        ++projection_count;
+        return i;
+      });
       assert(ret == a + 1);
       assert(*ret == 2);
       assert(projection_count == 2);
     }
   }
+
+  test_bititer_with_custom_sized_types();
 
   return true;
 }
@@ -210,9 +246,7 @@ public:
           return size;
         }()) {}
 
-  bool operator==(const Comparable& other) const {
-    return comparable_data[other.index_] == comparable_data[index_];
-  }
+  bool operator==(const Comparable& other) const { return comparable_data[other.index_] == comparable_data[index_]; }
 
   friend bool operator==(const Comparable& lhs, long long rhs) { return comparable_data[lhs.index_] == rhs; }
 };

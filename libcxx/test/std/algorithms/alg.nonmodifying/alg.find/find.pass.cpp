@@ -14,6 +14,7 @@
 // MSVC warning C4389: '==': signed/unsigned mismatch
 // MSVC warning C4805: '==': unsafe mix of type 'char' and type 'bool' in operation
 // ADDITIONAL_COMPILE_FLAGS(cl-style-warnings): /wd4245 /wd4305 /wd4310 /wd4389 /wd4805
+// XFAIL: FROZEN-CXX03-HEADERS-FIXME
 
 // <algorithm>
 
@@ -28,6 +29,7 @@
 #include <vector>
 #include <type_traits>
 
+#include "sized_allocator.h"
 #include "test_macros.h"
 #include "test_iterators.h"
 #include "type_algorithms.h"
@@ -206,6 +208,33 @@ struct TestIntegerPromotions {
   }
 };
 
+TEST_CONSTEXPR_CXX20 void test_bititer_with_custom_sized_types() {
+  {
+    using Alloc = sized_allocator<bool, std::uint8_t, std::int8_t>;
+    std::vector<bool, Alloc> in(100, false, Alloc(1));
+    in[in.size() - 2] = true;
+    assert(std::find(in.begin(), in.end(), true) == in.end() - 2);
+  }
+  {
+    using Alloc = sized_allocator<bool, std::uint16_t, std::int16_t>;
+    std::vector<bool, Alloc> in(200, false, Alloc(1));
+    in[in.size() - 2] = true;
+    assert(std::find(in.begin(), in.end(), true) == in.end() - 2);
+  }
+  {
+    using Alloc = sized_allocator<bool, std::uint32_t, std::int32_t>;
+    std::vector<bool, Alloc> in(200, false, Alloc(1));
+    in[in.size() - 2] = true;
+    assert(std::find(in.begin(), in.end(), true) == in.end() - 2);
+  }
+  {
+    using Alloc = sized_allocator<bool, std::uint64_t, std::int64_t>;
+    std::vector<bool, Alloc> in(200, false, Alloc(1));
+    in[in.size() - 2] = true;
+    assert(std::find(in.begin(), in.end(), true) == in.end() - 2);
+  }
+}
+
 TEST_CONSTEXPR_CXX20 bool test() {
   types::for_each(types::integer_types(), TestTypes<char>());
   types::for_each(types::integer_types(), TestTypes<int>());
@@ -226,6 +255,7 @@ TEST_CONSTEXPR_CXX20 bool test() {
 #endif
 
   types::for_each(types::integral_types(), TestIntegerPromotions());
+  test_bititer_with_custom_sized_types();
 
   return true;
 }
