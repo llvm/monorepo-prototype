@@ -785,6 +785,28 @@ def ConvertMathToSPIRV : Pass<"convert-math-to-spirv"> {
 }
 
 //===----------------------------------------------------------------------===//
+// MathToEmitC
+//===----------------------------------------------------------------------===//
+
+def ConvertMathToEmitC  : Pass<"convert-math-to-emitc"> {
+  let summary = "Convert some Math operations to EmitC Call_opaque";
+  let description = [{
+    This pass converts supported Math ops to `opaque_call` ops targeting libc/libm
+    functions. Unlike convert-math-to-funcs pass, converting to `call_opaque` ops
+    allows to overload the same function with different argument types.
+  }];
+  let dependentDialects = ["emitc::EmitCDialect"];
+  let options = [
+    Option<"languageTarget", "language-target", "::mlir::emitc::LanguageTarget",
+      /*default=*/"::mlir::emitc::LanguageTarget::c99", "Select the language standard target for callees (c99 or cpp11).",
+      [{::llvm::cl::values(
+            clEnumValN(::mlir::emitc::LanguageTarget::c99, "c99", "c99"),
+            clEnumValN(::mlir::emitc::LanguageTarget::cpp11, "cpp11", "cpp11")
+          )}]>
+  ];
+}
+
+//===----------------------------------------------------------------------===//
 // MathToFuncs
 //===----------------------------------------------------------------------===//
 
