@@ -1033,6 +1033,7 @@ namespace {
     }
 
     ASTContext &getASTContext() const override { return Ctx; }
+    SemaProxy &getSemaProxy() const { return Ctx.getSemaProxy(); }
 
     void setEvaluatingDecl(APValue::LValueBase Base, APValue &Value,
                            EvaluatingDeclKind EDK = EvaluatingDeclKind::Ctor) {
@@ -8306,6 +8307,12 @@ public:
 
     const FunctionDecl *Definition = nullptr;
     Stmt *Body = FD->getBody(Definition);
+    if (Info.getLangOpts().CPlusPlus23 && !Definition &&
+        FD->getTemplateInstantiationPattern()) {
+      Info.getSemaProxy().InstantiateFunctionDefinition(
+          E->getExprLoc(), const_cast<FunctionDecl *>(FD));
+      Body = FD->getBody(Definition);
+    }
 
     if (!CheckConstexprFunction(Info, E->getExprLoc(), FD, Definition, Body) ||
         !HandleFunctionCall(E->getExprLoc(), Definition, This, E, Args, Call,
