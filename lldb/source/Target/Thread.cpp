@@ -617,7 +617,7 @@ void Thread::WillStop() {
   current_plan->WillStop();
 }
 
-void Thread::SetupForResume() {
+bool Thread::SetupToStepOverBreakpointIfNeeded(RunDirection direction) {
   if (GetResumeState() != eStateSuspended) {
     // First check whether this thread is going to "actually" resume at all.
     // For instance, if we're stepping from one level to the next of an
@@ -625,17 +625,18 @@ void Thread::SetupForResume() {
     // without actually running this thread.  In that case, for this thread we
     // shouldn't push a step over breakpoint plan or do that work.
     if (GetCurrentPlan()->IsVirtualStep())
-      return;
+      return false;
 
     // If we're at a breakpoint push the step-over breakpoint plan.  Do this
     // before telling the current plan it will resume, since we might change
     // what the current plan is.
 
     lldb::RegisterContextSP reg_ctx_sp(GetRegisterContext());
-    if (reg_ctx_sp) {
+    ProcessSP process_sp(GetProcess());
+    if (reg_ctx_sp && process_sp && direction == eRunForward) {
       const addr_t thread_pc = reg_ctx_sp->GetPC();
       BreakpointSiteSP bp_site_sp =
-          GetProcess()->GetBreakpointSiteList().FindByAddress(thread_pc);
+          process_sp->GetBreakpointSiteList().FindByAddress(thread_pc);
       if (bp_site_sp) {
         // Note, don't assume there's a ThreadPlanStepOverBreakpoint, the
         // target may not require anything special to step over a breakpoint.
@@ -663,11 +664,13 @@ void Thread::SetupForResume() {
               step_bp_plan->SetAutoContinue(true);
             }
             QueueThreadPlan(step_bp_plan_sp, false);
+            return true;
           }
         }
       }
     }
   }
+  return false;
 }
 
 bool Thread::ShouldResume(StateType resume_state) {
@@ -1740,6 +1743,8 @@ std::string Thread::StopReasonAsString(lldb::StopReason reason) {
     return "processor trace";
   case eStopReasonInterrupt:
     return "async interrupt";
+  case eStopReasonHistoryBoundary:
+    return "history boundary";
   }
 
   return "StopReason = " + std::to_string(reason);
