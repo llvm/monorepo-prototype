@@ -766,6 +766,12 @@ static TemplateParameter makeTemplateParameter(Decl *D) {
 
   return TemplateParameter(cast<TemplateTemplateParmDecl>(D));
 }
+// Helper function to make template argument
+static TemplateArgument makeTemplateArgument(Decl *D) {
+  if (NonTypeTemplateParmDecl *NTTP = dyn_cast<NonTypeTemplateParmDecl>(D))
+    return TemplateArgument(NTTP->getType());
+  return TemplateArgument();
+}
 
 /// A pack that we're currently deducing.
 struct clang::DeducedPack {
@@ -3575,7 +3581,23 @@ TemplateDeductionResult Sema::SubstituteExplicitTemplateArguments(
     unsigned Index = SugaredBuilder.size();
     if (Index >= TemplateParams->size())
       return TemplateDeductionResult::SubstitutionFailure;
+
     Info.Param = makeTemplateParameter(TemplateParams->getParam(Index));
+    Info.FirstArg = ExplicitTemplateArgs[Index].getArgument();
+    Info.SecondArg = makeTemplateArgument(TemplateParams->getParam(Index));
+    // Info.SecondArg = TemplateArgument(
+    //     dyn_cast<NonTypeTemplateParmDecl>(TemplateParams->getParam(Index))
+    //         ->getType());
+
+    // NonTypeTemplateParmDecl tmp =
+    // makeTemplateArgument(TemplateParams->getParam(Index)); if(!tmp.isNull()){
+    //   Info.SecondArg = tmp->getType();
+    // }
+    if (ExplicitTemplateArgs[Index].getArgument().getKind() ==
+        TemplateArgument::Expression)
+      Info.SuppliedType = TemplateArgument(
+          ExplicitTemplateArgs[Index].getSourceExpression()->getType());
+
     return TemplateDeductionResult::InvalidExplicitArguments;
   }
 
