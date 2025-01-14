@@ -3433,7 +3433,7 @@ void CXXNameMangler::mangleType(const BuiltinType *T) {
     type_name = MangledName;                                                   \
     Out << (type_name == Name ? "u" : "") << type_name.size() << type_name;    \
     break;
-#define AARCH64_VECTOR_TYPE(Name, MangledName, Id, SingletonId)                \
+#define AARCH64_SCALAR_TYPE(Name, MangledName, Id, SingletonId, Bits)              \
   case BuiltinType::Id:                                                        \
     type_name = MangledName;                                                   \
     Out << (type_name == Name ? "u" : "") << type_name.size() << type_name;    \
@@ -3919,6 +3919,7 @@ void CXXNameMangler::mangleNeonVectorType(const VectorType *T) {
     case BuiltinType::Float:     EltName = "float32_t"; break;
     case BuiltinType::Half:      EltName = "float16_t"; break;
     case BuiltinType::BFloat16:  EltName = "bfloat16_t"; break;
+    case BuiltinType::MFloat8:   EltName = "mfloat8_t"; break;
     default:
       llvm_unreachable("unexpected Neon vector element type");
     }
@@ -3972,6 +3973,8 @@ static StringRef mangleAArch64VectorBase(const BuiltinType *EltType) {
     return "Float64";
   case BuiltinType::BFloat16:
     return "Bfloat16";
+  case BuiltinType::MFloat8:
+    return "Mfloat8";
   default:
     llvm_unreachable("Unexpected vector element base type");
   }
@@ -4096,6 +4099,10 @@ void CXXNameMangler::mangleAArch64FixedSveVectorType(const VectorType *T) {
   case BuiltinType::BFloat16:
     TypeName = "__SVBfloat16_t";
     break;
+  case BuiltinType::MFloat8:
+    TypeName = "__SVMfloat8_t";
+    break;
+
   default:
     llvm_unreachable("unexpected element type for fixed-length SVE vector!");
   }
