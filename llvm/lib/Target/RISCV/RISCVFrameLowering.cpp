@@ -774,8 +774,7 @@ void RISCVFrameLowering::emitPrologue(MachineFunction &MF,
 
   auto FirstFrameSetup = MBBI;
 
-  // Since spillCalleeSavedRegisters may have inserted a libcall, skip past
-  // any instructions marked as FrameSetup
+  // Skip past all callee-saved register spill instructions.
   while (MBBI != MBB.end() && MBBI->getFlag(MachineInstr::FrameSetup))
     ++MBBI;
 
@@ -783,6 +782,12 @@ void RISCVFrameLowering::emitPrologue(MachineFunction &MF,
   determineFrameLayout(MF);
 
   const auto &CSI = MFI.getCalleeSavedInfo();
+
+  // Skip to before the spills of scalar callee-saved registers
+  // FIXME: assumes exactly one instruction is used to restore each
+  // callee-saved register.
+  MBBI = std::prev(MBBI, getRVVCalleeSavedInfo(MF, CSI).size() +
+                             getUnmanagedCSI(MF, CSI).size());
 
   // If libcalls are used to spill and restore callee-saved registers, the frame
   // has two sections; the opaque section managed by the libcalls, and the
@@ -1037,8 +1042,7 @@ void RISCVFrameLowering::emitEpilogue(MachineFunction &MF,
 
     MBBI = MBB.getFirstTerminator();
 
-    // If callee-saved registers are saved via libcall, place stack adjustment
-    // before this call.
+    // Skip to before the restores of all callee-saved registers.
     while (MBBI != MBB.begin() &&
            std::prev(MBBI)->getFlag(MachineInstr::FrameDestroy))
       --MBBI;
@@ -1049,7 +1053,8 @@ void RISCVFrameLowering::emitEpilogue(MachineFunction &MF,
   // Skip to before the restores of scalar callee-saved registers
   // FIXME: assumes exactly one instruction is used to restore each
   // callee-saved register.
-  auto LastFrameDestroy = std::prev(MBBI, getUnmanagedCSI(MF, CSI).size());
+  auto LastScalarFrameDestroy =
+      std::next(MBBI, getRVVCalleeSavedInfo(MF, CSI).size());
 
   uint64_t FirstSPAdjustAmount = getFirstSPAdjustAmount(MF);
   uint64_t RealStackSize = FirstSPAdjustAmount ? FirstSPAdjustAmount
@@ -1066,20 +1071,20 @@ void RISCVFrameLowering::emitEpilogue(MachineFunction &MF,
     // If RestoreSPFromFP the stack pointer will be restored using the frame
     // pointer value.
     if (!RestoreSPFromFP)
-      RI->adjustReg(MBB, LastFrameDestroy, DL, SPReg, SPReg,
+      RI->adjustReg(MBB, LastScalarFrameDestroy, DL, SPReg, SPReg,
                     StackOffset::getScalable(RVVStackSize),
                     MachineInstr::FrameDestroy, getStackAlign());
 
     if (!hasFP(MF)) {
       unsigned CFIIndex = MF.addFrameInst(MCCFIInstruction::cfiDefCfa(
           nullptr, RI->getDwarfRegNum(SPReg, true), RealStackSize));
-      BuildMI(MBB, LastFrameDestroy, DL,
+      BuildMI(MBB, LastScalarFrameDestroy, DL,
               TII->get(TargetOpcode::CFI_INSTRUCTION))
           .addCFIIndex(CFIIndex)
           .setMIFlag(MachineInstr::FrameDestroy);
     }
 
-    emitCalleeSavedRVVEpilogCFI(MBB, LastFrameDestroy);
+    emitCalleeSavedRVVEpilogCFI(MBB, LastScalarFrameDestroy);
   }
 
   if (FirstSPAdjustAmount) {
@@ -1091,14 +1096,14 @@ void RISCVFrameLowering::emitEpilogue(MachineFunction &MF,
     // If RestoreSPFromFP the stack pointer will be restored using the frame
     // pointer value.
     if (!RestoreSPFromFP)
-      RI->adjustReg(MBB, LastFrameDestroy, DL, SPReg, SPReg,
+      RI->adjustReg(MBB, LastScalarFrameDestroy, DL, SPReg, SPReg,
                     StackOffset::getFixed(SecondSPAdjustAmount),
                     MachineInstr::FrameDestroy, getStackAlign());
 
     if (!hasFP(MF)) {
       unsigned CFIIndex = MF.addFrameInst(
           MCCFIInstruction::cfiDefCfaOffset(nullptr, FirstSPAdjustAmount));
-      BuildMI(MBB, LastFrameDestroy, DL,
+      BuildMI(MBB, LastScalarFrameDestroy, DL,
               TII->get(TargetOpcode::CFI_INSTRUCTION))
           .addCFIIndex(CFIIndex)
           .setMIFlag(MachineInstr::FrameDestroy);
@@ -1117,7 +1122,7 @@ void RISCVFrameLowering::emitEpilogue(MachineFunction &MF,
   // have vector objects in stack.
   if (RestoreSPFromFP) {
     assert(hasFP(MF) && "frame pointer should not have been eliminated");
-    RI->adjustReg(MBB, LastFrameDestroy, DL, SPReg, FPReg,
+    RI->adjustReg(MBB, LastScalarFrameDestroy, DL, SPReg, FPReg,
                   StackOffset::getFixed(-FPOffset), MachineInstr::FrameDestroy,
                   getStackAlign());
   }
@@ -1125,10 +1130,16 @@ void RISCVFrameLowering::emitEpilogue(MachineFunction &MF,
   if (hasFP(MF)) {
     unsigned CFIIndex = MF.addFrameInst(MCCFIInstruction::cfiDefCfa(
         nullptr, RI->getDwarfRegNum(SPReg, true), RealStackSize));
-    BuildMI(MBB, LastFrameDestroy, DL, TII->get(TargetOpcode::CFI_INSTRUCTION))
+    BuildMI(MBB, LastScalarFrameDestroy, DL,
+            TII->get(TargetOpcode::CFI_INSTRUCTION))
         .addCFIIndex(CFIIndex)
         .setMIFlag(MachineInstr::FrameDestroy);
   }
+
+  // Skip to after the restores of scalar callee-saved registers
+  // FIXME: assumes exactly one instruction is used to restore each
+  // callee-saved register.
+  MBBI = std::next(LastScalarFrameDestroy, getUnmanagedCSI(MF, CSI).size());
 
   if (getLibCallID(MF, CSI) != -1) {
     // tail __riscv_restore_[0-12] instruction is considered as a terminator,
@@ -1859,7 +1870,8 @@ bool RISCVFrameLowering::spillCalleeSavedRegisters(
       Register Reg = CS.getReg();
       const TargetRegisterClass *RC = TRI->getMinimalPhysRegClass(Reg);
       TII.storeRegToStackSlot(MBB, MI, Reg, !MBB.isLiveIn(Reg),
-                              CS.getFrameIdx(), RC, TRI, Register());
+                              CS.getFrameIdx(), RC, TRI, Register(),
+                              MachineInstr::FrameSetup);
     }
   };
   storeRegsToStackSlots(UnmanagedCSI);
@@ -1970,7 +1982,7 @@ bool RISCVFrameLowering::restoreCalleeSavedRegisters(
       Register Reg = CS.getReg();
       const TargetRegisterClass *RC = TRI->getMinimalPhysRegClass(Reg);
       TII.loadRegFromStackSlot(MBB, MI, Reg, CS.getFrameIdx(), RC, TRI,
-                               Register());
+                               Register(), MachineInstr::FrameDestroy);
       assert(MI != MBB.begin() &&
              "loadRegFromStackSlot didn't insert any code!");
     }
