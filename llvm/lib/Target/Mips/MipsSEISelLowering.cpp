@@ -59,6 +59,29 @@ static cl::opt<bool> NoDPLoadStore("mno-ldc1-sdc1", cl::init(false),
                                             "stores to their single precision "
                                             "counterparts"));
 
+// Widen the v2 vectors to the register width, i.e. v2i16 -> v8i16,
+// v2i32 -> v4i32, etc, to ensure the correct rail size is used, i.e.
+// INST.h for v16, INST.w for v32, INST.d for v64.
+TargetLoweringBase::LegalizeTypeAction
+MipsSETargetLowering::getPreferredVectorAction(MVT VT) const {
+  if (this->Subtarget.hasMSA() && this->Subtarget.isGP64bit()) {
+    switch (VT.SimpleTy) {
+    // Leave v2i1s to be promoted to larger ones.
+    case MVT::v2i1:
+      return TypePromoteInteger;
+    case MVT::v2i8:
+    case MVT::v2i16:
+    case MVT::v2i32:
+      return TypeWidenVector;
+      break;
+    // v2i64 is already 128-bit wide.
+    default:
+      break;
+    }
+  }
+  return TargetLoweringBase::getPreferredVectorAction(VT);
+}
+
 MipsSETargetLowering::MipsSETargetLowering(const MipsTargetMachine &TM,
                                            const MipsSubtarget &STI)
     : MipsTargetLowering(TM, STI) {
