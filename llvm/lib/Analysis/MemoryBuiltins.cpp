@@ -997,16 +997,29 @@ ObjectSizeOffsetVisitor::combineSizeOffset(SizeOffsetAPInt LHS,
     return ObjectSizeOffsetVisitor::unknown();
 
   switch (Options.EvalMode) {
-  case ObjectSizeOpts::Mode::Min:
-    return (getSizeWithOverflow(LHS).slt(getSizeWithOverflow(RHS))) ? LHS : RHS;
-  case ObjectSizeOpts::Mode::Max:
-    return (getSizeWithOverflow(LHS).sgt(getSizeWithOverflow(RHS))) ? LHS : RHS;
+  case ObjectSizeOpts::Mode::Min: {
+    APInt RemainingSizeLHS = LHS.Size - LHS.Offset;
+    APInt RemainingSizeRHS = RHS.Size - RHS.Offset;
+    APInt RemainingSize = RemainingSizeLHS.slt(RemainingSizeRHS)
+                              ? RemainingSizeLHS
+                              : RemainingSizeRHS;
+    APInt Offset = LHS.Offset.slt(RHS.Offset) ? LHS.Offset : RHS.Offset;
+    return {RemainingSize + Offset, Offset};
+  }
+  case ObjectSizeOpts::Mode::Max: {
+    APInt RemainingSizeLHS = LHS.Size - LHS.Offset;
+    APInt RemainingSizeRHS = RHS.Size - RHS.Offset;
+    APInt RemainingSize = RemainingSizeLHS.sgt(RemainingSizeRHS)
+                              ? RemainingSizeLHS
+                              : RemainingSizeRHS;
+    APInt Offset = LHS.Offset.sgt(RHS.Offset) ? LHS.Offset : RHS.Offset;
+    return {RemainingSize + Offset, Offset};
+  }
   case ObjectSizeOpts::Mode::ExactSizeFromOffset:
-    return (getSizeWithOverflow(LHS).eq(getSizeWithOverflow(RHS)))
-               ? LHS
-               : ObjectSizeOffsetVisitor::unknown();
+    // Treat this as ObjectSizeOpts::Mode::ExactUnderlyingSizeAndOffset to work
+    // around incorrect uses of the result.
   case ObjectSizeOpts::Mode::ExactUnderlyingSizeAndOffset:
-    return LHS == RHS ? LHS : ObjectSizeOffsetVisitor::unknown();
+    return (LHS == RHS) ? LHS : ObjectSizeOffsetVisitor::unknown();
   }
   llvm_unreachable("missing an eval mode");
 }
@@ -1084,7 +1097,13 @@ SizeOffsetValue ObjectSizeOffsetEvaluator::compute(Value *V) {
 }
 
 SizeOffsetValue ObjectSizeOffsetEvaluator::compute_(Value *V) {
-  ObjectSizeOffsetVisitor Visitor(DL, TLI, Context, EvalOpts);
+
+  // Only trust ObjectSizeOffsetVisitor in exact mode, otherwise fallback on
+  // dynamic computation.
+  ObjectSizeOpts VisitorEvalOpts(EvalOpts);
+  VisitorEvalOpts.EvalMode = ObjectSizeOpts::Mode::ExactUnderlyingSizeAndOffset;
+  ObjectSizeOffsetVisitor Visitor(DL, TLI, Context, VisitorEvalOpts);
+
   SizeOffsetAPInt Const = Visitor.compute(V);
   if (Const.bothKnown())
     return SizeOffsetValue(ConstantInt::get(Context, Const.Size),
