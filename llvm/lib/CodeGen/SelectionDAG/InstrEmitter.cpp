@@ -351,7 +351,7 @@ InstrEmitter::AddRegisterOperand(MachineInstrBuilder &MIB,
         OpRC = TRI->getAllocatableClass(OpRC);
         assert(OpRC && "Constraints cannot be fulfilled for allocation");
         Register NewVReg = MRI->createVirtualRegister(OpRC);
-        BuildMI(*MBB, InsertPos, Op.getNode()->getDebugLoc(),
+        BuildMI(*MBB, InsertPos, MIB->getDebugLoc(),
                 TII->get(TargetOpcode::COPY), NewVReg).addReg(VReg);
         VReg = NewVReg;
       } else {
