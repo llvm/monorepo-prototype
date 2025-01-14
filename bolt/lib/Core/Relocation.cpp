@@ -365,6 +365,16 @@ static uint64_t encodeValueX86(uint64_t Type, uint64_t Value, uint64_t PC) {
   return Value;
 }
 
+static bool canEncodeValueAArch64(uint64_t Type, uint64_t Value, uint64_t PC) {
+  // TODO: support more cases.
+  switch (Type) {
+  default:
+    llvm_unreachable("unsupported relocation");
+  case ELF::R_AARCH64_CALL26:
+    return isInt<28>(Value - PC);
+  }
+}
+
 static uint64_t encodeValueAArch64(uint64_t Type, uint64_t Value, uint64_t PC) {
   switch (Type) {
   default:
@@ -844,6 +854,12 @@ uint64_t Relocation::encodeValue(uint64_t Type, uint64_t Value, uint64_t PC) {
   case Triple::x86_64:
     return encodeValueX86(Type, Value, PC);
   }
+}
+
+bool Relocation::canEncodeValue(uint64_t Type, uint64_t Value, uint64_t PC) {
+  // TODO: support more architectures.
+  assert(Arch == Triple::aarch64);
+  return canEncodeValueAArch64(Type, Value, PC);
 }
 
 uint64_t Relocation::extractValue(uint64_t Type, uint64_t Contents,
