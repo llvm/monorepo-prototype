@@ -1451,6 +1451,13 @@ enum NodeType {
   VECREDUCE_UMAX,
   VECREDUCE_UMIN,
 
+  // Nodes used to represent a partial reduction addition operation (signed and
+  // unsigned).
+  // Operands: Accumulator, Input
+  // Outputs: Output
+  PARTIAL_REDUCE_SMLA,
+  PARTIAL_REDUCE_UMLA,
+
   // The `llvm.experimental.stackmap` intrinsic.
   // Operands: input chain, glue, <id>, <numShadowBytes>, [live0[, live1...]]
   // Outputs: output chain, glue
