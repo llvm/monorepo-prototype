@@ -301,6 +301,14 @@ void loongarch::getLoongArchTargetFeatures(const Driver &D,
     else
       Features.push_back("-div32");
   }
+
+  // Select scq feature determined by -m[no-]scq.
+  if (const Arg *A = Args.getLastArg(options::OPT_mscq, options::OPT_mno_scq)) {
+    if (A->getOption().matches(options::OPT_mscq))
+      Features.push_back("+scq");
+    else
+      Features.push_back("-scq");
+  }
 }
 
 std::string loongarch::postProcessTargetCPUString(const std::string &CPU,
