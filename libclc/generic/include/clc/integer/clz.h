@@ -1,2 +1,6 @@
-#define __CLC_BODY <clc/integer/clz.inc>
+#define FUNCTION clz
+#define __CLC_BODY "unary_decl.h"
+
 #include <clc/integer/gentype.inc>
+
+#undef FUNCTION

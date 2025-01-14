@@ -1,3 +1,6 @@
-#define __CLC_BODY <clc/integer/mad24.inc>
-#include <clc/integer/integer-gentype.inc>
-#undef __CLC_BODY
+#define FUNCTION mad24
+#define __CLC_BODY "ternary_decl.h"
+
+#include <clc/integer/gentype24.inc>
+
+#undef FUNCTION
