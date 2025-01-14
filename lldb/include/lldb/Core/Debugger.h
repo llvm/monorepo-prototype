@@ -19,6 +19,7 @@
 #include "lldb/Core/FormatEntity.h"
 #include "lldb/Core/IOHandler.h"
 #include "lldb/Core/SourceManager.h"
+#include "lldb/Core/Statusline.h"
 #include "lldb/Core/UserSettingsController.h"
 #include "lldb/Host/HostThread.h"
 #include "lldb/Host/StreamFile.h"
@@ -307,6 +308,12 @@ public:
   bool GetShowProgress() const;
 
   bool SetShowProgress(bool show_progress);
+
+  bool GetShowStatusline() const;
+
+  std::vector<FormatEntity::Entry> GetStatuslineFormat() const;
+
+  llvm::StringRef GetStatuslineSeparator() const;
 
   llvm::StringRef GetShowProgressAnsiPrefix() const;
 
@@ -728,7 +735,7 @@ protected:
   IOHandlerStack m_io_handler_stack;
   std::recursive_mutex m_io_handler_synchronous_mutex;
 
-  std::optional<uint64_t> m_current_event_id;
+  std::optional<Statusline> m_statusline;
 
   llvm::StringMap<std::weak_ptr<LogHandler>> m_stream_handlers;
   std::shared_ptr<CallbackLogHandler> m_callback_handler_sp;

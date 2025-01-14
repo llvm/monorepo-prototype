@@ -41,6 +41,7 @@ add_lldb_library(lldbInterpreter NO_PLUGIN_DEPENDENCIES
   OptionValueFileSpecList.cpp
   OptionValueFormat.cpp
   OptionValueFormatEntity.cpp
+  OptionValueFormatEntityList.cpp
   OptionValueLanguage.cpp
   OptionValuePathMappings.cpp
   OptionValueProperties.cpp

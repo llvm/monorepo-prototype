@@ -184,6 +184,18 @@ const OptionValueFormatEntity *OptionValue::GetAsFormatEntity() const {
   return nullptr;
 }
 
+OptionValueFormatEntityList *OptionValue::GetAsFormatEntityList() {
+  if (GetType() == OptionValue::eTypeFormatEntityList)
+    return static_cast<OptionValueFormatEntityList *>(this);
+  return nullptr;
+}
+
+const OptionValueFormatEntityList *OptionValue::GetAsFormatEntityList() const {
+  if (GetType() == OptionValue::eTypeFormatEntityList)
+    return static_cast<const OptionValueFormatEntityList *>(this);
+  return nullptr;
+}
+
 OptionValuePathMappings *OptionValue::GetAsPathMappings() {
   if (GetType() == OptionValue::eTypePathMap)
     return static_cast<OptionValuePathMappings *>(this);
@@ -380,6 +392,13 @@ bool OptionValue::SetLanguageValue(lldb::LanguageType new_language) {
   return false;
 }
 
+std::vector<FormatEntity::Entry> OptionValue::GetFormatEntityList() const {
+  std::lock_guard<std::mutex> lock(m_mutex);
+  if (const OptionValueFormatEntityList *option_value = GetAsFormatEntityList())
+    return option_value->GetCurrentValue();
+  return {};
+}
+
 const FormatEntity::Entry *OptionValue::GetFormatEntity() const {
   std::lock_guard<std::mutex> lock(m_mutex);
   if (const OptionValueFormatEntity *option_value = GetAsFormatEntity())
@@ -502,6 +521,8 @@ const char *OptionValue::GetBuiltinTypeAsCString(Type t) {
     return "format";
   case eTypeFormatEntity:
     return "format-string";
+  case eTypeFormatEntityList:
+    return "format-string-list";
   case eTypeLanguage:
     return "language";
   case eTypePathMap:
@@ -545,6 +566,9 @@ lldb::OptionValueSP OptionValue::CreateValueFromCStringForTypeMask(
     break;
   case 1u << eTypeFormatEntity:
     value_sp = std::make_shared<OptionValueFormatEntity>(nullptr);
+    break;
+  case 1u << eTypeFormatEntityList:
+    value_sp = std::make_shared<OptionValueFormatEntityList>();
     break;
   case 1u << eTypeLanguage:
     value_sp = std::make_shared<OptionValueLanguage>(eLanguageTypeUnknown);

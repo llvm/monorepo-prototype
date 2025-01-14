@@ -376,6 +376,8 @@ bool Debugger::SetTerminalWidth(uint64_t term_width) {
 
   if (auto handler_sp = m_io_handler_stack.Top())
     handler_sp->TerminalSizeChanged();
+  if (m_statusline)
+    m_statusline->TerminalSizeChanged();
 
   return success;
 }
@@ -392,6 +394,8 @@ bool Debugger::SetTerminalHeight(uint64_t term_height) {
 
   if (auto handler_sp = m_io_handler_stack.Top())
     handler_sp->TerminalSizeChanged();
+  if (m_statusline)
+    m_statusline->TerminalSizeChanged();
 
   return success;
 }
@@ -450,6 +454,23 @@ llvm::StringRef Debugger::GetShowProgressAnsiPrefix() const {
 
 llvm::StringRef Debugger::GetShowProgressAnsiSuffix() const {
   const uint32_t idx = ePropertyShowProgressAnsiSuffix;
+  return GetPropertyAtIndexAs<llvm::StringRef>(
+      idx, g_debugger_properties[idx].default_cstr_value);
+}
+
+bool Debugger::GetShowStatusline() const {
+  const uint32_t idx = ePropertyShowStatusline;
+  return GetPropertyAtIndexAs<bool>(
+      idx, g_debugger_properties[idx].default_uint_value != 0);
+}
+
+std::vector<FormatEntity::Entry> Debugger::GetStatuslineFormat() const {
+  const uint32_t idx = ePropertyStatuslineFormat;
+  return GetPropertyAtIndexAs<std::vector<FormatEntity::Entry>>(idx, {});
+}
+
+llvm::StringRef Debugger::GetStatuslineSeparator() const {
+  const uint32_t idx = ePropertyStatuslineSeparator;
   return GetPropertyAtIndexAs<llvm::StringRef>(
       idx, g_debugger_properties[idx].default_cstr_value);
 }
@@ -1093,12 +1114,18 @@ void Debugger::SetErrorFile(FileSP file_sp) {
 }
 
 void Debugger::SaveInputTerminalState() {
+  if (m_statusline)
+    m_statusline->Disable();
   int fd = GetInputFile().GetDescriptor();
   if (fd != File::kInvalidDescriptor)
     m_terminal_state.Save(fd, true);
 }
 
-void Debugger::RestoreInputTerminalState() { m_terminal_state.Restore(); }
+void Debugger::RestoreInputTerminalState() {
+  m_terminal_state.Restore();
+  if (m_statusline)
+    m_statusline->Enable();
+}
 
 ExecutionContext Debugger::GetSelectedExecutionContext() {
   bool adopt_selected = true;
@@ -1958,6 +1985,12 @@ lldb::thread_result_t Debugger::DefaultEventHandler() {
   // are now listening to all required events so no events get missed
   m_sync_broadcaster.BroadcastEvent(eBroadcastBitEventThreadIsListening);
 
+  if (!m_statusline && GetShowStatusline())
+    m_statusline.emplace(*this);
+
+  if (m_statusline)
+    m_statusline->Enable();
+
   bool done = false;
   while (!done) {
     EventSP event_sp;
@@ -2016,8 +2049,14 @@ lldb::thread_result_t Debugger::DefaultEventHandler() {
         if (m_forward_listener_sp)
           m_forward_listener_sp->AddEvent(event_sp);
       }
+      if (m_statusline)
+        m_statusline->Update();
     }
   }
+
+  if (m_statusline)
+    m_statusline->Disable();
+
   return {};
 }
 
@@ -2080,84 +2119,8 @@ void Debugger::HandleProgressEvent(const lldb::EventSP &event_sp) {
   if (!data)
     return;
 
-  // Do some bookkeeping for the current event, regardless of whether we're
-  // going to show the progress.
-  const uint64_t id = data->GetID();
-  if (m_current_event_id) {
-    Log *log = GetLog(LLDBLog::Events);
-    if (log && log->GetVerbose()) {
-      StreamString log_stream;
-      log_stream.AsRawOstream()
-          << static_cast<void *>(this) << " Debugger(" << GetID()
-          << ")::HandleProgressEvent( m_current_event_id = "
-          << *m_current_event_id << ", data = { ";
-      data->Dump(&log_stream);
-      log_stream << " } )";
-      log->PutString(log_stream.GetString());
-    }
-    if (id != *m_current_event_id)
-      return;
-    if (data->GetCompleted() == data->GetTotal())
-      m_current_event_id.reset();
-  } else {
-    m_current_event_id = id;
-  }
-
-  // Decide whether we actually are going to show the progress. This decision
-  // can change between iterations so check it inside the loop.
-  if (!GetShowProgress())
-    return;
-
-  // Determine whether the current output file is an interactive terminal with
-  // color support. We assume that if we support ANSI escape codes we support
-  // vt100 escape codes.
-  File &file = GetOutputFile();
-  if (!file.GetIsInteractive() || !file.GetIsTerminalWithColors())
-    return;
-
-  StreamSP output = GetAsyncOutputStream();
-
-  // Print over previous line, if any.
-  output->Printf("\r");
-
-  if (data->GetCompleted() == data->GetTotal()) {
-    // Clear the current line.
-    output->Printf("\x1B[2K");
-    output->Flush();
-    return;
-  }
-
-  // Trim the progress message if it exceeds the window's width and print it.
-  std::string message = data->GetMessage();
-  if (data->IsFinite())
-    message = llvm::formatv("[{0}/{1}] {2}", data->GetCompleted(),
-                            data->GetTotal(), message)
-                  .str();
-
-  // Trim the progress message if it exceeds the window's width and print it.
-  const uint32_t term_width = GetTerminalWidth();
-  const uint32_t ellipsis = 3;
-  if (message.size() + ellipsis >= term_width)
-    message.resize(term_width - ellipsis);
-
-  const bool use_color = GetUseColor();
-  llvm::StringRef ansi_prefix = GetShowProgressAnsiPrefix();
-  if (!ansi_prefix.empty())
-    output->Printf(
-        "%s", ansi::FormatAnsiTerminalCodes(ansi_prefix, use_color).c_str());
-
-  output->Printf("%s...", message.c_str());
-
-  llvm::StringRef ansi_suffix = GetShowProgressAnsiSuffix();
-  if (!ansi_suffix.empty())
-    output->Printf(
-        "%s", ansi::FormatAnsiTerminalCodes(ansi_suffix, use_color).c_str());
-
-  // Clear until the end of the line.
-  output->Printf("\x1B[K\r");
-
-  // Flush the output.
-  output->Flush();
+  if (m_statusline)
+    m_statusline->ReportProgress(*data);
 }
 
 void Debugger::HandleDiagnosticEvent(const lldb::EventSP &event_sp) {

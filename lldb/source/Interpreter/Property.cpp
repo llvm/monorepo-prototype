@@ -161,6 +161,15 @@ Property::Property(const PropertyDefinition &definition)
         definition.default_cstr_value);
     break;
 
+  case OptionValue::eTypeFormatEntityList:
+    // "definition.default_uint_value" is not used for a
+    // OptionValue::eTypeFormatEntityList
+    m_value_sp = std::make_shared<OptionValueFormatEntityList>();
+    if (definition.default_cstr_value) {
+      m_value_sp->SetValueFromString(definition.default_cstr_value);
+    }
+    break;
+
   case OptionValue::eTypePathMap:
     // "definition.default_uint_value" tells us if notifications should occur
     // for path mappings

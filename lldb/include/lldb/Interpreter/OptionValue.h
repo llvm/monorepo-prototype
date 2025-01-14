@@ -51,7 +51,8 @@ public:
     eTypeString,
     eTypeUInt64,
     eTypeUUID,
-    eTypeFormatEntity
+    eTypeFormatEntity,
+    eTypeFormatEntityList,
   };
 
   enum {
@@ -72,7 +73,7 @@ public:
   virtual ~OptionValue() = default;
 
   OptionValue(const OptionValue &other);
-  
+
   OptionValue& operator=(const OptionValue &other);
 
   // Subclasses should override these functions
@@ -249,6 +250,9 @@ public:
   OptionValueFormatEntity *GetAsFormatEntity();
   const OptionValueFormatEntity *GetAsFormatEntity() const;
 
+  OptionValueFormatEntityList *GetAsFormatEntityList();
+  const OptionValueFormatEntityList *GetAsFormatEntityList() const;
+
   bool AppendFileSpecValue(FileSpec file_spec);
 
   bool OptionWasSet() const { return m_value_was_set; }
@@ -286,6 +290,8 @@ public:
       return GetFileSpecValue();
     if constexpr (std::is_same_v<T, FileSpecList>)
       return GetFileSpecListValue();
+    if constexpr (std::is_same_v<T, std::vector<FormatEntity::Entry>>)
+      return GetFormatEntityList();
     if constexpr (std::is_same_v<T, lldb::LanguageType>)
       return GetLanguageValue();
     if constexpr (std::is_same_v<T, llvm::StringRef>)
@@ -387,8 +393,9 @@ private:
   bool SetUUIDValue(const UUID &uuid);
 
   const FormatEntity::Entry *GetFormatEntity() const;
+  std::vector<FormatEntity::Entry> GetFormatEntityList() const;
   const RegularExpression *GetRegexValue() const;
-  
+
   mutable std::mutex m_mutex;
 };
 

@@ -150,6 +150,7 @@ class OptionValueFileSpec;
 class OptionValueFileSpecList;
 class OptionValueFormat;
 class OptionValueFormatEntity;
+class OptionValueFormatEntityList;
 class OptionValueLanguage;
 class OptionValuePathMappings;
 class OptionValueProperties;
