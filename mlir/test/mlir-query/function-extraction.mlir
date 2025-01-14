@@ -16,4 +16,4 @@ func.func @mixedOperations(%a: f32, %b: f32, %c: f32) -> f32 {
   %sum2 = arith.addf %mul1, %b : f32
   %mul2 = arith.mulf %sub2, %sum2 : f32
   return %mul2 : f32
-}
+    }

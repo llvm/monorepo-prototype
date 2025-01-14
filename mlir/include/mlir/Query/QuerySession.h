@@ -33,6 +33,11 @@ public:
   llvm::StringMap<matcher::VariantValue> namedValues;
   bool terminate = false;
 
+public:
+  bool omitBlockArguments = false;
+  bool omitUsesFromAbove = true;
+  bool inclusive = true;
+
 private:
   Operation *rootOp;
   llvm::SourceMgr &sourceMgr;
