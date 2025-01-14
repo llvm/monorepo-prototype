@@ -13,7 +13,9 @@
 //   copy(InIter first, InIter last, OutIter result);
 
 #include <algorithm>
+#include <array>
 #include <cassert>
+#include <vector>
 
 #include "test_macros.h"
 #include "test_iterators.h"
@@ -59,6 +61,55 @@ struct TestInIters {
   }
 };
 
+template <class T, std::size_t N>
+struct TestFwdIterInBitIterOut {
+  std::array<T, N> in;
+  template <class FwdIter>
+  TEST_CONSTEXPR_CXX20 void operator()() {
+    { // Test with full bytes
+      std::vector<bool> out(N);
+      std::copy(FwdIter(in.data()), FwdIter(in.data() + N), out.begin());
+      for (std::size_t i = 0; i < N; ++i)
+        assert(out[i] == static_cast<bool>(in[i]));
+    }
+    { // Test with partial bytes in both front and back
+      std::vector<bool> out(N + 8);
+      std::copy(FwdIter(in.data()), FwdIter(in.data() + N), out.begin() + 4);
+      for (std::size_t i = 0; i < N; ++i)
+        assert(out[i + 4] == static_cast<bool>(in[i]));
+    }
+  }
+  TEST_CONSTEXPR std::size_t size() const { return N; }
+};
+
+// Test std::copy() with forward_iterator-pair input and vector<bool>::iterator output
+TEST_CONSTEXPR_CXX20 void test_fwditer_in_bititer_out() {
+  {
+    {
+      TestFwdIterInBitIterOut<bool, 8> f = {{true, false, true, false, true, false, true, false}};
+      types::for_each(types::forward_iterator_list<bool*>(), f);
+    }
+    {
+      TestFwdIterInBitIterOut<bool, 32> f = {{false}};
+      for (std::size_t i = 0; i < f.size(); i += 2)
+        f.in[i] = true;
+      types::for_each(types::forward_iterator_list<bool*>(), f);
+    }
+    {
+      TestFwdIterInBitIterOut<bool, 64> f = {{false}};
+      for (std::size_t i = 0; i < f.size(); i += 2)
+        f.in[i] = true;
+      types::for_each(types::forward_iterator_list<bool*>(), f);
+    }
+    {
+      TestFwdIterInBitIterOut<bool, 256> f = {{false}};
+      for (std::size_t i = 0; i < f.size(); i += 2)
+        f.in[i] = true;
+      types::for_each(types::forward_iterator_list<bool*>(), f);
+    }
+  }
+}
+
 TEST_CONSTEXPR_CXX20 bool test() {
   types::for_each(types::cpp17_input_iterator_list<int*>(), TestInIters());
 
@@ -77,6 +128,8 @@ TEST_CONSTEXPR_CXX20 bool test() {
     int expected[] = {4, 5, 6, 7, 8, 9, 10, 8, 9, 10};
     assert(std::equal(a, a + 10, expected));
   }
+
+  test_fwditer_in_bititer_out();
 
   return true;
 }
