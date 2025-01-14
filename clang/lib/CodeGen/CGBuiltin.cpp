@@ -4302,12 +4302,41 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
         *this, E, GetIntrinsicID(E->getArg(0)->getType()), "rdx.min"));
   }
 
-  case Builtin::BI__builtin_reduce_add:
+  case Builtin::BI__builtin_reduce_add: {
+    QualType QT = E->getArg(0)->getType();
+    if (QT->hasFloatingRepresentation()) {
+      Value *Op0 = EmitScalarExpr(E->getArg(0));
+      assert(Op0->getType()->isVectorTy());
+      unsigned VecSize = QT->getAs<VectorType>()->getNumElements();
+      Value *Sum = Builder.CreateExtractElement(Op0, static_cast<uint64_t>(0));
+      for (unsigned I = 1; I < VecSize; I++) {
+        Value *Elt = Builder.CreateExtractElement(Op0, I);
+        Sum = Builder.CreateFAdd(Sum, Elt);
+      }
+      return RValue::get(Sum);
+    }
+    assert(QT->hasIntegerRepresentation());
     return RValue::get(emitBuiltinWithOneOverloadedType<1>(
         *this, E, llvm::Intrinsic::vector_reduce_add, "rdx.add"));
-  case Builtin::BI__builtin_reduce_mul:
+  }
+  case Builtin::BI__builtin_reduce_mul: {
+    QualType QT = E->getArg(0)->getType();
+    if (QT->hasFloatingRepresentation()) {
+      Value *Op0 = EmitScalarExpr(E->getArg(0));
+      assert(Op0->getType()->isVectorTy());
+      unsigned VecSize = QT->getAs<VectorType>()->getNumElements();
+      Value *Product =
+          Builder.CreateExtractElement(Op0, static_cast<uint64_t>(0));
+      for (unsigned I = 1; I < VecSize; I++) {
+        Value *Elt = Builder.CreateExtractElement(Op0, I);
+        Product = Builder.CreateFMul(Product, Elt);
+      }
+      return RValue::get(Product);
+    }
+    assert(QT->hasIntegerRepresentation());
     return RValue::get(emitBuiltinWithOneOverloadedType<1>(
         *this, E, llvm::Intrinsic::vector_reduce_mul, "rdx.mul"));
+  }
   case Builtin::BI__builtin_reduce_xor:
     return RValue::get(emitBuiltinWithOneOverloadedType<1>(
         *this, E, llvm::Intrinsic::vector_reduce_xor, "rdx.xor"));
