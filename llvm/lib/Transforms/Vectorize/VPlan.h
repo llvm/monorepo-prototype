@@ -1211,6 +1211,7 @@ public:
     CalculateTripCountMinusVF,
     // Increment the canonical IV separately for each unrolled part.
     CanonicalIVIncrementForPart,
+    WideIVStep,
     BranchOnCount,
     BranchOnCond,
     ComputeReductionResult,
