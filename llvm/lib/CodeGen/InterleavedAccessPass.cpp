@@ -262,31 +262,29 @@ static bool isReInterleaveMask(ShuffleVectorInst *SVI, unsigned &Factor,
 //  getVectorInterleaveFactor / getVectorDeinterleaveFactor. But TLI
 //  hooks (e.g. lowerInterleavedScalableLoad) expect ABCD, so we need
 //  to reorder them by interleaving these values.
-static void interleaveLeafValues(SmallVectorImpl<Value *> &Leaves) {
-  unsigned Factor = Leaves.size();
-  assert(isPowerOf2_32(Factor) && Factor <= 8 && Factor > 1);
-
-  if (Factor == 2)
+static void interleaveLeafValues(MutableArrayRef<Value *> SubLeaves) {
+  int NumLeaves = SubLeaves.size();
+  if (NumLeaves == 2)
     return;
 
-  SmallVector<Value *, 8> Buffer;
-  if (Factor == 4) {
-    for (unsigned SrcIdx : {0, 2, 1, 3})
-      Buffer.push_back(Leaves[SrcIdx]);
-  } else {
-    // Factor of 8.
-    //
-    //  A E C G B F D H
-    //  |_| |_| |_| |_|
-    //   |___|   |___|
-    //     |_______|
-    //         |
-    //  A B C D E F G H
-    for (unsigned SrcIdx : {0, 4, 2, 6, 1, 5, 3, 7})
-      Buffer.push_back(Leaves[SrcIdx]);
-  }
+  assert(isPowerOf2_32(NumLeaves) && NumLeaves > 1);
 
-  llvm::copy(Buffer, Leaves.begin());
+  const int HalfLeaves = NumLeaves / 2;
+  // Visit the sub-trees.
+  interleaveLeafValues(SubLeaves.take_front(HalfLeaves));
+  interleaveLeafValues(SubLeaves.drop_front(HalfLeaves));
+
+  SmallVector<Value *, 8> Buffer;
+  // The step is alternating between +half and -half+1. We exit the
+  // loop right before the last element because given the fact that
+  // SubLeaves always has an even number of elements, the last element
+  // will never be moved and the last to be visited. This simplifies
+  // the exit condition.
+  for (int i = 0; i < NumLeaves - 1;
+       (i < HalfLeaves) ? i += HalfLeaves : i += (1 - HalfLeaves))
+    Buffer.push_back(SubLeaves[i]);
+
+  llvm::copy(Buffer, SubLeaves.begin());
 }
 
 static unsigned getVectorInterleaveFactor(IntrinsicInst *II,
@@ -353,7 +351,7 @@ static std::optional<Value *> getMask(Value *WideMask, unsigned Factor) {
   return std::nullopt;
 }
 
-static unsigned getVectorDeInterleaveFactor(IntrinsicInst *II,
+static unsigned getVectorDeinterleaveFactor(IntrinsicInst *II,
                                             SmallVectorImpl<Value *> &Results) {
   using namespace PatternMatch;
   if (II->getIntrinsicID() != Intrinsic::vector_deinterleave2 ||
@@ -370,7 +368,7 @@ static unsigned getVectorDeInterleaveFactor(IntrinsicInst *II,
     Queue.erase(Queue.begin());
     assert(Current->hasNUses(2));
 
-    unsigned VisitedIdx = 0;
+    ExtractValueInst *LHS = nullptr, *RHS = nullptr;
     for (User *Usr : Current->users()) {
       // We're playing safe here and matching only the expression
       // consisting of a perfectly balanced binary tree in which all
@@ -380,38 +378,26 @@ static unsigned getVectorDeInterleaveFactor(IntrinsicInst *II,
 
       auto *EV = cast<ExtractValueInst>(Usr);
       ArrayRef<unsigned> Indices = EV->getIndices();
-      if (Indices.size() != 1 || Indices[0] >= 2)
+      if (Indices.size() != 1)
         return 0;
 
-      // The idea is that we don't want to have two extractvalue
-      // on the same index. So we XOR (1 << index) onto VisitedIdx
-      // such that if there is any duplication, VisitedIdx will be
-      // zero.
-      VisitedIdx ^= (1 << Indices[0]);
-      if (!VisitedIdx)
+      if (Indices[0] == 0 && !LHS)
+        LHS = EV;
+      else if (Indices[0] == 1 && !RHS)
+        RHS = EV;
+      else
         return 0;
-      // We have a legal index. At this point we're either going
-      // to continue the traversal or push the leaf values into Results.
-      // But in either cases we need to follow the order imposed by
-      // ExtractValue's indices and swap with the last element pushed
-      // into Queue/Results if necessary (This is also one of the main
-      // reasons using BFS instead of DFS here, btw).
+    }
 
-      // When VisitedIdx equals to 0b11, we're the last visted ExtractValue.
-      // So if the current index is 0, we need to swap. Conversely, when
-      // we're either the first visited ExtractValue or the last operand
-      // in Queue/Results is of index 0, there is no need to swap.
-      bool SwapWithLast = VisitedIdx == 0b11 && Indices[0] == 0;
-
+    // We have legal indices. At this point we're either going
+    // to continue the traversal or push the leaf values into Results.
+    for (ExtractValueInst *EV : {LHS, RHS}) {
       // Continue the traversal.
       if (match(EV->user_back(),
                 m_Intrinsic<Intrinsic::vector_deinterleave2>()) &&
           EV->user_back()->hasNUses(2)) {
         auto *EVUsr = cast<IntrinsicInst>(EV->user_back());
-        if (SwapWithLast && !Queue.empty())
-          Queue.insert(Queue.end() - 1, EVUsr);
-        else
-          Queue.push_back(EVUsr);
+        Queue.push_back(EVUsr);
         continue;
       }
 
@@ -421,10 +407,7 @@ static unsigned getVectorDeInterleaveFactor(IntrinsicInst *II,
         return 0;
 
       // Save the leaf value.
-      if (SwapWithLast && !Results.empty())
-        Results.insert(Results.end() - 1, EV);
-      else
-        Results.push_back(EV);
+      Results.push_back(EV);
 
       ++Factor;
     }
@@ -673,7 +656,7 @@ bool InterleavedAccessImpl::lowerDeinterleaveIntrinsic(
     IntrinsicInst *DI, SmallSetVector<Instruction *, 32> &DeadInsts) {
   if (auto *VPLoad = dyn_cast<VPIntrinsic>(DI->getOperand(0))) {
     SmallVector<Value *, 8> DeInterleaveResults;
-    unsigned Factor = getVectorDeInterleaveFactor(DI, DeInterleaveResults);
+    unsigned Factor = getVectorDeinterleaveFactor(DI, DeInterleaveResults);
     if (!Factor)
       return false;
 

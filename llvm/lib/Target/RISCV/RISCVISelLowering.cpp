@@ -22400,11 +22400,6 @@ bool RISCVTargetLowering::lowerInterleavedScalableLoad(
       Intrinsic::riscv_vlseg6_mask, Intrinsic::riscv_vlseg7_mask,
       Intrinsic::riscv_vlseg8_mask,
   };
-  static const Intrinsic::ID IntrIds[] = {
-      Intrinsic::riscv_vlseg2, Intrinsic::riscv_vlseg3, Intrinsic::riscv_vlseg4,
-      Intrinsic::riscv_vlseg5, Intrinsic::riscv_vlseg6, Intrinsic::riscv_vlseg7,
-      Intrinsic::riscv_vlseg8,
-  };
 
   unsigned SEW = DL.getTypeSizeInBits(VTy->getElementType());
   unsigned NumElts = VTy->getElementCount().getKnownMinValue();
@@ -22418,22 +22413,20 @@ bool RISCVTargetLowering::lowerInterleavedScalableLoad(
   SmallVector<Value *> Operands;
   Operands.append({PoisonVal, Load->getArgOperand(0)});
 
-  Function *VlsegNFunc;
-  if (Mask) {
-    VlsegNFunc = Intrinsic::getOrInsertDeclaration(
-        Load->getModule(), IntrMaskIds[Factor - 2],
-        {VecTupTy, Mask->getType(), EVL->getType()});
-    Operands.push_back(Mask);
-  } else {
-    VlsegNFunc = Intrinsic::getOrInsertDeclaration(
-        Load->getModule(), IntrIds[Factor - 2], {VecTupTy, EVL->getType()});
-  }
+  if (!Mask)
+    Mask = ConstantVector::getSplat(VTy->getElementCount(),
+                                    ConstantInt::getTrue(Load->getContext()));
+
+  Function *VlsegNFunc = Intrinsic::getOrInsertDeclaration(
+      Load->getModule(), IntrMaskIds[Factor - 2],
+      {VecTupTy, Mask->getType(), EVL->getType()});
+
+  Operands.push_back(Mask);
 
   Operands.push_back(EVL);
 
   // Tail-policy
-  if (Mask)
-    Operands.push_back(ConstantInt::get(XLenTy, 1));
+  Operands.push_back(ConstantInt::get(XLenTy, RISCVII::TAIL_AGNOSTIC));
 
   Operands.push_back(ConstantInt::get(XLenTy, Log2_64(SEW)));
 
@@ -22565,11 +22558,6 @@ bool RISCVTargetLowering::lowerInterleavedScalableStore(
       Intrinsic::riscv_vsseg6_mask, Intrinsic::riscv_vsseg7_mask,
       Intrinsic::riscv_vsseg8_mask,
   };
-  static const Intrinsic::ID IntrIds[] = {
-      Intrinsic::riscv_vsseg2, Intrinsic::riscv_vsseg3, Intrinsic::riscv_vsseg4,
-      Intrinsic::riscv_vsseg5, Intrinsic::riscv_vsseg6, Intrinsic::riscv_vsseg7,
-      Intrinsic::riscv_vsseg8,
-  };
 
   unsigned SEW = DL.getTypeSizeInBits(VTy->getElementType());
   unsigned NumElts = VTy->getElementCount().getKnownMinValue();
@@ -22590,17 +22578,15 @@ bool RISCVTargetLowering::lowerInterleavedScalableStore(
   Operands.push_back(StoredVal);
   Operands.push_back(Store->getArgOperand(1));
 
-  Function *VssegNFunc;
-  if (Mask) {
-    VssegNFunc = Intrinsic::getOrInsertDeclaration(
-        Store->getModule(), IntrMaskIds[Factor - 2],
-        {VecTupTy, Mask->getType(), EVL->getType()});
-    Operands.push_back(Mask);
-  } else {
-    VssegNFunc = Intrinsic::getOrInsertDeclaration(
-        Store->getModule(), IntrIds[Factor - 2], {VecTupTy, EVL->getType()});
-  }
+  if (!Mask)
+    Mask = ConstantVector::getSplat(VTy->getElementCount(),
+                                    ConstantInt::getTrue(Store->getContext()));
 
+  Function *VssegNFunc = Intrinsic::getOrInsertDeclaration(
+      Store->getModule(), IntrMaskIds[Factor - 2],
+      {VecTupTy, Mask->getType(), EVL->getType()});
+
+  Operands.push_back(Mask);
   Operands.push_back(EVL);
   Operands.push_back(ConstantInt::get(XLenTy, Log2_64(SEW)));
 
