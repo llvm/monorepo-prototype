@@ -379,6 +379,9 @@ public:
 
   void setConstrainedFPCallAttr(CallBase *I) {
     I->addFnAttr(Attribute::StrictFP);
+    MemoryEffects ME = MemoryEffects::inaccessibleMemOnly();
+    auto A = Attribute::getWithMemoryEffects(getContext(), ME);
+    I->addFnAttr(A);
   }
 
   void setDefaultOperandBundles(ArrayRef<OperandBundleDef> OpBundles) {
@@ -994,6 +997,16 @@ public:
   /// the intrinsic.
   CallInst *CreateIntrinsic(Intrinsic::ID ID, ArrayRef<Type *> Types,
                             ArrayRef<Value *> Args, FMFSource FMFSource = {},
+                            const Twine &Name = "");
+
+  /// Create a call to intrinsic \p ID with \p Args, mangled using \p Types and
+  /// with operand bundles.
+  /// If \p FMFSource is provided, copy fast-math-flags from that instruction to
+  /// the intrinsic.
+  CallInst *CreateIntrinsic(Intrinsic::ID ID, ArrayRef<Type *> Types,
+                            ArrayRef<Value *> Args,
+                            ArrayRef<OperandBundleDef> OpBundles,
+                            Instruction *FMFSource = nullptr,
                             const Twine &Name = "");
 
   /// Create a call to intrinsic \p ID with \p RetTy and \p Args. If
@@ -2448,24 +2461,13 @@ public:
   CallInst *CreateCall(FunctionType *FTy, Value *Callee,
                        ArrayRef<Value *> Args = {}, const Twine &Name = "",
                        MDNode *FPMathTag = nullptr) {
-    CallInst *CI = CallInst::Create(FTy, Callee, Args, DefaultOperandBundles);
-    if (IsFPConstrained)
-      setConstrainedFPCallAttr(CI);
-    if (isa<FPMathOperator>(CI))
-      setFPAttrs(CI, FPMathTag, FMF);
-    return Insert(CI, Name);
+    return CreateCall(FTy, Callee, Args, DefaultOperandBundles, Name,
+                      FPMathTag);
   }
 
   CallInst *CreateCall(FunctionType *FTy, Value *Callee, ArrayRef<Value *> Args,
                        ArrayRef<OperandBundleDef> OpBundles,
-                       const Twine &Name = "", MDNode *FPMathTag = nullptr) {
-    CallInst *CI = CallInst::Create(FTy, Callee, Args, OpBundles);
-    if (IsFPConstrained)
-      setConstrainedFPCallAttr(CI);
-    if (isa<FPMathOperator>(CI))
-      setFPAttrs(CI, FPMathTag, FMF);
-    return Insert(CI, Name);
-  }
+                       const Twine &Name = "", MDNode *FPMathTag = nullptr);
 
   CallInst *CreateCall(FunctionCallee Callee, ArrayRef<Value *> Args = {},
                        const Twine &Name = "", MDNode *FPMathTag = nullptr) {
@@ -2683,6 +2685,13 @@ public:
   CallInst *CreateAlignmentAssumption(const DataLayout &DL, Value *PtrValue,
                                       Value *Alignment,
                                       Value *OffsetValue = nullptr);
+
+  void
+  createFPRoundingBundle(SmallVectorImpl<OperandBundleDef> &Bundles,
+                         std::optional<RoundingMode> Rounding = std::nullopt);
+  void createFPExceptionBundle(
+      SmallVectorImpl<OperandBundleDef> &Bundles,
+      std::optional<fp::ExceptionBehavior> Except = std::nullopt);
 };
 
 /// This provides a uniform API for creating instructions and inserting
