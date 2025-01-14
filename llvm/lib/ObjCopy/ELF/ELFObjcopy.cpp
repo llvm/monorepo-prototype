@@ -609,6 +609,97 @@ static void addSymbol(Object &Obj, const NewSymbolInfo &SymInfo,
       Sec ? (uint16_t)SYMBOL_SIMPLE_INDEX : (uint16_t)SHN_ABS, 0);
 }
 
+namespace {
+struct RemoveNoteDetail {
+  struct DeletedRange {
+    uint64_t OldFrom;
+    uint64_t OldTo;
+    uint64_t NewPos;
+  };
+
+  template <class ELFT>
+  static std::vector<DeletedRange>
+  findNotesToRemove(ArrayRef<uint8_t> Data, size_t Align,
+                    ArrayRef<RemoveNoteInfo> NotesToRemove);
+  static std::vector<uint8_t> updateData(ArrayRef<uint8_t> OldData,
+                                         ArrayRef<DeletedRange> ToRemove);
+};
+
+} // namespace
+
+template <class ELFT>
+std::vector<RemoveNoteDetail::DeletedRange>
+RemoveNoteDetail::findNotesToRemove(ArrayRef<uint8_t> Data, size_t Align,
+                                    ArrayRef<RemoveNoteInfo> NotesToRemove) {
+  LLVM_ELF_IMPORT_TYPES_ELFT(ELFT);
+  std::vector<DeletedRange> ToRemove;
+  uint64_t CurPos = 0;
+  uint64_t NewPos = 0;
+  while (CurPos + sizeof(Elf_Nhdr) <= Data.size()) {
+    auto Nhdr = reinterpret_cast<const Elf_Nhdr *>(Data.data() + CurPos);
+    size_t FullSize = Nhdr->getSize(Align);
+    if (CurPos + FullSize > Data.size())
+      break;
+    Elf_Note Note(*Nhdr);
+    bool ShouldRemove =
+        llvm::any_of(NotesToRemove, [&Note](const RemoveNoteInfo &NoteInfo) {
+          return NoteInfo.TypeId == Note.getType() &&
+                 (NoteInfo.Name.empty() || NoteInfo.Name == Note.getName());
+        });
+    if (ShouldRemove)
+      ToRemove.push_back({CurPos, CurPos + FullSize, NewPos});
+    else
+      NewPos += FullSize;
+    CurPos += FullSize;
+  }
+  return ToRemove;
+}
+
+std::vector<uint8_t>
+RemoveNoteDetail::updateData(ArrayRef<uint8_t> OldData,
+                             ArrayRef<DeletedRange> ToRemove) {
+  std::vector<uint8_t> NewData;
+  NewData.reserve(OldData.size());
+  uint64_t CurPos = 0;
+  for (auto &RemRange : ToRemove) {
+    if (CurPos < RemRange.OldFrom) {
+      auto Slice = OldData.slice(CurPos, RemRange.OldFrom - CurPos);
+      NewData.insert(NewData.end(), Slice.begin(), Slice.end());
+    }
+    assert(RemRange.NewPos == NewData.size());
+    CurPos = RemRange.OldTo;
+  }
+  if (CurPos < OldData.size()) {
+    auto Slice = OldData.slice(CurPos);
+    NewData.insert(NewData.end(), Slice.begin(), Slice.end());
+  }
+  return NewData;
+}
+
+static Error removeNote(Object &Obj, endianness Endianness,
+                        ArrayRef<RemoveNoteInfo> NotesToRemove) {
+  for (auto &Sec : Obj.sections()) {
+    // TODO: Support note sections in segments
+    if (Sec.Type != SHT_NOTE || Sec.ParentSegment || !Sec.hasContents())
+      continue;
+    ArrayRef<uint8_t> OldData = Sec.getContents();
+    size_t Align = std::max<size_t>(4, Sec.Align);
+    // Note: notes for both 32-bit and 64-bit ELF files use 4-byte words in the
+    // header, so the parsers are the same.
+    auto ToRemove = (Endianness == endianness::little)
+                        ? RemoveNoteDetail::findNotesToRemove<ELF64LE>(
+                              OldData, Align, NotesToRemove)
+                        : RemoveNoteDetail::findNotesToRemove<ELF64BE>(
+                              OldData, Align, NotesToRemove);
+    if (!ToRemove.empty()) {
+      if (Error E = Obj.updateSectionData(
+              Sec, RemoveNoteDetail::updateData(OldData, ToRemove)))
+        return E;
+    }
+  }
+  return Error::success();
+}
+
 static Error
 handleUserSection(const NewSectionInfo &NewSection,
                   function_ref<Error(StringRef, ArrayRef<uint8_t>)> F) {
@@ -798,6 +889,11 @@ static Error handleArgs(const CommonConfig &Config, const ELFConfig &ELFConfig,
   endianness E = OutputElfType == ELFT_ELF32LE || OutputElfType == ELFT_ELF64LE
                      ? endianness::little
                      : endianness::big;
+
+  if (!ELFConfig.NotesToRemove.empty()) {
+    if (Error Err = removeNote(Obj, E, ELFConfig.NotesToRemove))
+      return Err;
+  }
 
   for (const NewSectionInfo &AddedSection : Config.AddSection) {
     auto AddSection = [&](StringRef Name, ArrayRef<uint8_t> Data) -> Error {
