@@ -2249,6 +2249,8 @@ size_t DWARFASTParserClang::ParseChildEnumerators(
     return 0;
 
   size_t enumerators_added = 0;
+  unsigned NumNegativeBits = 0;
+  unsigned NumPositiveBits = 0;
 
   for (DWARFDIE die : parent_die.children()) {
     const dw_tag_t tag = die.Tag();
@@ -2300,11 +2302,54 @@ size_t DWARFASTParserClang::ParseChildEnumerators(
     }
 
     if (name && name[0] && got_value) {
-      m_ast.AddEnumerationValueToEnumerationType(
+      auto ECD = m_ast.AddEnumerationValueToEnumerationType(
           clang_type, decl, name, enum_value, enumerator_byte_size * 8);
       ++enumerators_added;
+
+      llvm::APSInt InitVal = ECD->getInitVal();
+      // Keep track of the size of positive and negative values.
+      if (InitVal.isUnsigned() || InitVal.isNonNegative()) {
+        // If the enumerator is zero that should still be counted as a positive
+        // bit since we need a bit to store the value zero.
+        unsigned ActiveBits = InitVal.getActiveBits();
+        NumPositiveBits = std::max({NumPositiveBits, ActiveBits, 1u});
+      } else {
+        NumNegativeBits =
+            std::max(NumNegativeBits, (unsigned)InitVal.getSignificantBits());
+      }
     }
   }
+
+  /// The following code follows the same logic as in Sema::ActOnEnumBody
+  /// clang/lib/Sema/SemaDecl.cpp
+  // If we have an empty set of enumerators we still need one bit.
+  // From [dcl.enum]p8
+  // If the enumerator-list is empty, the values of the enumeration are as if
+  // the enumeration had a single enumerator with value 0
+  if (!NumPositiveBits && !NumNegativeBits)
+    NumPositiveBits = 1;
+
+  clang::EnumDecl *enum_decl =
+      ClangUtil::GetQualType(clang_type)->getAs<clang::EnumType>()->getDecl();
+  enum_decl->setNumPositiveBits(NumPositiveBits);
+  enum_decl->setNumNegativeBits(NumNegativeBits);
+
+  auto ts_ptr = clang_type.GetTypeSystem().dyn_cast_or_null<TypeSystemClang>();
+  if (!ts_ptr)
+    return enumerators_added;
+
+  clang::QualType BestPromotionType;
+  clang::QualType BestType;
+  unsigned BestWidth;
+
+  auto &Context = m_ast.getASTContext();
+  bool is_cpp = Language::LanguageIsCPlusPlus(
+      SymbolFileDWARF::GetLanguage(*parent_die.GetCU()));
+  ts_ptr->getSema()->ComputeBestEnumProperties(
+      Context, enum_decl, is_cpp, false, NumNegativeBits, NumPositiveBits,
+      BestWidth, BestType, BestPromotionType);
+  enum_decl->setPromotionType(BestPromotionType);
+
   return enumerators_added;
 }
 
