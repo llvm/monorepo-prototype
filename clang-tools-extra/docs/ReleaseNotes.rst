@@ -260,6 +260,11 @@ Changes in existing checks
   <clang-tidy/checks/cppcoreguidelines/pro-type-union-access>` check to
   report a location even when the member location is not valid.
 
+- Improved :doc:`misc-const-correctness
+  <clang-tidy/checks/misc/const-correctness>` check by adding
+  the option ``AllowedTypes``, that excludes specified types
+  from const-correctness checking.
+
 - Improved :doc:`misc-definitions-in-headers
   <clang-tidy/checks/misc/definitions-in-headers>` check by rewording the
   diagnostic note that suggests adding ``inline``.
