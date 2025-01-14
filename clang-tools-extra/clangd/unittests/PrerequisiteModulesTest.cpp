@@ -9,7 +9,6 @@
 
 /// FIXME: Skip testing on windows temporarily due to the different escaping
 /// code mode.
-#include "llvm/ADT/StringRef.h"
 #ifndef _WIN32
 
 #include "ModulesBuilder.h"
@@ -19,6 +18,7 @@
 #include "Compiler.h"
 #include "TestTU.h"
 #include "support/ThreadsafeFS.h"
+#include "llvm/ADT/StringRef.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/raw_ostream.h"
 #include "gmock/gmock.h"
