@@ -19506,7 +19506,11 @@ void Sema::ActOnFields(Scope *S, SourceLocation RecLoc, Decl *EnclosingDecl,
       CDecl->setIvarRBraceLoc(RBrac);
     }
   }
-  ProcessAPINotes(Record);
+
+  // If this is a class template instantiation, its API Notes attributes were
+  // added to the class template itself. Make sure they are not added twice.
+  if (!CXXRecord || !CXXRecord->getDescribedClassTemplate())
+    ProcessAPINotes(Record);
 }
 
 /// Determine whether the given integral value is representable within
