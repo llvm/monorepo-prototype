@@ -292,6 +292,9 @@ int clang_main(int Argc, char **Argv, const llvm::ToolContext &ToolContext) {
       // Insert at the end of the argument list to append.
       Args.append(AppendedOpts.begin(), AppendedOpts.end());
     }
+
+    // Header search path mode defaults to Microsoft.
+    Args.insert(Args.begin() + 1, "-fheader-search=microsoft");
   }
 
   llvm::StringSet<> SavedStrings;
