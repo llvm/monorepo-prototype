@@ -131,3 +131,17 @@ define <vscale x 4 x i8> @splat_idx_constant_nxv4i8(<vscale x 8 x i8> %v) {
   %splat = shufflevector <vscale x 4 x i8> %ins, <vscale x 4 x i8> poison, <vscale x 4 x i32> zeroinitializer
   ret <vscale x 4 x i8> %splat
 }
+
+define <4 x i8> @splat_idx_constant_last_idx_v4i8(<8 x i8> %v) {
+; CHECK-LABEL: splat_idx_constant_last_idx_v4i8:
+; CHECK:       # %bb.0:
+; CHECK-NEXT:    vsetivli zero, 4, e8, mf2, ta, ma
+; CHECK-NEXT:    vslidedown.vi v9, v8, 4
+; CHECK-NEXT:    vsetivli zero, 4, e8, mf4, ta, ma
+; CHECK-NEXT:    vrgather.vi v8, v9, 3
+; CHECK-NEXT:    ret
+  %x = extractelement <8 x i8> %v, i64 7
+  %ins = insertelement <4 x i8> poison, i8 %x, i32 0
+  %splat = shufflevector <4 x i8> %ins, <4 x i8> poison, <4 x i32> zeroinitializer
+  ret <4 x i8> %splat
+}
