@@ -30,19 +30,37 @@ class GenericLoopConversionPattern
     : public mlir::OpConversionPattern<mlir::omp::LoopOp> {
 public:
   enum class GenericLoopCombinedInfo {
-    None,
+    Standalone,
     TargetTeamsLoop,
     TargetParallelLoop
   };
 
   using mlir::OpConversionPattern<mlir::omp::LoopOp>::OpConversionPattern;
 
+  explicit GenericLoopConversionPattern(mlir::MLIRContext *ctx)
+      : mlir::OpConversionPattern<mlir::omp::LoopOp>{ctx} {
+    this->setHasBoundedRewriteRecursion(true);
+  }
+
   mlir::LogicalResult
   matchAndRewrite(mlir::omp::LoopOp loopOp, OpAdaptor adaptor,
                   mlir::ConversionPatternRewriter &rewriter) const override {
     assert(mlir::succeeded(checkLoopConversionSupportStatus(loopOp)));
 
-    rewriteToDistributeParallelDo(loopOp, rewriter);
+    GenericLoopCombinedInfo combinedInfo = findGenericLoopCombineInfo(loopOp);
+
+    switch (combinedInfo) {
+    case GenericLoopCombinedInfo::Standalone:
+      rewriteStandaloneLoop(loopOp, rewriter);
+      break;
+    case GenericLoopCombinedInfo::TargetParallelLoop:
+      assert(false);
+      break;
+    case GenericLoopCombinedInfo::TargetTeamsLoop:
+      rewriteToDistributeParallelDo(loopOp, rewriter);
+      break;
+    }
+
     rewriter.eraseOp(loopOp);
     return mlir::success();
   }
@@ -52,9 +70,8 @@ public:
     GenericLoopCombinedInfo combinedInfo = findGenericLoopCombineInfo(loopOp);
 
     switch (combinedInfo) {
-    case GenericLoopCombinedInfo::None:
-      return loopOp.emitError(
-          "not yet implemented: Standalone `omp loop` directive");
+    case GenericLoopCombinedInfo::Standalone:
+      break;
     case GenericLoopCombinedInfo::TargetParallelLoop:
       return loopOp.emitError(
           "not yet implemented: Combined `omp target parallel loop` directive");
@@ -68,7 +85,10 @@ public:
              << loopOp->getName() << " operation";
     };
 
-    if (loopOp.getBindKind())
+    // For standalone directives, `bind` is already supported. Other combined
+    // forms will be supported in a follow-up PR.
+    if (combinedInfo != GenericLoopCombinedInfo::Standalone &&
+        loopOp.getBindKind())
       return todo("bind");
 
     if (loopOp.getOrder())
@@ -86,7 +106,7 @@ private:
   static GenericLoopCombinedInfo
   findGenericLoopCombineInfo(mlir::omp::LoopOp loopOp) {
     mlir::Operation *parentOp = loopOp->getParentOp();
-    GenericLoopCombinedInfo result = GenericLoopCombinedInfo::None;
+    GenericLoopCombinedInfo result = GenericLoopCombinedInfo::Standalone;
 
     if (auto teamsOp = mlir::dyn_cast_if_present<mlir::omp::TeamsOp>(parentOp))
       if (mlir::isa_and_present<mlir::omp::TargetOp>(teamsOp->getParentOp()))
@@ -98,6 +118,103 @@ private:
         result = GenericLoopCombinedInfo::TargetParallelLoop;
 
     return result;
+  }
+
+  void rewriteStandaloneLoop(mlir::omp::LoopOp loopOp,
+                             mlir::ConversionPatternRewriter &rewriter) const {
+    using namespace mlir::omp;
+    std::optional<ClauseBindKind> bindKind = loopOp.getBindKind();
+
+    if (!bindKind.has_value())
+      return rewriteToSimdLoop(loopOp, rewriter);
+
+    switch (*loopOp.getBindKind()) {
+    case ClauseBindKind::Parallel:
+      return rewriteToWsloop(loopOp, rewriter);
+    case ClauseBindKind::Teams:
+      return rewriteToDistrbute(loopOp, rewriter);
+    case ClauseBindKind::Thread:
+      return rewriteToSimdLoop(loopOp, rewriter);
+    }
+  }
+
+  /// Rewrites standalone `loop` (with `bind` clause with `bind(parallel)`)
+  /// directives to equivalent `simd` constructs.
+  ///
+  /// The reasoning behind this decision is that according to the spec (version
+  /// 5.2, section 11.7.1):
+  ///
+  /// "If the bind clause is not specified on a construct for which it may be
+  /// specified and the construct is closely nested inside a teams or parallel
+  /// construct, the effect is as if binding is teams or parallel. If none of
+  /// those conditions hold, the binding region is not defined."
+  ///
+  /// which means that standalone `loop` directives have undefined binding
+  /// region. Moreover, the spec says (in the next paragraph):
+  ///
+  /// "The specified binding region determines the binding thread set.
+  /// Specifically, if the binding region is a teams region, then the binding
+  /// thread set is the set of initial threads that are executing that region
+  /// while if the binding region is a parallel region, then the binding thread
+  /// set is the team of threads that are executing that region. If the binding
+  /// region is not defined, then the binding thread set is the encountering
+  /// thread."
+  ///
+  /// which means that the binding thread set for a standalone `loop` directive
+  /// is only the encountering thread.
+  ///
+  /// Since the encountering thread is the binding thread (set) for a
+  /// standalone `loop` directive, the best we can do in such case is to "simd"
+  /// the directive.
+  void rewriteToSimdLoop(mlir::omp::LoopOp loopOp,
+                         mlir::ConversionPatternRewriter &rewriter) const {
+    loopOp.emitWarning(
+        "Detected standalone OpenMP `loop` directive with thread binding, "
+        "the associated loop will be rewritten to `simd`.");
+    rewriteToSingleWrapperOp<mlir::omp::SimdOp, mlir::omp::SimdOperands>(
+        loopOp, rewriter);
+  }
+
+  void rewriteToDistrbute(mlir::omp::LoopOp loopOp,
+                          mlir::ConversionPatternRewriter &rewriter) const {
+    rewriteToSingleWrapperOp<mlir::omp::DistributeOp,
+                             mlir::omp::DistributeOperands>(loopOp, rewriter);
+  }
+
+  void rewriteToWsloop(mlir::omp::LoopOp loopOp,
+                       mlir::ConversionPatternRewriter &rewriter) const {
+    rewriteToSingleWrapperOp<mlir::omp::WsloopOp, mlir::omp::WsloopOperands>(
+        loopOp, rewriter);
+  }
+
+  template <typename OpTy, typename OpOperandsTy>
+  void
+  rewriteToSingleWrapperOp(mlir::omp::LoopOp loopOp,
+                           mlir::ConversionPatternRewriter &rewriter) const {
+    OpOperandsTy distributeClauseOps;
+    distributeClauseOps.privateVars = loopOp.getPrivateVars();
+
+    auto privateSyms = loopOp.getPrivateSyms();
+    if (privateSyms)
+      distributeClauseOps.privateSyms.assign(privateSyms->begin(),
+                                             privateSyms->end());
+
+    Fortran::common::openmp::EntryBlockArgs distributeArgs;
+    distributeArgs.priv.vars = distributeClauseOps.privateVars;
+
+    auto distributeOp =
+        rewriter.create<OpTy>(loopOp.getLoc(), distributeClauseOps);
+    mlir::Block *distributeBlock =
+        genEntryBlock(rewriter, distributeArgs, distributeOp.getRegion());
+
+    mlir::IRMapping mapper;
+    mlir::Block &loopBlock = *loopOp.getRegion().begin();
+
+    for (auto [loopOpArg, distributeOpArg] : llvm::zip_equal(
+             loopBlock.getArguments(), distributeBlock->getArguments()))
+      mapper.map(loopOpArg, distributeOpArg);
+
+    rewriter.clone(*loopOp.begin(), mapper);
   }
 
   void rewriteToDistributeParallelDo(
