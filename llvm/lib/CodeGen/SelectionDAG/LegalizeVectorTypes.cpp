@@ -4521,6 +4521,9 @@ void DAGTypeLegalizer::WidenVectorResult(SDNode *N, unsigned ResNo) {
     break;
   case ISD::EXTRACT_SUBVECTOR: Res = WidenVecRes_EXTRACT_SUBVECTOR(N); break;
   case ISD::INSERT_VECTOR_ELT: Res = WidenVecRes_INSERT_VECTOR_ELT(N); break;
+  case ISD::ATOMIC_LOAD:
+    Res = WidenVecRes_ATOMIC_LOAD(cast<AtomicSDNode>(N));
+    break;
   case ISD::LOAD:              Res = WidenVecRes_LOAD(N); break;
   case ISD::STEP_VECTOR:
   case ISD::SPLAT_VECTOR:
@@ -5905,6 +5908,30 @@ SDValue DAGTypeLegalizer::WidenVecRes_INSERT_VECTOR_ELT(SDNode *N) {
   return DAG.getNode(ISD::INSERT_VECTOR_ELT, SDLoc(N),
                      InOp.getValueType(), InOp,
                      N->getOperand(1), N->getOperand(2));
+}
+
+SDValue DAGTypeLegalizer::WidenVecRes_ATOMIC_LOAD(AtomicSDNode *N) {
+  SmallVector<SDValue, 16> LdChain; // Chain for the series of load
+  SDValue Result = GenWidenVectorLoads(LdChain, N, /*IsAtomic=*/true);
+
+  if (Result) {
+    // If we generate a single load, we can use that for the chain.  Otherwise,
+    // build a factor node to remember the multiple loads are independent and
+    // chain to that.
+    SDValue NewChain;
+    if (LdChain.size() == 1)
+      NewChain = LdChain[0];
+    else
+      NewChain = DAG.getNode(ISD::TokenFactor, SDLoc(N), MVT::Other, LdChain);
+
+    // Modified the chain - switch anything that used the old chain to use
+    // the new one.
+    ReplaceValueWith(SDValue(N, 1), NewChain);
+
+    return Result;
+  }
+
+  report_fatal_error("Unable to widen atomic vector load");
 }
 
 SDValue DAGTypeLegalizer::WidenVecRes_LOAD(SDNode *N) {
@@ -7706,7 +7733,7 @@ static SDValue BuildVectorFromScalar(SelectionDAG& DAG, EVT VecTy,
 }
 
 SDValue DAGTypeLegalizer::GenWidenVectorLoads(SmallVectorImpl<SDValue> &LdChain,
-                                              LoadSDNode *LD) {
+                                              MemSDNode *LD, bool IsAtomic) {
   // The strategy assumes that we can efficiently load power-of-two widths.
   // The routine chops the vector into the largest vector loads with the same
   // element type or scalar loads and then recombines it to the widen vector
@@ -7763,8 +7790,13 @@ SDValue DAGTypeLegalizer::GenWidenVectorLoads(SmallVectorImpl<SDValue> &LdChain,
     } while (TypeSize::isKnownGT(RemainingWidth, NewVTWidth));
   }
 
-  SDValue LdOp = DAG.getLoad(*FirstVT, dl, Chain, BasePtr, LD->getPointerInfo(),
-                             LD->getOriginalAlign(), MMOFlags, AAInfo);
+  SDValue LdOp;
+  if (IsAtomic)
+    LdOp = DAG.getAtomic(ISD::ATOMIC_LOAD, dl, *FirstVT, *FirstVT, Chain,
+                         BasePtr, LD->getMemOperand());
+  else
+    LdOp = DAG.getLoad(*FirstVT, dl, Chain, BasePtr, LD->getPointerInfo(),
+                       LD->getOriginalAlign(), MMOFlags, AAInfo);
   LdChain.push_back(LdOp.getValue(1));
 
   // Check if we can load the element with one instruction.

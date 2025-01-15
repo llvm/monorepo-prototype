@@ -1046,6 +1046,7 @@ private:
   SDValue WidenVecRes_EXTRACT_SUBVECTOR(SDNode* N);
   SDValue WidenVecRes_INSERT_SUBVECTOR(SDNode *N);
   SDValue WidenVecRes_INSERT_VECTOR_ELT(SDNode* N);
+  SDValue WidenVecRes_ATOMIC_LOAD(AtomicSDNode *N);
   SDValue WidenVecRes_LOAD(SDNode* N);
   SDValue WidenVecRes_VP_LOAD(VPLoadSDNode *N);
   SDValue WidenVecRes_VP_STRIDED_LOAD(VPStridedLoadSDNode *N);
@@ -1129,8 +1130,8 @@ private:
   /// resulting wider type. It takes:
   ///   LdChain: list of chains for the load to be generated.
   ///   Ld:      load to widen
-  SDValue GenWidenVectorLoads(SmallVectorImpl<SDValue> &LdChain,
-                              LoadSDNode *LD);
+  SDValue GenWidenVectorLoads(SmallVectorImpl<SDValue> &LdChain, MemSDNode *LD,
+                              bool IsAtomic = false);
 
   /// Helper function to generate a set of extension loads to load a vector with
   /// a resulting wider type. It takes:
