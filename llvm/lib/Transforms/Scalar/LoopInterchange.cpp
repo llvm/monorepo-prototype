@@ -201,8 +201,11 @@ static void interChangeDependencies(CharMatrix &DepMatrix, unsigned FromIndx,
 //   "<" or ">", and it does not change before and after the permutation is
 //   applied.
 static DirectionVectorOrder
-calcDirectionVectorOrder(const std::vector<char> &DV) {
-  for (unsigned char Direction : DV) {
+calcDirectionVectorOrder(const std::vector<char> &DV, unsigned Left,
+                         unsigned Right) {
+  assert(Left <= Right && "Left must be less or equal to Right");
+  for (unsigned I = Left; I <= Right; I++) {
+    unsigned char Direction = DV[I];
     switch (Direction) {
     case '<':
       return DirectionVectorOrder::Positive;
@@ -226,11 +229,11 @@ static bool isLegalToInterChangeLoops(CharMatrix &DepMatrix,
     // Create temporary DepVector check its lexicographical order
     // before and after swapping OuterLoop vs InnerLoop
     Cur = DepMatrix[Row];
-    auto OrderBefore = calcDirectionVectorOrder(Cur);
+    auto OrderBefore = calcDirectionVectorOrder(Cur, OuterLoopId, InnerLoopId);
     if (OrderBefore == DirectionVectorOrder::All)
       return false;
     std::swap(Cur[InnerLoopId], Cur[OuterLoopId]);
-    auto OrderAfter = calcDirectionVectorOrder(Cur);
+    auto OrderAfter = calcDirectionVectorOrder(Cur, OuterLoopId, InnerLoopId);
     if (OrderBefore != OrderAfter)
       return false;
   }
