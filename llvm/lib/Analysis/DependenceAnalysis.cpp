@@ -3601,14 +3601,10 @@ DependenceInfo::depends(Instruction *Src, Instruction *Dst,
     return std::make_unique<Dependence>(Src, Dst);
   }
 
-  assert(isLoadOrStore(Src) && "instruction is not load or store");
-  assert(isLoadOrStore(Dst) && "instruction is not load or store");
-  Value *SrcPtr = getLoadStorePointerOperand(Src);
-  Value *DstPtr = getLoadStorePointerOperand(Dst);
+  const MemoryLocation &LocA = MemoryLocation::get(Dst);
+  const MemoryLocation &LocB = MemoryLocation::get(Src);
 
-  switch (underlyingObjectsAlias(AA, F->getDataLayout(),
-                                 MemoryLocation::get(Dst),
-                                 MemoryLocation::get(Src))) {
+  switch (underlyingObjectsAlias(AA, F->getDataLayout(), LocA, LocB)) {
   case AliasResult::MayAlias:
   case AliasResult::PartialAlias:
     // cannot analyse objects if we don't understand their aliasing.
@@ -3622,6 +3618,13 @@ DependenceInfo::depends(Instruction *Src, Instruction *Dst,
     break; // The underlying objects alias; test accesses for dependence.
   }
 
+  if (LocA.Size != LocB.Size) {
+    // The dependence test gets confused if the size of the memory accesses
+    // differ.
+    LLVM_DEBUG(dbgs() << "can't analyze must alias with different sizes\n");
+    return std::make_unique<Dependence>(Src, Dst);
+  }
+
   // establish loop nesting levels
   establishNestingLevels(Src, Dst);
   LLVM_DEBUG(dbgs() << "    common nesting levels = " << CommonLevels << "\n");
@@ -3632,6 +3635,8 @@ DependenceInfo::depends(Instruction *Src, Instruction *Dst,
 
   unsigned Pairs = 1;
   SmallVector<Subscript, 2> Pair(Pairs);
+  Value *SrcPtr = getLoadStorePointerOperand(Src);
+  Value *DstPtr = getLoadStorePointerOperand(Dst);
   const SCEV *SrcSCEV = SE->getSCEV(SrcPtr);
   const SCEV *DstSCEV = SE->getSCEV(DstPtr);
   LLVM_DEBUG(dbgs() << "    SrcSCEV = " << *SrcSCEV << "\n");
