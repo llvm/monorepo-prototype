@@ -363,6 +363,16 @@ mlir::getEffectsRecursively(Operation *rootOp) {
   return effects;
 }
 
+bool mlir::isMemoryEffectFreeOrOnlyRead(Operation *op) {
+  std::optional<SmallVector<MemoryEffects::EffectInstance>> effects =
+      getEffectsRecursively(op);
+  if (!effects)
+    return false;
+  return std::all_of(effects->begin(), effects->end(), [](auto &effect) {
+    return isa<MemoryEffects::Read>(effect.getEffect());
+  });
+}
+
 bool mlir::isSpeculatable(Operation *op) {
   auto conditionallySpeculatable = dyn_cast<ConditionallySpeculatable>(op);
   if (!conditionallySpeculatable)
