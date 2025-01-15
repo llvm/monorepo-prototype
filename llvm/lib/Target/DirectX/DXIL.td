@@ -785,6 +785,7 @@ def CreateHandle : DXILOp<57, createHandle> {
   let arguments = [Int8Ty, Int32Ty, Int32Ty, Int1Ty];
   let result = HandleTy;
   let stages = [Stages<DXIL1_0, [all_stages]>, Stages<DXIL1_6, [removed]>];
+  let attributes = [Attributes<DXIL1_0, [ReadOnly]>];
 }
 
 def BufferLoad : DXILOp<68, bufferLoad> {
@@ -796,6 +797,7 @@ def BufferLoad : DXILOp<68, bufferLoad> {
       [Overloads<DXIL1_0,
                  [ResRetHalfTy, ResRetFloatTy, ResRetInt16Ty, ResRetInt32Ty]>];
   let stages = [Stages<DXIL1_0, [all_stages]>];
+  let attributes = [Attributes<DXIL1_0, [ReadOnly]>];
 }
 
 def BufferStore : DXILOp<69, bufferStore> {
@@ -824,6 +826,7 @@ def CheckAccessFullyMapped : DXILOp<71, checkAccessFullyMapped> {
   let result = Int1Ty;
   let overloads = [Overloads<DXIL1_0, [Int32Ty]>];
   let stages = [Stages<DXIL1_0, [all_stages]>];
+  let attributes = [Attributes<DXIL1_0, [ReadOnly]>];
 }
 
 def Discard : DXILOp<82, discard> {
@@ -954,6 +957,7 @@ def AnnotateHandle : DXILOp<216, annotateHandle> {
   let arguments = [HandleTy, ResPropsTy];
   let result = HandleTy;
   let stages = [Stages<DXIL1_6, [all_stages]>];
+  let attributes = [Attributes<DXIL1_0, [ReadNone]>];
 }
 
 def CreateHandleFromBinding : DXILOp<217, createHandleFromBinding> {
@@ -961,6 +965,7 @@ def CreateHandleFromBinding : DXILOp<217, createHandleFromBinding> {
   let arguments = [ResBindTy, Int32Ty, Int1Ty];
   let result = HandleTy;
   let stages = [Stages<DXIL1_6, [all_stages]>];
+  let attributes = [Attributes<DXIL1_0, [ReadNone]>];
 }
 
 def WaveActiveAllTrue : DXILOp<114, waveAllTrue> {
@@ -985,7 +990,7 @@ def WaveIsFirstLane :  DXILOp<110, waveIsFirstLane> {
   let arguments = [];
   let result = Int1Ty;
   let stages = [Stages<DXIL1_0, [all_stages]>];
-  let attributes = [Attributes<DXIL1_0, [ReadNone]>];
+  let attributes = [Attributes<DXIL1_0, [ReadNone, IsWave]>];
 }
 
 def WaveReadLaneAt:  DXILOp<117, waveReadLaneAt> {
@@ -1004,7 +1009,8 @@ def WaveGetLaneIndex : DXILOp<111, waveGetLaneIndex> {
   let arguments = [];
   let result = Int32Ty;
   let stages = [Stages<DXIL1_0, [all_stages]>];
-  let attributes = [Attributes<DXIL1_0, [ReadNone]>];
+  // Lane Index can change on thread repacking. See dxc #5607 for details.
+  let attributes = [Attributes<DXIL1_0, [ReadOnly]>];
 }
 
 def WaveAllBitCount : DXILOp<135, waveAllOp> {
