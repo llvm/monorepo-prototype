@@ -20,6 +20,7 @@
 #include "llvm/IR/Value.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/ErrorHandling.h"
+#include "llvm/Support/NVPTXAddrSpace.h"
 #include "llvm/Transforms/InstCombine/InstCombiner.h"
 #include <optional>
 using namespace llvm;
@@ -562,4 +563,11 @@ Value *NVPTXTTIImpl::rewriteIntrinsicWithAddressSpace(IntrinsicInst *II,
   }
   }
   return nullptr;
+}
+
+unsigned NVPTXTTIImpl::getAssumedAddrSpace(const Value *V) const {
+  if (isa<AllocaInst>(V))
+    return ADDRESS_SPACE_LOCAL;
+
+  return -1;
 }
