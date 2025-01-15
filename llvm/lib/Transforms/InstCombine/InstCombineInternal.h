@@ -240,6 +240,13 @@ public:
   convertOrOfShiftsToFunnelShift(Instruction &Or);
 
 private:
+  ConstantRange computeConstantRange(const Value *V, const Instruction *CtxI,
+                                     bool ForSigned, bool UseInstrInfo = true,
+                                     unsigned Depth = 0) {
+    return llvm::computeConstantRange(V, ForSigned, UseInstrInfo, &AC, CtxI,
+                                      &DT, Depth);
+  }
+
   bool annotateAnyAllocSite(CallBase &Call, const TargetLibraryInfo *TLI);
   bool isDesirableIntType(unsigned BitWidth) const;
   bool shouldChangeType(unsigned FromBitWidth, unsigned ToBitWidth) const;
@@ -668,6 +675,7 @@ public:
   Instruction *foldICmpWithCastOp(ICmpInst &ICmp);
   Instruction *foldICmpWithZextOrSext(ICmpInst &ICmp);
 
+  Instruction *foldICmpUsingConstantRanges(ICmpInst &Cmp);
   Instruction *foldICmpUsingKnownBits(ICmpInst &Cmp);
   Instruction *foldICmpWithDominatingICmp(ICmpInst &Cmp);
   Instruction *foldICmpWithConstant(ICmpInst &Cmp);
