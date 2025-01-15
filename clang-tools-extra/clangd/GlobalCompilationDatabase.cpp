@@ -830,6 +830,16 @@ bool OverlayCDB::setCompileCommand(PathRef File,
   return true;
 }
 
+std::unique_ptr<ProjectModules>
+OverlayCDB::getProjectModules(PathRef File) const {
+  auto MDB = DelegatingCDB::getProjectModules(File);
+  MDB->setCommandProvider([&Mangler = Mangler](tooling::CompileCommand &Command,
+                                               PathRef CommandPath) {
+    Mangler(Command, CommandPath);
+  });
+  return std::move(MDB);
+}
+
 DelegatingCDB::DelegatingCDB(const GlobalCompilationDatabase *Base)
     : Base(Base) {
   if (Base)
@@ -874,6 +884,5 @@ bool DelegatingCDB::blockUntilIdle(Deadline D) const {
     return true;
   return Base->blockUntilIdle(D);
 }
-
 } // namespace clangd
 } // namespace clang
