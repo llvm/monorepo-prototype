@@ -36,13 +36,10 @@ namespace memspace {
 [[nodiscard]] const MemSpaceRegion *getMemSpace(ProgramStateRef State,
                                                 const MemRegion *MR);
 
-[[nodiscard]] bool hasMemSpaceTrait(ProgramStateRef State, const MemRegion *MR);
-
 template <typename FirstT, typename... RestT>
 [[nodiscard]] bool isMemSpace(ProgramStateRef State,
                               const MemRegion *MR) {
-  return isa<FirstT, RestT...>(MR->getMemorySpace()) ||
-         isa_and_nonnull<FirstT, RestT...>(getMemSpace(State, MR));
+  return isa_and_nonnull<FirstT, RestT...>(getMemSpace(State, MR));
 }
 
 } // namespace memspace

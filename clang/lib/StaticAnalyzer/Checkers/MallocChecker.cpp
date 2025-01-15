@@ -2204,8 +2204,6 @@ MallocChecker::FreeMemAux(CheckerContext &C, const Expr *ArgExpr,
     return nullptr;
   }
 
-  const MemSpaceRegion *MS = R->getMemorySpace();
-
   // Parameters, locals, statics, globals, and memory returned by
   // __builtin_alloca() shouldn't be freed.
   // Should skip this check if:
@@ -2213,16 +2211,13 @@ MallocChecker::FreeMemAux(CheckerContext &C, const Expr *ArgExpr,
   // - The region has unknown memspace and no trait for further clarification
   //   (i.e., just unknown)
   // - The region has unknown memspace and a heap memspace trait
-  const MemSpaceRegion *MSTrait = memspace::getMemSpace(State, R);
-  bool HasHeapOrUnknownTrait = !MSTrait || isa<HeapSpaceRegion>(MSTrait);
-  if (!(isa<HeapSpaceRegion>(MS) ||
-        (isa<UnknownSpaceRegion>(MS) && HasHeapOrUnknownTrait))) {
+  if (!memspace::isMemSpace<HeapSpaceRegion, UnknownSpaceRegion>(State, R)) {
     // Regions returned by malloc() are represented by SymbolicRegion objects
     // within HeapSpaceRegion. Of course, free() can work on memory allocated
     // outside the current function, so UnknownSpaceRegion is also a
     // possibility here.
 
-    if (isa<AllocaRegion>(R) || isa_and_nonnull<AllocaRegion>(MSTrait))
+    if (isa<AllocaRegion>(R))
       HandleFreeAlloca(C, ArgVal, ArgExpr->getSourceRange());
     else
       HandleNonHeapDealloc(C, ArgVal, ArgExpr->getSourceRange(), ParentExpr,
@@ -2413,11 +2408,7 @@ bool MallocChecker::SummarizeRegion(ProgramStateRef State, raw_ostream &os,
     os << "a block";
     return true;
   default: {
-    const MemSpaceRegion *MS = MR->getMemorySpace();
-    const MemSpaceRegion *MSTrait = memspace::getMemSpace(State, MR);
-
-    if (isa<StackLocalsSpaceRegion>(MS) ||
-        isa_and_nonnull<StackLocalsSpaceRegion>(MSTrait)) {
+    if (memspace::isMemSpace<StackLocalsSpaceRegion>(State, MR)) {
       const VarRegion *VR = dyn_cast<VarRegion>(MR);
       const VarDecl *VD;
       if (VR)
@@ -2432,8 +2423,7 @@ bool MallocChecker::SummarizeRegion(ProgramStateRef State, raw_ostream &os,
       return true;
     }
 
-    if (isa<StackArgumentsSpaceRegion>(MS) ||
-        isa_and_nonnull<StackArgumentsSpaceRegion>(MSTrait)) {
+    if (memspace::isMemSpace<StackArgumentsSpaceRegion>(State, MR)) {
       const VarRegion *VR = dyn_cast<VarRegion>(MR);
       const VarDecl *VD;
       if (VR)
@@ -2448,8 +2438,7 @@ bool MallocChecker::SummarizeRegion(ProgramStateRef State, raw_ostream &os,
       return true;
     }
 
-    if (isa<GlobalsSpaceRegion>(MS) ||
-        isa_and_nonnull<GlobalsSpaceRegion>(MSTrait)) {
+    if (memspace::isMemSpace<GlobalsSpaceRegion>(State, MR)) {
       const VarRegion *VR = dyn_cast<VarRegion>(MR);
       const VarDecl *VD;
       if (VR)

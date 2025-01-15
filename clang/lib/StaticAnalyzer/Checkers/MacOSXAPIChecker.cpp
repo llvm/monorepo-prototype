@@ -121,7 +121,7 @@ void MacOSXAPIChecker::CheckDispatchOnce(CheckerContext &C, const CallExpr *CE,
     os << " the instance variable '" << IVR->getDecl()->getName() << '\'';
   } else if (memspace::isMemSpace<HeapSpaceRegion>(State, RB)) {
     os << " heap-allocated memory";
-  } else if (isa<UnknownSpaceRegion>(RB->getMemorySpace())) {
+  } else if (memspace::isMemSpace<UnknownSpaceRegion>(State, RB)) {
     // Presence of an IVar superregion has priority over this branch, because
     // ObjC objects are on the heap even if the core doesn't realize this.
     // Presence of a block variable base region has priority over this branch,

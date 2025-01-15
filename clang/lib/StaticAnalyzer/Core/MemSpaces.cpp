@@ -56,16 +56,6 @@ ProgramStateRef setMemSpaceTrait(ProgramStateRef State, const MemRegion *MR,
   return NewState;
 }
 
-bool hasMemSpaceTrait(ProgramStateRef State, const MemRegion *MR) {
-  MR = canonicalizeMemRegion(MR);
-
-  if (!isa<UnknownSpaceRegion>(MR->getMemorySpace()))
-    return false;
-
-  const MemSpaceRegion *const *Result = State->get<MemSpacesMap>(MR);
-  return Result;
-}
-
 const MemSpaceRegion *getMemSpace(ProgramStateRef State,
                                   const MemRegion *MR) {
   MR = canonicalizeMemRegion(MR);
