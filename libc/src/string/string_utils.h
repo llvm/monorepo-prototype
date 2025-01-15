@@ -16,6 +16,7 @@
 
 #include "src/__support/CPP/bitset.h"
 #include "src/__support/macros/config.h"
+#include "src/__support/macros/null_check.h"
 #include "src/__support/macros/optimization.h" // LIBC_UNLIKELY
 #include "src/string/memory_utils/inline_bzero.h"
 #include "src/string/memory_utils/inline_memcpy.h"
@@ -89,6 +90,7 @@ LIBC_INLINE size_t string_length_byte_read(const char *src) {
 // Returns the length of a string, denoted by the first occurrence
 // of a null terminator.
 LIBC_INLINE size_t string_length(const char *src) {
+  LIBC_CRASH_ON_NULLPTR(src);
 #ifdef LIBC_COPT_STRING_UNSAFE_WIDE_READ
   // Unsigned int is the default size for most processors, and on x86-64 it
   // performs better than larger sizes when the src pointer can't be assumed to
@@ -144,6 +146,7 @@ LIBC_INLINE void *find_first_character_byte_read(const unsigned char *src,
 // 'src'. If 'ch' is not found, returns nullptr.
 LIBC_INLINE void *find_first_character(const unsigned char *src,
                                        unsigned char ch, size_t max_strlen) {
+  LIBC_CRASH_ON_NULLPTR(src);
 #ifdef LIBC_COPT_STRING_UNSAFE_WIDE_READ
   // If the maximum size of the string is small, the overhead of aligning to a
   // word boundary and generating a bitmask of the appropriate size may be
@@ -163,6 +166,8 @@ LIBC_INLINE void *find_first_character(const unsigned char *src,
 // Returns the maximum length span that contains only characters not found in
 // 'segment'. If no characters are found, returns the length of 'src'.
 LIBC_INLINE size_t complementary_span(const char *src, const char *segment) {
+  LIBC_CRASH_ON_NULLPTR(src);
+  LIBC_CRASH_ON_NULLPTR(segment);
   const char *initial = src;
   cpp::bitset<256> bitset;
 
@@ -216,6 +221,8 @@ LIBC_INLINE char *string_token(char *__restrict src,
 
 LIBC_INLINE size_t strlcpy(char *__restrict dst, const char *__restrict src,
                            size_t size) {
+  LIBC_CRASH_ON_NULLPTR(dst);
+  LIBC_CRASH_ON_NULLPTR(src);
   size_t len = internal::string_length(src);
   if (!size)
     return len;
@@ -228,6 +235,7 @@ LIBC_INLINE size_t strlcpy(char *__restrict dst, const char *__restrict src,
 template <bool ReturnNull = true>
 LIBC_INLINE constexpr static char *strchr_implementation(const char *src,
                                                          int c) {
+  LIBC_CRASH_ON_NULLPTR(src);
   char ch = static_cast<char>(c);
   for (; *src && *src != ch; ++src)
     ;
@@ -237,6 +245,7 @@ LIBC_INLINE constexpr static char *strchr_implementation(const char *src,
 
 LIBC_INLINE constexpr static char *strrchr_implementation(const char *src,
                                                           int c) {
+  LIBC_CRASH_ON_NULLPTR(src);
   char ch = static_cast<char>(c);
   char *last_occurrence = nullptr;
   while (true) {
