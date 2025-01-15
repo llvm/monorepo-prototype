@@ -28,6 +28,7 @@ Implementation Status
    strings
    sys/mman
    sys/resource
+   termios
    threads
    time
    uchar
