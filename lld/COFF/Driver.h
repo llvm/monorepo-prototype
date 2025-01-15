@@ -234,6 +234,9 @@ private:
   void parseSection(StringRef);
   void parseAligncomm(StringRef);
 
+  // Parses a MS-DOS stub file
+  void parseDosStub(StringRef path);
+
   // Parses a string in the form of "[:<integer>]"
   void parseFunctionPadMin(llvm::opt::Arg *a);
 
