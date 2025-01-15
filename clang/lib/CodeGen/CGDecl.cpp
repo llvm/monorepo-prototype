@@ -104,7 +104,6 @@ void CodeGenFunction::EmitDecl(const Decl &D) {
   case Decl::Binding:
   case Decl::UnresolvedUsingIfExists:
   case Decl::HLSLBuffer:
-    llvm_unreachable("Declaration should not be in declstmts!");
   case Decl::Record:    // struct/union/class X;
   case Decl::CXXRecord: // struct/union/class X; [C++]
     if (CGDebugInfo *DI = getDebugInfo())
@@ -163,9 +162,10 @@ void CodeGenFunction::EmitDecl(const Decl &D) {
            "Should not see file-scope variables inside a function!");
     EmitVarDecl(VD);
     if (auto *DD = dyn_cast<DecompositionDecl>(&VD))
-      for (auto *B : DD->bindings())
+      for (auto *B : DD->flat_bindings())
         if (auto *HD = B->getHoldingVar())
           EmitVarDecl(*HD);
+
     return;
   }
 
