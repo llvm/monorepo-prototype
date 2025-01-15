@@ -205,7 +205,7 @@ protected:
   PeelCounter calculate(Value &, ScalarEvolution &SE);
 
   // Returns true if the \p Phi is an induction in the target loop. This
-  // funciton is a wrapper of `InductionDescriptor::isInductionPHI`.
+  // function is a wrapper of `InductionDescriptor::isInductionPHI`.
   bool isInductionPHI(PHINode *Phi, ScalarEvolution &SE) const;
 
   const Loop &L;

@@ -198,18 +198,18 @@ for.body:
   br i1 %exitcond, label %for.cond.cleanup, label %for.body
 }
 
-; Check that phi analysis can handle a binary operator with induction variable.
-define void @_Z6binaryv_induction() {
+; Check that phi analysis can handle a binary operator with induction variables.
+define void @binary_induction() {
 ; The phis become induction through the chain of phis, with a unary
 ; instruction on a loop induction.  Check that the phis for x, a, and y become
-; a loop induction since x is based on y, which is based on a, which is based
+; loop inductions since x is based on y, which is based on a, which is based
 ; on a binary add of a constant and i, which is a loop induction.
 ; Consider the calls to g:
 ; First iteration: g(0), x=0, g(0), y=1, a=2
 ; Second iteration: g(0), x=1, g(2), y=3, a=3
 ; Third iteration: g(1), x=3, g(3), y=4, a=4
 ; Fourth iteration (and subsequent): g(i), x=i+1, g(i+1), y=i+2, a=i+2
-; Therefore, peeling 3 times removes the phi nodes.
+; Therefore, peeling 3 times makes the phi nodes induction variables.
 ;
 ; void g(int);
 ; void binary() {
@@ -224,7 +224,7 @@ define void @_Z6binaryv_induction() {
 ;     a = i + 2;
 ;   }
 ; }
-; CHECK-LABEL: @_Z6binaryv_induction(
+; CHECK-LABEL: @binary_induction(
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    br label [[FOR_BODY_PEEL_BEGIN:%.*]]
 ; CHECK:       for.body.peel.begin:
@@ -295,8 +295,89 @@ for.body:
   br i1 %exitcond, label %for.body, label %for.cond.cleanup
 }
 
+; Check that phi analysis can handle an assignment from an induction.
+define void @induction_assignment(ptr noundef noalias %a, ptr noundef noalias %b) {
+; The phis become induction through the assignment from an induction. Check
+; that the phi im becomes a loop ; induction because i is a loop induction.
+; This test is based on TSVC s291.
+;
+; #define N 100
+; void f(int * restrict a, int * restrict b) {
+;   int im = N - 1;
+;   for (int i = 0; i < N; i++) {
+;     a[i] = b[i] + b[im];
+;     im = i;
+;   }
+; }
+; CHECK-LABEL: @induction_assignment(
+; CHECK-NEXT:  entry:
+; CHECK-NEXT:    br label [[FOR_BODY_PEEL_BEGIN:%.*]]
+; CHECK:       for.body.peel.begin:
+; CHECK-NEXT:    br label [[FOR_BODY_PEEL:%.*]]
+; CHECK:       for.body.peel:
+; CHECK-NEXT:    [[ARRAYIDX_PEEL:%.*]] = getelementptr inbounds nuw i32, ptr [[B:%.*]], i64 0
+; CHECK-NEXT:    [[TMP0:%.*]] = load i32, ptr [[ARRAYIDX_PEEL]], align 4
+; CHECK-NEXT:    [[IDXPROM1_PEEL:%.*]] = zext nneg i32 99 to i64
+; CHECK-NEXT:    [[ARRAYIDX2_PEEL:%.*]] = getelementptr inbounds nuw i32, ptr [[B]], i64 [[IDXPROM1_PEEL]]
+; CHECK-NEXT:    [[TMP1:%.*]] = load i32, ptr [[ARRAYIDX2_PEEL]], align 4
+; CHECK-NEXT:    [[ADD_PEEL:%.*]] = add nsw i32 [[TMP1]], [[TMP0]]
+; CHECK-NEXT:    [[ARRAYIDX4_PEEL:%.*]] = getelementptr inbounds nuw i32, ptr [[A:%.*]], i64 0
+; CHECK-NEXT:    store i32 [[ADD_PEEL]], ptr [[ARRAYIDX4_PEEL]], align 4
+; CHECK-NEXT:    [[INDVARS_IV_NEXT_PEEL:%.*]] = add nuw nsw i64 0, 1
+; CHECK-NEXT:    [[TMP2:%.*]] = trunc nuw nsw i64 0 to i32
+; CHECK-NEXT:    [[EXITCOND_PEEL:%.*]] = icmp ne i64 [[INDVARS_IV_NEXT_PEEL]], 100
+; CHECK-NEXT:    br i1 [[EXITCOND_PEEL]], label [[FOR_BODY_PEEL_NEXT:%.*]], label [[FOR_COND_CLEANUP:%.*]]
+; CHECK:       for.body.peel.next:
+; CHECK-NEXT:    br label [[FOR_BODY_PEEL_NEXT1:%.*]]
+; CHECK:       for.body.peel.next1:
+; CHECK-NEXT:    br label [[ENTRY_PEEL_NEWPH:%.*]]
+; CHECK:       entry.peel.newph:
+; CHECK-NEXT:    br label [[FOR_BODY:%.*]]
+; CHECK:       for.body:
+; CHECK-NEXT:    [[INDVARS_IV:%.*]] = phi i64 [ [[INDVARS_IV_NEXT_PEEL]], [[ENTRY_PEEL_NEWPH]] ], [ [[INDVARS_IV_NEXT:%.*]], [[FOR_BODY]] ]
+; CHECK-NEXT:    [[IM_010:%.*]] = phi i32 [ [[TMP2]], [[ENTRY_PEEL_NEWPH]] ], [ [[TMP5:%.*]], [[FOR_BODY]] ]
+; CHECK-NEXT:    [[ARRAYIDX:%.*]] = getelementptr inbounds nuw i32, ptr [[B]], i64 [[INDVARS_IV]]
+; CHECK-NEXT:    [[TMP3:%.*]] = load i32, ptr [[ARRAYIDX]], align 4
+; CHECK-NEXT:    [[IDXPROM1:%.*]] = zext nneg i32 [[IM_010]] to i64
+; CHECK-NEXT:    [[ARRAYIDX2:%.*]] = getelementptr inbounds nuw i32, ptr [[B]], i64 [[IDXPROM1]]
+; CHECK-NEXT:    [[TMP4:%.*]] = load i32, ptr [[ARRAYIDX2]], align 4
+; CHECK-NEXT:    [[ADD:%.*]] = add nsw i32 [[TMP4]], [[TMP3]]
+; CHECK-NEXT:    [[ARRAYIDX4:%.*]] = getelementptr inbounds nuw i32, ptr [[A]], i64 [[INDVARS_IV]]
+; CHECK-NEXT:    store i32 [[ADD]], ptr [[ARRAYIDX4]], align 4
+; CHECK-NEXT:    [[INDVARS_IV_NEXT]] = add nuw nsw i64 [[INDVARS_IV]], 1
+; CHECK-NEXT:    [[TMP5]] = trunc nuw nsw i64 [[INDVARS_IV]] to i32
+; CHECK-NEXT:    [[EXITCOND:%.*]] = icmp ne i64 [[INDVARS_IV_NEXT]], 100
+; CHECK-NEXT:    br i1 [[EXITCOND]], label [[FOR_BODY]], label [[FOR_COND_CLEANUP_LOOPEXIT:%.*]], !llvm.loop [[LOOP4:![0-9]+]]
+; CHECK:       for.cond.cleanup.loopexit:
+; CHECK-NEXT:    br label [[FOR_COND_CLEANUP]]
+; CHECK:       for.cond.cleanup:
+; CHECK-NEXT:    ret void
+;
+entry:
+  br label %for.body
+
+for.body:
+  %indvars.iv = phi i64 [ 0, %entry ], [ %indvars.iv.next, %for.body ]
+  %im.010 = phi i32 [ 99, %entry ], [ %2, %for.body ]
+  %arrayidx = getelementptr inbounds nuw i32, ptr %b, i64 %indvars.iv
+  %0 = load i32, ptr %arrayidx, align 4
+  %idxprom1 = zext nneg i32 %im.010 to i64
+  %arrayidx2 = getelementptr inbounds nuw i32, ptr %b, i64 %idxprom1
+  %1 = load i32, ptr %arrayidx2, align 4
+  %add = add nsw i32 %1, %0
+  %arrayidx4 = getelementptr inbounds nuw i32, ptr %a, i64 %indvars.iv
+  store i32 %add, ptr %arrayidx4, align 4
+  %indvars.iv.next = add nuw nsw i64 %indvars.iv, 1
+  %2 = trunc nuw nsw i64 %indvars.iv to i32
+  %exitcond = icmp ne i64 %indvars.iv.next, 100
+  br i1 %exitcond, label %for.body, label %for.cond.cleanup
+
+for.cond.cleanup:
+  ret void
+}
+
 ; Check that phi analysis can handle cast operations with induction variable.
-define void @_Z6induction_with_cast(ptr noundef %a, i64 noundef %size) {
+define void @induction_with_cast(ptr noundef %a, i64 noundef %size) {
 ; The original code is like as follows. We don't need peel the loop to make
 ; phis loop induction.
 ;
@@ -305,7 +386,7 @@ define void @_Z6induction_with_cast(ptr noundef %a, i64 noundef %size) {
 ;     a[i] = 10;
 ; }
 ;
-; CHECK-LABEL: @_Z6induction_with_cast(
+; CHECK-LABEL: @induction_with_cast(
 ; CHECK-NEXT:  for.body.preheader:
 ; CHECK-NEXT:    br label [[FOR_BODY:%.*]]
 ; CHECK:       for.body:
