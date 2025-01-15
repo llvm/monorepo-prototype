@@ -4612,14 +4612,16 @@ static Value *simplifyCmpSelOfMaxMin(Value *CmpLHS, Value *CmpRHS,
   return nullptr;
 }
 
-/// An alternative way to test if a bit is set or not uses sgt/slt instead of
-/// eq/ne.
-static Value *simplifySelectWithFakeICmpEq(Value *CmpLHS, Value *CmpRHS,
-                                           CmpPredicate Pred, Value *TrueVal,
-                                           Value *FalseVal) {
-  if (auto Res = decomposeBitTestICmp(CmpLHS, CmpRHS, Pred))
-    return simplifySelectBitTest(TrueVal, FalseVal, Res->X, &Res->Mask,
-                                 Res->Pred == ICmpInst::ICMP_EQ);
+/// An alternative way to test if a bit is set or not uses e.g. sgt/slt instead
+/// of eq/ne.
+static Value *simplifySelectWithBitTest(Value *CondVal, Value *TrueVal,
+                                        Value *FalseVal) {
+
+  if (auto *ICmp = dyn_cast<ICmpInst>(CondVal))
+    if (auto Res = decomposeBitTestICmp(
+            ICmp->getOperand(0), ICmp->getOperand(1), ICmp->getPredicate()))
+      return simplifySelectBitTest(TrueVal, FalseVal, Res->X, &Res->Mask,
+                                   Res->Pred == ICmpInst::ICMP_EQ);
 
   return nullptr;
 }
@@ -4727,11 +4729,6 @@ static Value *simplifySelectWithICmpCond(Value *CondVal, Value *TrueVal,
         match(FalseVal, m_Intrinsic<Intrinsic::abs>(m_Specific(CmpLHS))))
       return FalseVal;
   }
-
-  // Check for other compares that behave like bit test.
-  if (Value *V =
-          simplifySelectWithFakeICmpEq(CmpLHS, CmpRHS, Pred, TrueVal, FalseVal))
-    return V;
 
   // If we have a scalar equality comparison, then we know the value in one of
   // the arms of the select. See if substituting this value into the arm and
@@ -4982,6 +4979,9 @@ static Value *simplifySelectInst(Value *Cond, Value *TrueVal, Value *FalseVal,
 
   if (Value *V =
           simplifySelectWithICmpCond(Cond, TrueVal, FalseVal, Q, MaxRecurse))
+    return V;
+
+  if (Value *V = simplifySelectWithBitTest(Cond, TrueVal, FalseVal))
     return V;
 
   if (Value *V = simplifySelectWithFCmp(Cond, TrueVal, FalseVal, Q, MaxRecurse))
