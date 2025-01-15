@@ -1,4 +1,5 @@
 // REQUIRES: native-run
+// UNSUPPORTED: target={{s390.*}}
 // RUN: %clang_builtins %s %librt -o %t && %run_nomprotect %t
 // REQUIRES: librt_has_enable_execute_stack
 
