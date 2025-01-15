@@ -100,6 +100,11 @@ SBSaveCoreOptions::AddMemoryRegionToSave(const SBMemoryRegionInfo &region) {
   return SBError();
 }
 
+lldb::SBThreadCollection SBSaveCoreOptions::GetThreadsToSave() const {
+  LLDB_INSTRUMENT_VA(this);
+  return SBThreadCollection(m_opaque_up->GetThreadsToSave());
+}
+
 void SBSaveCoreOptions::Clear() {
   LLDB_INSTRUMENT_VA(this);
   m_opaque_up->Clear();

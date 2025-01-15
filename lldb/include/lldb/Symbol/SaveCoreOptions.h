@@ -13,7 +13,6 @@
 #include "lldb/Utility/RangeMap.h"
 
 #include <optional>
-#include <set>
 #include <string>
 #include <unordered_set>
 
@@ -46,6 +45,8 @@ public:
   const MemoryRanges &GetCoreFileMemoryRanges() const;
 
   void AddMemoryRegionToSave(const lldb_private::MemoryRegionInfo &region);
+
+  lldb::ThreadCollectionSP GetThreadsToSave() const;
 
   void Clear();
 
