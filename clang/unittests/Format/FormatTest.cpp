@@ -28188,6 +28188,17 @@ TEST_F(FormatTest, BreakBinaryOperations) {
                "                  | byte_buffer[2] << 16\n"
                "                  | byte_buffer[3] << 24;",
                Style);
+
+  Style.BreakBinaryOperations = FormatStyle::BBO_OnePerLine;
+  // Check operator >> special case
+  verifyFormat("std::cin\n"
+               "    >> longOperand1\n"
+               "    >> longOperand2\n"
+               "    >> longOperand3\n"
+               "    >> longOperand4\n"
+               "    >> longOperand5\n"
+               "    >> longOperand6;",
+               Style);
 }
 
 TEST_F(FormatTest, RemoveEmptyLinesInUnwrappedLines) {
