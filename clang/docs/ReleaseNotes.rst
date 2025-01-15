@@ -1217,6 +1217,7 @@ clang-format
 - Adds ``VariableTemplates`` option.
 - Adds support for bash globstar in ``.clang-format-ignore``.
 - Adds ``WrapNamespaceBodyWithEmptyLines`` option.
+- Adds ``AlignBlockComments`` option.
 
 libclang
 --------
