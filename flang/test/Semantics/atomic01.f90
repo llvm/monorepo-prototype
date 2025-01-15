@@ -5,7 +5,7 @@
 
 program test_atomic_add
   use iso_fortran_env, only : atomic_int_kind
-  implicit none
+  implicit none(external, type)
 
   integer(kind=atomic_int_kind) atom_object[*], atom_array(2)[*], quantity, array(1), coarray[*], non_coarray
   integer non_atom_object[*], non_atom, non_scalar(1), status, stat_array(1), coindexed[*]

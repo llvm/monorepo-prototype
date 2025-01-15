@@ -1311,6 +1311,14 @@ static const SpecificIntrinsicInterface specificIntrinsicFunction[]{
 
 static const IntrinsicInterface intrinsicSubroutine[]{
     {"abort", {}, {}, Rank::elemental, IntrinsicClass::impureSubroutine},
+    {"atomic_add",
+        {{"atom", AtomicInt, Rank::atom, Optionality::required,
+             common::Intent::InOut},
+            {"value", AnyInt, Rank::scalar, Optionality::required,
+                common::Intent::In},
+            {"stat", AnyInt, Rank::scalar, Optionality::optional,
+                common::Intent::Out}},
+        {}, Rank::elemental, IntrinsicClass::atomicSubroutine},
     {"atomic_and",
         {{"atom", AtomicInt, Rank::atom, Optionality::required,
              common::Intent::InOut},
@@ -1585,7 +1593,6 @@ static const IntrinsicInterface intrinsicSubroutine[]{
 };
 
 // TODO: Intrinsic subroutine EVENT_QUERY
-// TODO: Atomic intrinsic subroutines: ATOMIC_ADD
 // TODO: Collective intrinsic subroutines: co_reduce
 
 // Finds a built-in derived type and returns it as a DynamicType.
@@ -3232,8 +3239,8 @@ static bool ApplySpecificChecks(SpecificCall &call, FoldingContext &context) {
           arg ? arg->sourceLocation() : context.messages().at(),
           "Argument of ALLOCATED() must be an ALLOCATABLE object or component"_err_en_US);
     }
-  } else if (name == "atomic_and" || name == "atomic_or" ||
-      name == "atomic_xor") {
+  } else if (name == "atomic_add" || name == "atomic_and" ||
+      name == "atomic_or" || name == "atomic_xor") {
     return CheckForCoindexedObject(
         context.messages(), call.arguments[2], name, "stat");
   } else if (name == "atomic_cas") {
