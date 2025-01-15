@@ -92,6 +92,16 @@ Error DXContainer::parseHash(StringRef Part) {
   return Error::success();
 }
 
+Error DXContainer::parseRootSignature(StringRef Part) {
+  if (RootSignature)
+    return parseFailed("More than one RTS0 part is present in the file");
+  dxbc::RootSignatureDesc Desc;
+  if (Error Err = readStruct(Part, Part.begin(), Desc))
+    return Err;
+  RootSignature = Desc;
+  return Error::success();
+}
+
 Error DXContainer::parsePSVInfo(StringRef Part) {
   if (PSVInfo)
     return parseFailed("More than one PSV0 part is present in the file");
@@ -192,6 +202,11 @@ Error DXContainer::parsePartOffsets() {
         return Err;
       break;
     case dxbc::PartType::Unknown:
+      break;
+    case dxbc::PartType::RTS0:
+      if (Error Err = parseRootSignature(PartData))
+        return Err;
+
       break;
     }
   }
