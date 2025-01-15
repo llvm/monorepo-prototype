@@ -24,13 +24,13 @@ namespace memspace {
 
 ProgramStateRef setMemSpaceTrait(ProgramStateRef State, const MemRegion *MR,
                                  const MemSpaceRegion *MS) {
-  // for now, this should only be called to update the trait for mem regions
-  // that have an unknown mem spaces since we assume everywhere else that the
-  // memspace trait is set only for unknown mem spaces (setting this info
+  // For now, this should only be called to update the trait for memory regions
+  // that have an unknown memory spaces since we assume everywhere else that the
+  // memory space trait is set only for unknown memory spaces (setting this info
   // otherwise would go unused).
   assert(isa<UnknownSpaceRegion>(MR->getMemorySpace()));
 
-  // Shouldn't use the memspace trait to associate UnknownSpaceRegion with an
+  // Shouldn't use the memory space trait to associate UnknownSpaceRegion with an
   // already UnknownSpaceRegion
   assert(!isa<UnknownSpaceRegion>(MS));
 
