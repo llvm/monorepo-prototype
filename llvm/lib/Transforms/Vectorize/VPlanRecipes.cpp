@@ -696,7 +696,13 @@ Value *VPInstruction::generate(VPTransformState &State) {
     Value *A = State.get(getOperand(0));
     return Builder.CreateOrReduce(A);
   }
-
+  case VPInstruction::ExtractFirstActive: {
+    Value *Vec = State.get(getOperand(0));
+    Value *Mask = State.get(getOperand(1));
+    Value *Ctz =
+        Builder.CreateCountTrailingZeroElems(Builder.getInt64Ty(), Mask);
+    return Builder.CreateExtractElement(Vec, Ctz);
+  }
   default:
     llvm_unreachable("Unsupported opcode for instruction");
   }
@@ -704,6 +710,7 @@ Value *VPInstruction::generate(VPTransformState &State) {
 
 bool VPInstruction::isVectorToScalar() const {
   return getOpcode() == VPInstruction::ExtractFromEnd ||
+         getOpcode() == VPInstruction::ExtractFirstActive ||
          getOpcode() == VPInstruction::ComputeReductionResult ||
          getOpcode() == VPInstruction::AnyOf;
 }
@@ -768,6 +775,7 @@ bool VPInstruction::opcodeMayReadOrWriteFromMemory() const {
   case VPInstruction::CalculateTripCountMinusVF:
   case VPInstruction::CanonicalIVIncrementForPart:
   case VPInstruction::ExtractFromEnd:
+  case VPInstruction::ExtractFirstActive:
   case VPInstruction::FirstOrderRecurrenceSplice:
   case VPInstruction::LogicalAnd:
   case VPInstruction::Not:
@@ -886,6 +894,9 @@ void VPInstruction::print(raw_ostream &O, const Twine &Indent,
     break;
   case VPInstruction::AnyOf:
     O << "any-of";
+    break;
+  case VPInstruction::ExtractFirstActive:
+    O << "extract-first-active";
     break;
   default:
     O << Instruction::getOpcodeName(getOpcode());

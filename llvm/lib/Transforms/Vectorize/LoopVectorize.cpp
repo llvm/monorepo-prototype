@@ -2775,6 +2775,23 @@ BasicBlock *InnerLoopVectorizer::createVectorizedLoopSkeleton(
   return LoopVectorPreHeader;
 }
 
+static bool isValueIncomingFromBlock(BasicBlock *ExitingBB, Value *V,
+                                     Instruction *UI) {
+  PHINode *PHI = dyn_cast<PHINode>(UI);
+  assert(PHI && "Expected LCSSA form");
+
+  // If this loop has an uncountable early exit then there could be
+  // different users of OrigPhi with either:
+  //   1. Multiple users, because each exiting block (countable or
+  //      uncountable) jumps to the same exit block, or ..
+  //   2. A single user with an incoming value from a countable or
+  //      uncountable exiting block.
+  // In both cases there is no guarantee this came from a countable exiting
+  // block, i.e. the latch.
+  int Index = PHI->getBasicBlockIndex(ExitingBB);
+  return Index != -1 && PHI->getIncomingValue(Index) == V;
+}
+
 // Fix up external users of the induction variable. At this point, we are
 // in LCSSA form, with all external PHIs that use the IV having one input value,
 // coming from the remainder loop. We need those PHIs to also have a correct
@@ -2797,12 +2814,13 @@ void InnerLoopVectorizer::fixupIVUsers(PHINode *OrigPhi,
 
   // An external user of the last iteration's value should see the value that
   // the remainder loop uses to initialize its own IV.
-  Value *PostInc = OrigPhi->getIncomingValueForBlock(OrigLoop->getLoopLatch());
+  BasicBlock *OrigLoopLatch = OrigLoop->getLoopLatch();
+  Value *PostInc = OrigPhi->getIncomingValueForBlock(OrigLoopLatch);
   for (User *U : PostInc->users()) {
     Instruction *UI = cast<Instruction>(U);
     if (!OrigLoop->contains(UI)) {
-      assert(isa<PHINode>(UI) && "Expected LCSSA form");
-      MissingVals[UI] = EndValue;
+      if (isValueIncomingFromBlock(OrigLoopLatch, PostInc, UI))
+        MissingVals[cast<PHINode>(UI)] = EndValue;
     }
   }
 
@@ -2812,7 +2830,8 @@ void InnerLoopVectorizer::fixupIVUsers(PHINode *OrigPhi,
   for (User *U : OrigPhi->users()) {
     auto *UI = cast<Instruction>(U);
     if (!OrigLoop->contains(UI)) {
-      assert(isa<PHINode>(UI) && "Expected LCSSA form");
+      if (!isValueIncomingFromBlock(OrigLoopLatch, OrigPhi, UI))
+        continue;
       IRBuilder<> B(MiddleBlock->getTerminator());
 
       // Fast-math-flags propagate from the original induction instruction.
@@ -2841,18 +2860,6 @@ void InnerLoopVectorizer::fixupIVUsers(PHINode *OrigPhi,
       MissingVals[UI] = Escape;
     }
   }
-
-  assert((MissingVals.empty() ||
-          all_of(MissingVals,
-                 [MiddleBlock, this](const std::pair<Value *, Value *> &P) {
-                   return all_of(
-                       predecessors(cast<Instruction>(P.first)->getParent()),
-                       [MiddleBlock, this](BasicBlock *Pred) {
-                         return Pred == MiddleBlock ||
-                                Pred == OrigLoop->getLoopLatch();
-                       });
-                 })) &&
-         "Expected escaping values from latch/middle.block only");
 
   for (auto &I : MissingVals) {
     PHINode *PHI = cast<PHINode>(I.first);
@@ -9235,14 +9242,20 @@ collectUsersInExitBlocks(Loop *OrigLoop, VPRecipeBuilder &Builder,
 // Add exit values to \p Plan. Extracts are added for each entry in \p
 // ExitUsersToFix if needed and their operands are updated. Returns true if all
 // exit users can be handled, otherwise return false.
-static bool
+static void
 addUsersInExitBlocks(VPlan &Plan,
                      const SetVector<VPIRInstruction *> &ExitUsersToFix) {
   if (ExitUsersToFix.empty())
-    return true;
+    return;
 
   auto *MiddleVPBB = Plan.getMiddleBlock();
-  VPBuilder B(MiddleVPBB, MiddleVPBB->getFirstNonPhi());
+  VPBuilder MiddleB(MiddleVPBB, MiddleVPBB->getFirstNonPhi());
+  VPBuilder EarlyExitB;
+  VPBasicBlock *VectorEarlyExitVPBB = Plan.getEarlyExit();
+  VPValue *EarlyExitMask = nullptr;
+  if (VectorEarlyExitVPBB)
+    EarlyExitB.setInsertPoint(VectorEarlyExitVPBB,
+                              VectorEarlyExitVPBB->getFirstNonPhi());
 
   // Introduce extract for exiting values and update the VPIRInstructions
   // modeling the corresponding LCSSA phis.
@@ -9253,19 +9266,38 @@ addUsersInExitBlocks(VPlan &Plan,
       if (Op->isLiveIn())
         continue;
 
-      // Currently only live-ins can be used by exit values from blocks not
-      // exiting via the vector latch through to the middle block.
-      if (ExitIRI->getParent()->getSinglePredecessor() != MiddleVPBB)
-        return false;
-
       LLVMContext &Ctx = ExitIRI->getInstruction().getContext();
-      VPValue *Ext = B.createNaryOp(VPInstruction::ExtractFromEnd,
-                                    {Op, Plan.getOrAddLiveIn(ConstantInt::get(
-                                             IntegerType::get(Ctx, 32), 1))});
+      VPValue *Ext;
+      VPBasicBlock *PredVPBB =
+          cast<VPBasicBlock>(ExitIRI->getParent()->getPredecessors()[Idx]);
+      if (PredVPBB != MiddleVPBB) {
+        assert(ExitIRI->getParent()->getNumPredecessors() <= 2);
+
+        // Lookup and cache the early exit mask.
+        if (!EarlyExitMask) {
+          VPBasicBlock *MiddleSplitVPBB =
+              cast<VPBasicBlock>(VectorEarlyExitVPBB->getSinglePredecessor());
+          VPInstruction *PredTerm =
+              cast<VPInstruction>(MiddleSplitVPBB->getTerminator());
+          assert(PredTerm->getOpcode() == VPInstruction::BranchOnCond &&
+                 "Unexpected middle split block terminator");
+          VPInstruction *ScalarCond =
+              cast<VPInstruction>(PredTerm->getOperand(0));
+          assert(
+              ScalarCond->getOpcode() == VPInstruction::AnyOf &&
+              "Unexpected condition for middle split block terminator branch");
+          EarlyExitMask = ScalarCond->getOperand(0);
+        }
+        Ext = EarlyExitB.createNaryOp(VPInstruction::ExtractFirstActive,
+                                      {Op, EarlyExitMask});
+      } else {
+        Ext = MiddleB.createNaryOp(VPInstruction::ExtractFromEnd,
+                                   {Op, Plan.getOrAddLiveIn(ConstantInt::get(
+                                            IntegerType::get(Ctx, 32), 1))});
+      }
       ExitIRI->setOperand(Idx, Ext);
     }
   }
-  return true;
 }
 
 /// Handle users in the exit block for first order reductions in the original
@@ -9568,12 +9600,7 @@ LoopVectorizationPlanner::tryToBuildVPlanWithVPRecipes(VFRange &Range) {
   SetVector<VPIRInstruction *> ExitUsersToFix =
       collectUsersInExitBlocks(OrigLoop, RecipeBuilder, *Plan);
   addExitUsersForFirstOrderRecurrences(*Plan, ExitUsersToFix);
-  if (!addUsersInExitBlocks(*Plan, ExitUsersToFix)) {
-    reportVectorizationFailure(
-        "Some exit values in loop with uncountable exit not supported yet",
-        "UncountableEarlyExitLoopsUnsupportedExitValue", ORE, OrigLoop);
-    return nullptr;
-  }
+  addUsersInExitBlocks(*Plan, ExitUsersToFix);
 
   // ---------------------------------------------------------------------------
   // Transform initial VPlan: Apply previously taken decisions, in order, to

@@ -407,6 +407,11 @@ public:
 
   /// Returns the destination of an uncountable early exiting block.
   BasicBlock *getUncountableEarlyExitBlock() const {
+    if (!HasUncountableEarlyExit) {
+      assert(getUncountableExitBlocks().empty() &&
+             "Expected no uncountable exiting blocks");
+      return nullptr;
+    }
     assert(getUncountableExitBlocks().size() == 1 &&
            "Expected only a single uncountable exit block");
     return getUncountableExitBlocks()[0];
