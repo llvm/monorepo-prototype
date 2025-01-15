@@ -42,6 +42,7 @@
 #include "llvm/TargetParser/Triple.h"
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
 #include <iterator>
 #include <utility>
@@ -2952,8 +2953,14 @@ static SDValue lowerVECTOR_SHUFFLE_PCKOD(SDValue Op, EVT ResTy,
 // if the type is v8i16 and all the indices are less than 8 then the second
 // operand is unused and can be replaced with anything. We choose to replace it
 // with the used operand since this reduces the number of instructions overall.
+//
+// NOTE: SPLATI shuffle masks may contain UNDEFs, since isSPLATI() treats
+//       UNDEFs as same as SPLATI index.
+//       For other instances we use the last valid index if UNDEF is
+//       encountered.
 static SDValue lowerVECTOR_SHUFFLE_VSHF(SDValue Op, EVT ResTy,
                                         const SmallVector<int, 16> &Indices,
+                                        const bool isSPLATI,
                                         SelectionDAG &DAG) {
   SmallVector<SDValue, 16> Ops;
   SDValue Op0;
@@ -2965,6 +2972,9 @@ static SDValue lowerVECTOR_SHUFFLE_VSHF(SDValue Op, EVT ResTy,
   SDLoc DL(Op);
   int ResTyNumElts = ResTy.getVectorNumElements();
 
+  assert(Indices[0] >= 0 &&
+         "shuffle mask starts with an UNDEF, which is not expected");
+
   for (int i = 0; i < ResTyNumElts; ++i) {
     // Idx == -1 means UNDEF
     int Idx = Indices[i];
@@ -2974,9 +2984,14 @@ static SDValue lowerVECTOR_SHUFFLE_VSHF(SDValue Op, EVT ResTy,
     if (ResTyNumElts <= Idx && Idx < ResTyNumElts * 2)
       Using2ndVec = true;
   }
-
-  for (int Idx : Indices)
+  for (size_t i = 0; i < Indices.size(); i++) {
+    int Idx = Indices[i];
+    if (Indices[i] < 0) {
+      // Continue using splati index or use the last valid index.
+      Idx = isSPLATI ? Indices[0] : Indices[i - 1];
+    }
     Ops.push_back(DAG.getTargetConstant(Idx, DL, MaskEltTy));
+  }
 
   SDValue MaskVec = DAG.getBuildVector(MaskVecTy, DL, Ops);
 
@@ -3019,7 +3034,7 @@ SDValue MipsSETargetLowering::lowerVECTOR_SHUFFLE(SDValue Op,
   // splati.[bhwd] is preferable to the others but is matched from
   // MipsISD::VSHF.
   if (isVECTOR_SHUFFLE_SPLATI(Op, ResTy, Indices, DAG))
-    return lowerVECTOR_SHUFFLE_VSHF(Op, ResTy, Indices, DAG);
+    return lowerVECTOR_SHUFFLE_VSHF(Op, ResTy, Indices, true, DAG);
   SDValue Result;
   if ((Result = lowerVECTOR_SHUFFLE_ILVEV(Op, ResTy, Indices, DAG)))
     return Result;
@@ -3035,7 +3050,7 @@ SDValue MipsSETargetLowering::lowerVECTOR_SHUFFLE(SDValue Op,
     return Result;
   if ((Result = lowerVECTOR_SHUFFLE_SHF(Op, ResTy, Indices, DAG)))
     return Result;
-  return lowerVECTOR_SHUFFLE_VSHF(Op, ResTy, Indices, DAG);
+  return lowerVECTOR_SHUFFLE_VSHF(Op, ResTy, Indices, false, DAG);
 }
 
 MachineBasicBlock *
