@@ -691,13 +691,9 @@ static AllocationInfo GetAllocationSite(ProgramStateManager &StateMgr,
       const MemRegion *R = FB.getRegion();
       // Do not show local variables belonging to a function other than
       // where the error is reported.
-      const StackSpaceRegion *MR =
-          dyn_cast<StackSpaceRegion>(R->getMemorySpace());
-      if (!MR)
-        MR = dyn_cast_if_present<StackSpaceRegion>(
-            memspace::getMemSpace(St, R));
+      const StackSpaceRegion *SSR = dyn_cast_if_present<StackSpaceRegion>(memspace::getMemSpace(St, R));
 
-      if (MR && MR->getStackFrame() == LeakContext->getStackFrame())
+      if (SSR && SSR->getStackFrame() == LeakContext->getStackFrame())
         FirstBinding = R;
     }
 
