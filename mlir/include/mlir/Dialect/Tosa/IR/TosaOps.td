@@ -805,7 +805,7 @@ def Tosa_MulOp : Tosa_ElementwiseOp<"mul", [
   let arguments = (ins
     Tosa_Tensor:$input1,
     Tosa_Tensor:$input2,
-    I8Attr:$shift
+    Optional<TosaTensorRankOf<[Tosa_Int8], [0]>>:$shift
   );
 
   let results = (outs
