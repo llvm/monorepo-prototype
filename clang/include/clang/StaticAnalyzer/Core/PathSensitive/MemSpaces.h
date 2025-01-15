@@ -34,7 +34,7 @@ namespace memspace {
                                                const MemSpaceRegion *MS);
 
 [[nodiscard]] const MemSpaceRegion *getMemSpace(ProgramStateRef State,
-                                                     const MemRegion *MR);
+                                                const MemRegion *MR);
 
 [[nodiscard]] bool hasMemSpaceTrait(ProgramStateRef State, const MemRegion *MR);
 
