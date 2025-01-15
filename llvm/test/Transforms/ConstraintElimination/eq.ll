@@ -424,3 +424,23 @@ bc_equal:
 not_eq:
   ret i1 false
 }
+
+define i1 @test_eq_for_signed_cmp(i32 noundef %v0, i32 noundef %v1, i32 noundef %v2)  {
+; CHECK-LABEL: define i1 @test_eq_for_signed_cmp(
+; CHECK-SAME: i32 noundef [[V0:%.*]], i32 noundef [[V1:%.*]], i32 noundef [[V2:%.*]]) {
+; CHECK-NEXT:  [[ENTRY:.*:]]
+; CHECK-NEXT:    [[CMP:%.*]] = icmp eq i32 [[V2]], [[V0]]
+; CHECK-NEXT:    [[CMP1:%.*]] = icmp sge i32 [[V0]], [[V1]]
+; CHECK-NEXT:    [[AND0:%.*]] = and i1 [[CMP1]], [[CMP]]
+; CHECK-NEXT:    [[CMP4:%.*]] = icmp sgt i32 [[V1]], [[V2]]
+; CHECK-NEXT:    [[AND1:%.*]] = and i1 false, [[AND0]]
+; CHECK-NEXT:    ret i1 [[AND1]]
+;
+entry:
+  %cmp = icmp eq i32 %v2, %v0
+  %cmp1 = icmp sge i32 %v0, %v1
+  %and0 = and i1 %cmp1, %cmp
+  %cmp4 = icmp sgt i32 %v1, %v2
+  %and1 = and i1 %cmp4, %and0
+  ret i1 %and1
+}
