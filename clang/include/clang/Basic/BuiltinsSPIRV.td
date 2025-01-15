@@ -13,3 +13,9 @@ def SPIRVDistance : Builtin {
   let Attributes = [NoThrow, Const];
   let Prototype = "void(...)";
 }
+
+def SPIRVReflect : Builtin {
+  let Spellings = ["__builtin_spirv_reflect"];
+  let Attributes = [NoThrow, Const];
+  let Prototype = "void(...)";
+}

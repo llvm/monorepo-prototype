@@ -79,6 +79,23 @@ distance_vec_impl(vector<T, N> X, vector<T, N> Y) {
   return length_vec_impl(X - Y);
 #endif
 }
+
+template <typename T>
+constexpr enable_if_t<is_same<float, T>::value || is_same<half, T>::value, T>
+reflect_impl(T I, T N) {
+  return I - 2 * N * I * N;
+}
+
+template <typename T, int L>
+constexpr enable_if_t<is_same<float, T>::value || is_same<half, T>::value, T>
+reflect_vec_impl(vector<T, L> I, vector<T, L> N) {
+#if (__has_builtin(__builtin_spirv_reflect))
+  return __builtin_spirv_reflect(I, N);
+#else
+  return I - 2 * N * __builtin_hlsl_dot(I, N);
+#endif
+}
+
 } // namespace __detail
 } // namespace hlsl
 #endif //_HLSL_HLSL_DETAILS_H_
