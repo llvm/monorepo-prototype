@@ -21,6 +21,7 @@
 #include "clang/StaticAnalyzer/Core/PathSensitive/CheckerContext.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/CheckerHelpers.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/DynamicExtent.h"
+#include "clang/StaticAnalyzer/Core/PathSensitive/MemSpaces.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringExtras.h"
@@ -411,7 +412,7 @@ void UnixAPIMisuseChecker::CheckPthreadOnce(CheckerContext &C,
   // because that's likely to be bad news.
   ProgramStateRef state = C.getState();
   const MemRegion *R = Call.getArgSVal(0).getAsRegion();
-  if (!R || !isa<StackSpaceRegion>(R->getMemorySpace()))
+  if (!R || !memspace::isMemSpaceOrTrait<StackSpaceRegion>(state, R))
     return;
 
   ExplodedNode *N = C.generateErrorNode(state);

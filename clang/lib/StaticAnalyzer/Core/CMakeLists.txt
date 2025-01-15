@@ -36,6 +36,7 @@ add_clang_library(clangStaticAnalyzerCore
   LoopUnrolling.cpp
   LoopWidening.cpp
   MemRegion.cpp
+  MemSpaces.cpp
   PlistDiagnostics.cpp
   ProgramState.cpp
   RangeConstraintManager.cpp

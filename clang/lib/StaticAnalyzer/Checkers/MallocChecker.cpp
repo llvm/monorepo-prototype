@@ -72,6 +72,7 @@
 #include "clang/StaticAnalyzer/Core/PathSensitive/CheckerHelpers.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/DynamicExtent.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/ExplodedGraph.h"
+#include "clang/StaticAnalyzer/Core/PathSensitive/MemSpaces.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/ProgramState.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/ProgramStateTrait.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/ProgramState_Fwd.h"
@@ -784,7 +785,8 @@ private:
                                              bool IsALeakCheck = false) const;
   ///@}
   static bool SummarizeValue(raw_ostream &os, SVal V);
-  static bool SummarizeRegion(raw_ostream &os, const MemRegion *MR);
+  static bool SummarizeRegion(ProgramStateRef State, raw_ostream &os,
+                              const MemRegion *MR);
 
   void HandleNonHeapDealloc(CheckerContext &C, SVal ArgVal, SourceRange Range,
                             const Expr *DeallocExpr,
@@ -2206,13 +2208,21 @@ MallocChecker::FreeMemAux(CheckerContext &C, const Expr *ArgExpr,
 
   // Parameters, locals, statics, globals, and memory returned by
   // __builtin_alloca() shouldn't be freed.
-  if (!isa<UnknownSpaceRegion, HeapSpaceRegion>(MS)) {
+  // Should skip this check if:
+  // - The region is in the heap
+  // - The region has unknown memspace and no trait for further clarification
+  //   (i.e., just unknown)
+  // - The region has unknown memspace and a heap memspace trait
+  const MemSpaceRegion *MSTrait = memspace::getMemSpaceTrait(State, R);
+  bool HasHeapOrUnknownTrait = !MSTrait || isa<HeapSpaceRegion>(MSTrait);
+  if (!(isa<HeapSpaceRegion>(MS) ||
+        (isa<UnknownSpaceRegion>(MS) && HasHeapOrUnknownTrait))) {
     // Regions returned by malloc() are represented by SymbolicRegion objects
     // within HeapSpaceRegion. Of course, free() can work on memory allocated
     // outside the current function, so UnknownSpaceRegion is also a
     // possibility here.
 
-    if (isa<AllocaRegion>(R))
+    if (isa<AllocaRegion>(R) || isa_and_nonnull<AllocaRegion>(MSTrait))
       HandleFreeAlloca(C, ArgVal, ArgExpr->getSourceRange());
     else
       HandleNonHeapDealloc(C, ArgVal, ArgExpr->getSourceRange(), ParentExpr,
@@ -2384,7 +2394,7 @@ bool MallocChecker::SummarizeValue(raw_ostream &os, SVal V) {
   return true;
 }
 
-bool MallocChecker::SummarizeRegion(raw_ostream &os,
+bool MallocChecker::SummarizeRegion(ProgramStateRef State, raw_ostream &os,
                                     const MemRegion *MR) {
   switch (MR->getKind()) {
   case MemRegion::FunctionCodeRegionKind: {
@@ -2404,8 +2414,10 @@ bool MallocChecker::SummarizeRegion(raw_ostream &os,
     return true;
   default: {
     const MemSpaceRegion *MS = MR->getMemorySpace();
+    const MemSpaceRegion *MSTrait = memspace::getMemSpaceTrait(State, MR);
 
-    if (isa<StackLocalsSpaceRegion>(MS)) {
+    if (isa<StackLocalsSpaceRegion>(MS) ||
+        isa_and_nonnull<StackLocalsSpaceRegion>(MSTrait)) {
       const VarRegion *VR = dyn_cast<VarRegion>(MR);
       const VarDecl *VD;
       if (VR)
@@ -2420,7 +2432,8 @@ bool MallocChecker::SummarizeRegion(raw_ostream &os,
       return true;
     }
 
-    if (isa<StackArgumentsSpaceRegion>(MS)) {
+    if (isa<StackArgumentsSpaceRegion>(MS) ||
+        isa_and_nonnull<StackArgumentsSpaceRegion>(MSTrait)) {
       const VarRegion *VR = dyn_cast<VarRegion>(MR);
       const VarDecl *VD;
       if (VR)
@@ -2435,7 +2448,8 @@ bool MallocChecker::SummarizeRegion(raw_ostream &os,
       return true;
     }
 
-    if (isa<GlobalsSpaceRegion>(MS)) {
+    if (isa<GlobalsSpaceRegion>(MS) ||
+        isa_and_nonnull<GlobalsSpaceRegion>(MSTrait)) {
       const VarRegion *VR = dyn_cast<VarRegion>(MR);
       const VarDecl *VD;
       if (VR)
@@ -2489,8 +2503,8 @@ void MallocChecker::HandleNonHeapDealloc(CheckerContext &C, SVal ArgVal,
       os << "deallocator";
 
     os << " is ";
-    bool Summarized = MR ? SummarizeRegion(os, MR)
-                         : SummarizeValue(os, ArgVal);
+    bool Summarized =
+        MR ? SummarizeRegion(C.getState(), os, MR) : SummarizeValue(os, ArgVal);
     if (Summarized)
       os << ", which is not memory allocated by ";
     else
