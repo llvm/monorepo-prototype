@@ -818,6 +818,7 @@ void TargetLoweringBase::initActions() {
     setOperationAction(ISD::SDOPC, VT, Expand);
 #include "llvm/IR/VPIntrinsics.def"
 
+    setOperationAction(ISD::EXPERIMENTAL_ALIAS_LANE_MASK, VT, Expand);
     // FP environment operations default to expand.
     setOperationAction(ISD::GET_FPENV, VT, Expand);
     setOperationAction(ISD::SET_FPENV, VT, Expand);

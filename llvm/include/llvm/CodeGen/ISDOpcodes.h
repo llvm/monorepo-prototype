@@ -1480,6 +1480,11 @@ enum NodeType {
   // Output: Output Chain
   EXPERIMENTAL_VECTOR_HISTOGRAM,
 
+  // The `llvm.experimental.get.alias.lane.mask.*` intrinsics
+  // Operands: Load pointer, Store pointer, Element size, Write after read
+  // Output: Mask
+  EXPERIMENTAL_ALIAS_LANE_MASK,
+
   // llvm.clear_cache intrinsic
   // Operands: Input Chain, Start Addres, End Address
   // Outputs: Output Chain
