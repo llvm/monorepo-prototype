@@ -209,7 +209,8 @@ MipsABIInfo::classifyArgumentType(QualType Ty, uint64_t &Offset) const {
 
     if (CGCXXABI::RecordArgABI RAA = getRecordArgABI(Ty, getCXXABI())) {
       Offset = OrigOffset + MinABIStackAlignInBytes;
-      return getNaturalAlignIndirect(Ty, RAA == CGCXXABI::RAA_DirectInMemory);
+      return getNaturalAlignIndirect(Ty, getDataLayout().getAllocaAddrSpace(),
+                                     RAA == CGCXXABI::RAA_DirectInMemory);
     }
 
     // If we have reached here, aggregates are passed directly by coercing to
@@ -231,7 +232,7 @@ MipsABIInfo::classifyArgumentType(QualType Ty, uint64_t &Offset) const {
     if (EIT->getNumBits() > 128 ||
         (EIT->getNumBits() > 64 &&
          !getContext().getTargetInfo().hasInt128Type()))
-      return getNaturalAlignIndirect(Ty);
+      return getNaturalAlignIndirect(Ty, getDataLayout().getAllocaAddrSpace());
 
   // All integral types are promoted to the GPR width.
   if (Ty->isIntegralOrEnumerationType())
@@ -310,7 +311,7 @@ ABIArgInfo MipsABIInfo::classifyReturnType(QualType RetTy) const {
       }
     }
 
-    return getNaturalAlignIndirect(RetTy);
+    return getNaturalAlignIndirect(RetTy, getDataLayout().getAllocaAddrSpace());
   }
 
   // Treat an enum type as its underlying type.
@@ -322,7 +323,8 @@ ABIArgInfo MipsABIInfo::classifyReturnType(QualType RetTy) const {
     if (EIT->getNumBits() > 128 ||
         (EIT->getNumBits() > 64 &&
          !getContext().getTargetInfo().hasInt128Type()))
-      return getNaturalAlignIndirect(RetTy);
+      return getNaturalAlignIndirect(RetTy,
+                                     getDataLayout().getAllocaAddrSpace());
 
   if (isPromotableIntegerTypeForABI(RetTy))
     return ABIArgInfo::getExtend(RetTy);
