@@ -6,7 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// TODO
+// This file defines getters and setters for the memory space trait which
+// associates memory regions with memory spaces in the program state. It also
+// defines the MemSpacesMap which maps memory regions to memory spaces.
 //
 //===----------------------------------------------------------------------===//
 
@@ -30,8 +32,8 @@ ProgramStateRef setMemSpaceTrait(ProgramStateRef State, const MemRegion *MR,
   // otherwise would go unused).
   assert(isa<UnknownSpaceRegion>(MR->getMemorySpace()));
 
-  // Shouldn't use the memory space trait to associate UnknownSpaceRegion with an
-  // already UnknownSpaceRegion
+  // Shouldn't use the memory space trait to associate UnknownSpaceRegion with
+  // an already UnknownSpaceRegion
   assert(!isa<UnknownSpaceRegion>(MS));
 
   ProgramStateRef NewState = State->set<MemSpacesMap>(MR, MS);

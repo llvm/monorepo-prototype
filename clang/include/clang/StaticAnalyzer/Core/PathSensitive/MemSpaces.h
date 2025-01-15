@@ -6,7 +6,12 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// TODO
+// This file declares getters and setters for the memory space trait which
+// associates memory regions with memory spaces in the program state. We are
+// still transitioning to having all memory space information stored in the
+// trait, so currently memory regions still have memory spaces as a class field.
+// Because of this, these getters still consider memory spaces set as class
+// fields in memory region types.
 //
 //===----------------------------------------------------------------------===//
 
