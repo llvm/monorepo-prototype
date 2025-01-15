@@ -37,8 +37,7 @@ namespace memspace {
                                                 const MemRegion *MR);
 
 template <typename FirstT, typename... RestT>
-[[nodiscard]] bool isMemSpace(ProgramStateRef State,
-                              const MemRegion *MR) {
+[[nodiscard]] bool isMemSpace(ProgramStateRef State, const MemRegion *MR) {
   return isa_and_nonnull<FirstT, RestT...>(getMemSpace(State, MR));
 }
 

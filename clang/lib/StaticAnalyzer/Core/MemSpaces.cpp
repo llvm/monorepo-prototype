@@ -9,7 +9,7 @@
 // This file defines getters and setters for the memory space trait which
 // associates memory regions with memory spaces in the program state. It also
 // defines the MemSpacesMap which maps memory regions to memory spaces.
-// 
+//
 // These functions keep the following invariants over the MemSpacesMap:
 // 1. (Temporary as an intermediate step) Memory space traits are only
 //    mapped for memory regions that have an unknown memory space
@@ -32,9 +32,10 @@ namespace clang {
 namespace ento {
 namespace memspace {
 
-// Canonicalize to base, in case of subregions, we don't want base regions and subregions
-// to have different memory spaces
-[[nodiscard]] static const MemRegion *canonicalizeMemRegion(const MemRegion *MR) {
+// Canonicalize to base, in case of subregions, we don't want base regions and
+// subregions to have different memory spaces
+[[nodiscard]] static const MemRegion *
+canonicalizeMemRegion(const MemRegion *MR) {
   return MR->getBaseRegion();
 }
 
@@ -56,8 +57,7 @@ ProgramStateRef setMemSpaceTrait(ProgramStateRef State, const MemRegion *MR,
   return NewState;
 }
 
-const MemSpaceRegion *getMemSpace(ProgramStateRef State,
-                                  const MemRegion *MR) {
+const MemSpaceRegion *getMemSpace(ProgramStateRef State, const MemRegion *MR) {
   MR = canonicalizeMemRegion(MR);
 
   const MemSpaceRegion *const *Result = State->get<MemSpacesMap>(MR);

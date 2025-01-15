@@ -3511,8 +3511,8 @@ ProgramStateRef ExprEngine::processPointerEscapedOnBind(
   for (const std::pair<SVal, SVal> &LocAndVal : LocAndVals) {
     // Cases (1) and (2).
     const MemRegion *MR = LocAndVal.first.getAsRegion();
-    if (!MR ||
-        !memspace::isMemSpace<StackSpaceRegion, StaticGlobalSpaceRegion>(State, MR)) {
+    if (!MR || !memspace::isMemSpace<StackSpaceRegion, StaticGlobalSpaceRegion>(
+                   State, MR)) {
       Escaped.push_back(LocAndVal.second);
       continue;
     }
