@@ -34,20 +34,22 @@ __sift_down(_RandomAccessIterator __first,
 
   typedef typename iterator_traits<_RandomAccessIterator>::difference_type difference_type;
   typedef typename iterator_traits<_RandomAccessIterator>::value_type value_type;
-  // left-child of __start is at 2 * __start + 1
-  // right-child of __start is at 2 * __start + 2
-  difference_type __child = __start - __first;
 
-  if (__len < 2 || (__len - 2) / 2 < __child)
+  if (__len < 2)
     return;
 
-  __child                         = 2 * __child + 1;
+  // left-child of __start is at 2 * __start + 1
+  // right-child of __start is at 2 * __start + 2
+  difference_type __child         = 2 * (__start - __first) + 1;
   _RandomAccessIterator __child_i = __first + __child;
 
-  if ((__child + 1) < __len && __comp(*__child_i, *(__child_i + difference_type(1)))) {
-    // right-child exists and is greater than left-child
-    ++__child_i;
-    ++__child;
+  if ((__child + 1) < __len) {
+    _RandomAccessIterator __right_i = _Ops::next(__child_i);
+    if (__comp(*__child_i, *__right_i)) {
+      // right-child exists and is greater than left-child
+      __child_i = __right_i;
+      ++__child;
+    }
   }
 
   // check if we are in heap-order
@@ -68,10 +70,13 @@ __sift_down(_RandomAccessIterator __first,
     __child   = 2 * __child + 1;
     __child_i = __first + __child;
 
-    if ((__child + 1) < __len && __comp(*__child_i, *(__child_i + difference_type(1)))) {
-      // right-child exists and is greater than left-child
-      ++__child_i;
-      ++__child;
+    if ((__child + 1) < __len) {
+      _RandomAccessIterator __right_i = _Ops::next(__child_i);
+      if (__comp(*__child_i, *__right_i)) {
+        // right-child exists and is greater than left-child
+        __child_i = __right_i;
+        ++__child;
+      }
     }
 
     // check if we are in heap-order
@@ -84,29 +89,34 @@ _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 _RandomAccessIterator __floy
     _RandomAccessIterator __first,
     _Compare&& __comp,
     typename iterator_traits<_RandomAccessIterator>::difference_type __len) {
-  using difference_type = typename iterator_traits<_RandomAccessIterator>::difference_type;
-  _LIBCPP_ASSERT_INTERNAL(__len >= 2, "shouldn't be called unless __len >= 2");
+  _LIBCPP_ASSERT_INTERNAL(__len > 1, "shouldn't be called unless __len > 1");
 
-  _RandomAccessIterator __hole    = __first;
-  _RandomAccessIterator __child_i = __first;
-  difference_type __child         = 0;
+  using _Ops = _IterOps<_AlgPolicy>;
+
+  typedef typename iterator_traits<_RandomAccessIterator>::difference_type difference_type;
+
+  difference_type __child      = 1;
+  _RandomAccessIterator __hole = __first, __child_i = __first;
 
   while (true) {
-    __child_i += difference_type(__child + 1);
-    __child = 2 * __child + 1;
+    __child_i += __child;
+    __child *= 2;
 
-    if ((__child + 1) < __len && __comp(*__child_i, *(__child_i + difference_type(1)))) {
-      // right-child exists and is greater than left-child
-      ++__child_i;
-      ++__child;
+    if (__child < __len) {
+      _RandomAccessIterator __right_i = _Ops::next(__child_i);
+      if (__comp(*__child_i, *__right_i)) {
+        // right-child exists and is greater than left-child
+        __child_i = __right_i;
+        ++__child;
+      }
     }
 
     // swap __hole with its largest child
-    *__hole = _IterOps<_AlgPolicy>::__iter_move(__child_i);
+    *__hole = _Ops::__iter_move(__child_i);
     __hole  = __child_i;
 
     // if __hole is now a leaf, we're done
-    if (__child > (__len - 2) / 2)
+    if (__child > __len / 2)
       return __hole;
   }
 }
