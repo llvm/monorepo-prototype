@@ -267,13 +267,7 @@ void StackAddrEscapeChecker::checkPreStmt(const ReturnStmt *RS,
   if (const BlockDataRegion *B = dyn_cast<BlockDataRegion>(R))
     checkReturnedBlockCaptures(*B, C);
 
-  if (isa<UnknownSpaceRegion>(R)) {
-    const MemSpaceRegion *MS = memspace::getMemSpace(C.getState(), R);
-    if (!isa_and_nonnull<StackSpaceRegion>(MS) || isNotInCurrentFrame(MS, C))
-      return;
-  }
-
-  const MemSpaceRegion *MS = R->getMemorySpace();
+  const MemSpaceRegion *MS = memspace::getMemSpace(C.getState(), R);
   if (!isa<StackSpaceRegion>(MS) || isNotInCurrentFrame(MS, C))
     return;
 
