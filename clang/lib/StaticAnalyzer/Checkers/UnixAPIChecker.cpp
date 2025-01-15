@@ -412,7 +412,7 @@ void UnixAPIMisuseChecker::CheckPthreadOnce(CheckerContext &C,
   // because that's likely to be bad news.
   ProgramStateRef state = C.getState();
   const MemRegion *R = Call.getArgSVal(0).getAsRegion();
-  if (!R || !memspace::isMemSpaceOrTrait<StackSpaceRegion>(state, R))
+  if (!R || !memspace::isMemSpace<StackSpaceRegion>(state, R))
     return;
 
   ExplodedNode *N = C.generateErrorNode(state);

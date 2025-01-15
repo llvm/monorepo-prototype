@@ -143,7 +143,7 @@ StackAddrEscapeChecker::getCapturedStackRegions(const BlockDataRegion &B,
   for (auto Var : B.referenced_vars()) {
     SVal Val = State->getSVal(Var.getCapturedRegion());
     const MemRegion *Region = Val.getAsRegion();
-    if (Region && memspace::isMemSpaceOrTrait<StackSpaceRegion>(State, Region))
+    if (Region && memspace::isMemSpace<StackSpaceRegion>(State, Region))
       Regions.push_back(Region);
   }
   return Regions;
