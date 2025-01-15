@@ -4,7 +4,7 @@
 // REQUIRES: stable-runtime
 
 // This testcase checks correct interaction between VLAs and allocas.
-// UNSUPPORTED: MSVC
+// UNSUPPORTED: msvc
 
 #include <assert.h>
 #include <stdint.h>
