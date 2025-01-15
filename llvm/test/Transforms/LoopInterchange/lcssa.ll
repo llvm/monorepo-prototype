@@ -177,7 +177,7 @@ for.end16:                                        ; preds = %for.exit
 }
 
 ; PHI node in inner latch with multiple predecessors.
-; REMARK: Interchanged
+; REMARK:      Dependence
 ; REMARK-NEXT: lcssa_05
 
 define void @lcssa_05(ptr %ptr, i1 %arg) {
@@ -222,7 +222,7 @@ for.end16:                                        ; preds = %for.exit
   ret void
 }
 
-; REMARK: UnsupportedExitPHI
+; REMARK:      Dependence
 ; REMARK-NEXT: lcssa_06
 
 define void @lcssa_06(ptr %ptr, ptr %ptr1, i1 %arg) {

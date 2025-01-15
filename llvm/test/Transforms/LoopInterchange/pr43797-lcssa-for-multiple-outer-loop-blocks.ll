@@ -8,39 +8,28 @@
 define void @test1() {
 ; CHECK-LABEL: @test1(
 ; CHECK-NEXT:  entry:
-; CHECK-NEXT:    br label [[INNER_HEADER_PREHEADER:%.*]]
-; CHECK:       outer.header.preheader:
 ; CHECK-NEXT:    br label [[OUTER_HEADER:%.*]]
 ; CHECK:       outer.header:
-; CHECK-NEXT:    [[OUTER_IDX:%.*]] = phi i64 [ [[OUTER_IDX_INC:%.*]], [[OUTER_LATCH:%.*]] ], [ 0, [[OUTER_HEADER_PREHEADER:%.*]] ]
+; CHECK-NEXT:    [[OUTER_IDX:%.*]] = phi i64 [ 0, [[ENTRY:%.*]] ], [ [[OUTER_IDX_INC:%.*]], [[OUTER_LATCH:%.*]] ]
 ; CHECK-NEXT:    [[ARRAYIDX8:%.*]] = getelementptr inbounds [5 x [5 x double]], ptr @wdtdr, i64 0, i64 0, i64 [[OUTER_IDX]]
-; CHECK-NEXT:    br label [[INNER_HEADER_SPLIT:%.*]]
-; CHECK:       inner.header.preheader:
 ; CHECK-NEXT:    br label [[INNER_HEADER:%.*]]
 ; CHECK:       inner.header:
-; CHECK-NEXT:    [[INNER_IDX:%.*]] = phi i64 [ [[TMP3:%.*]], [[INNER_LATCH_SPLIT:%.*]] ], [ 0, [[INNER_HEADER_PREHEADER]] ]
-; CHECK-NEXT:    br label [[OUTER_HEADER_PREHEADER]]
-; CHECK:       inner.header.split:
+; CHECK-NEXT:    [[INNER_IDX:%.*]] = phi i64 [ 0, [[OUTER_HEADER]] ], [ [[TMP3:%.*]], [[INNER_LATCH:%.*]] ]
 ; CHECK-NEXT:    [[TMP0:%.*]] = load double, ptr [[ARRAYIDX8]], align 8
 ; CHECK-NEXT:    store double undef, ptr [[ARRAYIDX8]], align 8
-; CHECK-NEXT:    br label [[INNER_LATCH:%.*]]
+; CHECK-NEXT:    br label [[INNER_LATCH]]
 ; CHECK:       inner.latch:
-; CHECK-NEXT:    [[INNER_IDX_INC:%.*]] = add nsw i64 [[INNER_IDX]], 1
-; CHECK-NEXT:    br label [[INNER_EXIT:%.*]]
-; CHECK:       inner.latch.split:
-; CHECK-NEXT:    [[TMP1:%.*]] = phi i64 [ [[OUTER_V:%.*]], [[OUTER_LATCH]] ]
-; CHECK-NEXT:    [[TMP2:%.*]] = phi i64 [ [[OUTER_IDX_INC]], [[OUTER_LATCH]] ]
 ; CHECK-NEXT:    [[TMP3]] = add nsw i64 [[INNER_IDX]], 1
 ; CHECK-NEXT:    br i1 false, label [[INNER_HEADER]], label [[OUTER_EXIT:%.*]]
 ; CHECK:       inner.exit:
-; CHECK-NEXT:    [[OUTER_V]] = add nsw i64 [[OUTER_IDX]], 1
+; CHECK-NEXT:    [[OUTER_V:%.*]] = add nsw i64 [[OUTER_IDX]], 1
 ; CHECK-NEXT:    br label [[OUTER_LATCH]]
 ; CHECK:       outer.latch:
 ; CHECK-NEXT:    [[OUTER_IDX_INC]] = add nsw i64 [[OUTER_IDX]], 1
-; CHECK-NEXT:    br i1 false, label [[OUTER_HEADER]], label [[INNER_LATCH_SPLIT]]
+; CHECK-NEXT:    br i1 false, label [[OUTER_HEADER]], label [[INNER_LATCH_SPLIT:%.*]]
 ; CHECK:       outer.exit:
-; CHECK-NEXT:    [[EXIT1_LCSSA:%.*]] = phi i64 [ [[TMP1]], [[INNER_LATCH_SPLIT]] ]
-; CHECK-NEXT:    [[EXIT2_LCSSA:%.*]] = phi i64 [ [[TMP2]], [[INNER_LATCH_SPLIT]] ]
+; CHECK-NEXT:    [[EXIT1_LCSSA:%.*]] = phi i64 [ [[OUTER_V]], [[OUTER_LATCH]] ]
+; CHECK-NEXT:    [[EXIT2_LCSSA:%.*]] = phi i64 [ [[OUTER_IDX_INC]], [[OUTER_LATCH]] ]
 ; CHECK-NEXT:    ret void
 ;
 entry:
@@ -82,39 +71,30 @@ define void @test2(i1 %cond) {
 ; CHECK:       outer.header.preheader:
 ; CHECK-NEXT:    br label [[OUTER_HEADER:%.*]]
 ; CHECK:       outer.header:
-; CHECK-NEXT:    [[OUTER_IDX:%.*]] = phi i64 [ [[OUTER_IDX_INC:%.*]], [[OUTER_LATCH:%.*]] ], [ 0, [[OUTER_HEADER_PREHEADER:%.*]] ]
+; CHECK-NEXT:    [[OUTER_IDX:%.*]] = phi i64 [ [[OUTER_IDX_INC:%.*]], [[OUTER_LATCH:%.*]] ], [ 0, [[INNER_HEADER_PREHEADER]] ]
 ; CHECK-NEXT:    [[ARRAYIDX8:%.*]] = getelementptr inbounds [5 x [5 x double]], ptr @wdtdr, i64 0, i64 0, i64 [[OUTER_IDX]]
-; CHECK-NEXT:    br label [[INNER_HEADER_SPLIT:%.*]]
-; CHECK:       inner.header.preheader:
 ; CHECK-NEXT:    br label [[INNER_HEADER:%.*]]
 ; CHECK:       inner.header:
-; CHECK-NEXT:    [[INNER_IDX:%.*]] = phi i64 [ [[TMP3:%.*]], [[INNER_LATCH_SPLIT:%.*]] ], [ 0, [[INNER_HEADER_PREHEADER]] ]
-; CHECK-NEXT:    br label [[OUTER_HEADER_PREHEADER]]
-; CHECK:       inner.header.split:
+; CHECK-NEXT:    [[INNER_IDX:%.*]] = phi i64 [ 0, [[OUTER_HEADER]] ], [ [[TMP3:%.*]], [[INNER_LATCH:%.*]] ]
 ; CHECK-NEXT:    [[TMP0:%.*]] = load double, ptr [[ARRAYIDX8]], align 8
 ; CHECK-NEXT:    store double undef, ptr [[ARRAYIDX8]], align 8
-; CHECK-NEXT:    br label [[INNER_LATCH:%.*]]
+; CHECK-NEXT:    br label [[INNER_LATCH]]
 ; CHECK:       inner.latch:
-; CHECK-NEXT:    [[INNER_IDX_INC:%.*]] = add nsw i64 [[INNER_IDX]], 1
-; CHECK-NEXT:    br label [[INNER_EXIT:%.*]]
-; CHECK:       inner.latch.split:
-; CHECK-NEXT:    [[TMP1:%.*]] = phi i64 [ [[OUTER_IDX_INC]], [[OUTER_LATCH]] ]
-; CHECK-NEXT:    [[TMP2:%.*]] = phi i64 [ [[OUTER_V:%.*]], [[OUTER_LATCH]] ]
 ; CHECK-NEXT:    [[TMP3]] = add nsw i64 [[INNER_IDX]], 1
 ; CHECK-NEXT:    br i1 false, label [[INNER_HEADER]], label [[OUTER_EXIT_LOOPEXIT:%.*]]
 ; CHECK:       inner.exit:
-; CHECK-NEXT:    [[OUTER_V]] = add nsw i64 [[OUTER_IDX]], 1
+; CHECK-NEXT:    [[OUTER_V:%.*]] = add nsw i64 [[OUTER_IDX]], 1
 ; CHECK-NEXT:    br label [[OUTER_LATCH]]
 ; CHECK:       outer.latch:
 ; CHECK-NEXT:    [[OUTER_IDX_INC]] = add nsw i64 [[OUTER_IDX]], 1
-; CHECK-NEXT:    br i1 false, label [[OUTER_HEADER]], label [[INNER_LATCH_SPLIT]]
+; CHECK-NEXT:    br i1 false, label [[OUTER_HEADER]], label [[INNER_LATCH_SPLIT:%.*]]
 ; CHECK:       outer.exit.loopexit:
-; CHECK-NEXT:    [[OUTER_IDX_INC_LCSSA:%.*]] = phi i64 [ [[TMP1]], [[INNER_LATCH_SPLIT]] ]
-; CHECK-NEXT:    [[OUTER_V_LCSSA:%.*]] = phi i64 [ [[TMP2]], [[INNER_LATCH_SPLIT]] ]
+; CHECK-NEXT:    [[OUTER_IDX_INC_LCSSA:%.*]] = phi i64 [ [[OUTER_IDX_INC]], [[OUTER_LATCH]] ]
+; CHECK-NEXT:    [[OUTER_V_LCSSA:%.*]] = phi i64 [ [[OUTER_V]], [[OUTER_LATCH]] ]
 ; CHECK-NEXT:    br label [[OUTER_EXIT]]
 ; CHECK:       outer.exit:
-; CHECK-NEXT:    [[EXIT1_LCSSA:%.*]] = phi i64 [ 0, [[ENTRY:%.*]] ], [ [[OUTER_V_LCSSA]], [[OUTER_EXIT_LOOPEXIT]] ]
-; CHECK-NEXT:    [[EXIT2_LCSSA:%.*]] = phi i64 [ 0, [[ENTRY]] ], [ [[OUTER_IDX_INC_LCSSA]], [[OUTER_EXIT_LOOPEXIT]] ]
+; CHECK-NEXT:    [[EXIT1_LCSSA:%.*]] = phi i64 [ 0, [[ENTRY:%.*]] ], [ [[OUTER_V_LCSSA]], [[INNER_LATCH_SPLIT]] ]
+; CHECK-NEXT:    [[EXIT2_LCSSA:%.*]] = phi i64 [ 0, [[ENTRY]] ], [ [[OUTER_IDX_INC_LCSSA]], [[INNER_LATCH_SPLIT]] ]
 ; CHECK-NEXT:    ret void
 ;
 entry:

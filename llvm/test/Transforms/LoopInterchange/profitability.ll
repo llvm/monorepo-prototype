@@ -1,5 +1,5 @@
 ; RUN: opt < %s -passes=loop-interchange -cache-line-size=64 -pass-remarks-output=%t -verify-dom-info -verify-loop-info \
-; RUN:     -pass-remarks=loop-interchange -pass-remarks-missed=loop-interchange
+; RUN:     -pass-remarks=loop-interchange -pass-remarks-missed=loop-interchange -S
 ; RUN: FileCheck -input-file %t %s
 
 ; RUN: opt < %s -passes=loop-interchange,loop-interchange -cache-line-size=64 \
@@ -174,23 +174,15 @@ for.end12:
 ;;   for(int i=1;i<100;i++)
 ;;     for(int j=1;j<100;j++)
 ;;       A[j][0] = A[j][0] + B[j][i];
+;
+; FIXME
 
-; CHECK:      Name:            Interchanged
+; CHECK:      Name:            Dependence 
 ; CHECK-NEXT: Function:        interchange_05
 
-; PROFIT-LABEL: --- !Passed
-; PROFIT-NEXT: Pass:            loop-interchange
-; PROFIT-NEXT: Name:            Interchanged
-; PROFIT-LABEL: Function:        interchange_05
+; PROFIT:      Function:        interchange_05
 ; PROFIT-NEXT: Args:
-; PROFIT-NEXT:   - String:          Loop interchanged with enclosing loop.
-; PROFIT-NEXT: ...
-; PROFIT: --- !Missed
-; PROFIT-NEXT: Pass:            loop-interchange
-; PROFIT-NEXT: Name:            InterchangeNotProfitable
-; PROFIT-NEXT: Function:        interchange_05
-; PROFIT-NEXT: Args:
-; PROFIT-NEXT:   - String:          Interchanging loops is not considered to improve cache locality nor vectorization.
+; PROFIT-NEXT:   - String:          Cannot interchange loops due to dependences
 ; PROFIT-NEXT: ...
 define void @interchange_05() {
 entry:

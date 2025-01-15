@@ -36,13 +36,9 @@ define void @interchange_09(i32 %k) {
 ; CHECK-NEXT:    [[CALL:%.*]] = call double @fn1()
 ; CHECK-NEXT:    [[ARRAYIDX:%.*]] = getelementptr inbounds [100 x double], ptr @T, i64 0, i64 [[INDVARS_IV45]]
 ; CHECK-NEXT:    store double [[CALL]], ptr [[ARRAYIDX]], align 8
-; CHECK-NEXT:    br label %[[FOR_BODY9_PREHEADER:.*]]
-; CHECK:       [[FOR_COND6_PREHEADER_PREHEADER:.*]]:
 ; CHECK-NEXT:    br label %[[FOR_COND6_PREHEADER:.*]]
 ; CHECK:       [[FOR_COND6_PREHEADER]]:
-; CHECK-NEXT:    [[INDVARS_IV42:%.*]] = phi i64 [ [[INDVARS_IV_NEXT43:%.*]], %[[FOR_COND_CLEANUP8:.*]] ], [ 0, %[[FOR_COND6_PREHEADER_PREHEADER]] ]
-; CHECK-NEXT:    br label %[[FOR_BODY9_SPLIT1:.*]]
-; CHECK:       [[FOR_BODY9_PREHEADER]]:
+; CHECK-NEXT:    [[INDVARS_IV42:%.*]] = phi i64 [ 0, %[[FOR_BODY]] ], [ [[INDVARS_IV_NEXT43:%.*]], %[[FOR_COND_CLEANUP8:.*]] ]
 ; CHECK-NEXT:    br label %[[FOR_BODY9:.*]]
 ; CHECK:       [[FOR_COND_CLEANUP4]]:
 ; CHECK-NEXT:    [[TMP:%.*]] = load double, ptr [[ARRAYIDX]], align 8
@@ -53,23 +49,17 @@ define void @interchange_09(i32 %k) {
 ; CHECK:       [[FOR_COND_CLEANUP8]]:
 ; CHECK-NEXT:    [[INDVARS_IV_NEXT43]] = add nuw nsw i64 [[INDVARS_IV42]], 1
 ; CHECK-NEXT:    [[EXITCOND44:%.*]] = icmp ne i64 [[INDVARS_IV_NEXT43]], 1000
-; CHECK-NEXT:    br i1 [[EXITCOND44]], label %[[FOR_COND6_PREHEADER]], label %[[FOR_BODY9_SPLIT:.*]]
+; CHECK-NEXT:    br i1 [[EXITCOND44]], label %[[FOR_COND6_PREHEADER]], label %[[FOR_COND_CLEANUP4]]
 ; CHECK:       [[FOR_BODY9]]:
-; CHECK-NEXT:    [[INDVARS_IV:%.*]] = phi i64 [ [[TMP0:%.*]], %[[FOR_BODY9_SPLIT]] ], [ 1, %[[FOR_BODY9_PREHEADER]] ]
-; CHECK-NEXT:    br label %[[FOR_COND6_PREHEADER_PREHEADER]]
-; CHECK:       [[FOR_BODY9_SPLIT1]]:
+; CHECK-NEXT:    [[INDVARS_IV:%.*]] = phi i64 [ 1, %[[FOR_COND6_PREHEADER]] ], [ [[TMP0:%.*]], %[[FOR_BODY9]] ]
 ; CHECK-NEXT:    [[ARRAYIDX13:%.*]] = getelementptr inbounds [1000 x [1000 x i32]], ptr @Arr, i64 0, i64 [[INDVARS_IV]], i64 [[INDVARS_IV42]]
 ; CHECK-NEXT:    [[T1:%.*]] = load i32, ptr [[ARRAYIDX13]], align 4
 ; CHECK-NEXT:    [[T2:%.*]] = trunc i64 [[INDVARS_IV45]] to i32
 ; CHECK-NEXT:    [[ADD:%.*]] = add nsw i32 [[T1]], [[T2]]
 ; CHECK-NEXT:    store i32 [[ADD]], ptr [[ARRAYIDX13]], align 4
-; CHECK-NEXT:    [[INDVARS_IV_NEXT:%.*]] = add nuw nsw i64 [[INDVARS_IV]], 1
-; CHECK-NEXT:    [[EXITCOND:%.*]] = icmp ne i64 [[INDVARS_IV_NEXT]], 1000
-; CHECK-NEXT:    br label %[[FOR_COND_CLEANUP8]]
-; CHECK:       [[FOR_BODY9_SPLIT]]:
 ; CHECK-NEXT:    [[TMP0]] = add nuw nsw i64 [[INDVARS_IV]], 1
 ; CHECK-NEXT:    [[TMP1:%.*]] = icmp ne i64 [[TMP0]], 1000
-; CHECK-NEXT:    br i1 [[TMP1]], label %[[FOR_BODY9]], label %[[FOR_COND_CLEANUP4]]
+; CHECK-NEXT:    br i1 [[TMP1]], label %[[FOR_BODY9]], label %[[FOR_COND_CLEANUP8]]
 ;
 entry:
   br label %for.body

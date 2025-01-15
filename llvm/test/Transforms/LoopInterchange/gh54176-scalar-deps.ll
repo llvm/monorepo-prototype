@@ -29,19 +29,13 @@
 define dso_local i32 @test1(i1 %cond) {
 ; CHECK-LABEL: define dso_local i32 @test1(
 ; CHECK-SAME: i1 [[COND:%.*]]) {
-; CHECK-NEXT:  [[FOR_PREHEADER:.*:]]
-; CHECK-NEXT:    br label %[[INNERLOOP_PREHEADER:.*]]
-; CHECK:       [[OUTERLOOP_PREHEADER:.*]]:
+; CHECK-NEXT:  [[FOR_PREHEADER:.*]]:
 ; CHECK-NEXT:    br label %[[OUTERLOOP:.*]]
 ; CHECK:       [[OUTERLOOP]]:
-; CHECK-NEXT:    [[I:%.*]] = phi i64 [ [[INDVARS_IV_NEXT21_I:%.*]], %[[FOR_LATCH:.*]] ], [ 0, %[[OUTERLOOP_PREHEADER]] ]
-; CHECK-NEXT:    br label %[[INNERLOOP_SPLIT:.*]]
-; CHECK:       [[INNERLOOP_PREHEADER]]:
+; CHECK-NEXT:    [[I:%.*]] = phi i64 [ 0, %[[FOR_PREHEADER]] ], [ [[INDVARS_IV_NEXT21_I:%.*]], %[[FOR_LATCH:.*]] ]
 ; CHECK-NEXT:    br label %[[INNERLOOP:.*]]
 ; CHECK:       [[INNERLOOP]]:
-; CHECK-NEXT:    [[J:%.*]] = phi i64 [ [[TMP0:%.*]], %[[IF_END_SPLIT:.*]] ], [ 0, %[[INNERLOOP_PREHEADER]] ]
-; CHECK-NEXT:    br label %[[OUTERLOOP_PREHEADER]]
-; CHECK:       [[INNERLOOP_SPLIT]]:
+; CHECK-NEXT:    [[J:%.*]] = phi i64 [ 0, %[[OUTERLOOP]] ], [ [[TMP0:%.*]], %[[IF_END:.*]] ]
 ; CHECK-NEXT:    [[ARRAYIDX6_I:%.*]] = getelementptr inbounds [4 x [9 x i32]], ptr @f, i64 0, i64 [[J]], i64 [[I]]
 ; CHECK-NEXT:    [[I1:%.*]] = load i32, ptr [[ARRAYIDX6_I]], align 4
 ; CHECK-NEXT:    [[TOBOOL_I:%.*]] = icmp eq i32 [[I1]], 0
@@ -50,24 +44,20 @@ define dso_local i32 @test1(i1 %cond) {
 ; CHECK-NEXT:    store i32 3, ptr @g, align 4
 ; CHECK-NEXT:    br label %[[LAND_END]]
 ; CHECK:       [[LAND_END]]:
-; CHECK-NEXT:    br i1 [[COND]], label %[[IF_END:.*]], label %[[IF_THEN:.*]]
+; CHECK-NEXT:    br i1 [[COND]], label %[[IF_END]], label %[[IF_THEN:.*]]
 ; CHECK:       [[IF_THEN]]:
 ; CHECK-NEXT:    [[I2:%.*]] = load i32, ptr @g, align 4
 ; CHECK-NEXT:    [[INC_I:%.*]] = add i32 [[I2]], 1
 ; CHECK-NEXT:    store i32 [[INC_I]], ptr @g, align 4
 ; CHECK-NEXT:    br label %[[IF_END]]
 ; CHECK:       [[IF_END]]:
-; CHECK-NEXT:    [[J_NEXT:%.*]] = add nuw nsw i64 [[J]], 1
-; CHECK-NEXT:    [[EXITCOND_I:%.*]] = icmp eq i64 [[J_NEXT]], 3
-; CHECK-NEXT:    br label %[[FOR_LATCH]]
-; CHECK:       [[IF_END_SPLIT]]:
 ; CHECK-NEXT:    [[TMP0]] = add nuw nsw i64 [[J]], 1
 ; CHECK-NEXT:    [[TMP1:%.*]] = icmp eq i64 [[TMP0]], 3
-; CHECK-NEXT:    br i1 [[TMP1]], label %[[EXIT:.*]], label %[[INNERLOOP]]
+; CHECK-NEXT:    br i1 [[TMP1]], label %[[FOR_LATCH]], label %[[INNERLOOP]]
 ; CHECK:       [[FOR_LATCH]]:
 ; CHECK-NEXT:    [[INDVARS_IV_NEXT21_I]] = add nsw i64 [[I]], 1
 ; CHECK-NEXT:    [[CMP_I:%.*]] = icmp slt i64 [[I]], 2
-; CHECK-NEXT:    br i1 [[CMP_I]], label %[[OUTERLOOP]], label %[[IF_END_SPLIT]]
+; CHECK-NEXT:    br i1 [[CMP_I]], label %[[OUTERLOOP]], label %[[EXIT:.*]]
 ; CHECK:       [[EXIT]]:
 ; CHECK-NEXT:    [[I3:%.*]] = load i32, ptr @g, align 4
 ; CHECK-NEXT:    ret i32 [[I3]]
@@ -139,19 +129,13 @@ exit:
 define dso_local i32 @test2(i1 %cond) {
 ; CHECK-LABEL: define dso_local i32 @test2(
 ; CHECK-SAME: i1 [[COND:%.*]]) {
-; CHECK-NEXT:  [[FOR_PREHEADER:.*:]]
-; CHECK-NEXT:    br label %[[INNERLOOP_PREHEADER:.*]]
-; CHECK:       [[OUTERLOOP_PREHEADER:.*]]:
+; CHECK-NEXT:  [[FOR_PREHEADER:.*]]:
 ; CHECK-NEXT:    br label %[[OUTERLOOP:.*]]
 ; CHECK:       [[OUTERLOOP]]:
-; CHECK-NEXT:    [[I:%.*]] = phi i64 [ [[INDVARS_IV_NEXT21_I:%.*]], %[[FOR_LATCH:.*]] ], [ 0, %[[OUTERLOOP_PREHEADER]] ]
-; CHECK-NEXT:    br label %[[INNERLOOP_SPLIT:.*]]
-; CHECK:       [[INNERLOOP_PREHEADER]]:
+; CHECK-NEXT:    [[I:%.*]] = phi i64 [ 0, %[[FOR_PREHEADER]] ], [ [[INDVARS_IV_NEXT21_I:%.*]], %[[FOR_LATCH:.*]] ]
 ; CHECK-NEXT:    br label %[[INNERLOOP:.*]]
 ; CHECK:       [[INNERLOOP]]:
-; CHECK-NEXT:    [[J:%.*]] = phi i64 [ [[TMP0:%.*]], %[[IF_END_SPLIT:.*]] ], [ 0, %[[INNERLOOP_PREHEADER]] ]
-; CHECK-NEXT:    br label %[[OUTERLOOP_PREHEADER]]
-; CHECK:       [[INNERLOOP_SPLIT]]:
+; CHECK-NEXT:    [[J:%.*]] = phi i64 [ 0, %[[OUTERLOOP]] ], [ [[TMP0:%.*]], %[[IF_END:.*]] ]
 ; CHECK-NEXT:    [[ARRAYIDX6_I:%.*]] = getelementptr inbounds [4 x [9 x i32]], ptr @f, i64 0, i64 [[J]], i64 [[I]]
 ; CHECK-NEXT:    [[I1:%.*]] = load i32, ptr [[ARRAYIDX6_I]], align 4
 ; CHECK-NEXT:    [[TOBOOL_I:%.*]] = icmp eq i32 [[I1]], 0
@@ -160,24 +144,20 @@ define dso_local i32 @test2(i1 %cond) {
 ; CHECK:       [[LAND_RHS]]:
 ; CHECK-NEXT:    br label %[[LAND_END]]
 ; CHECK:       [[LAND_END]]:
-; CHECK-NEXT:    br i1 [[COND]], label %[[IF_END:.*]], label %[[IF_THEN:.*]]
+; CHECK-NEXT:    br i1 [[COND]], label %[[IF_END]], label %[[IF_THEN:.*]]
 ; CHECK:       [[IF_THEN]]:
 ; CHECK-NEXT:    [[I2:%.*]] = load i32, ptr @g, align 4
 ; CHECK-NEXT:    [[INC_I:%.*]] = add i32 [[I2]], 1
 ; CHECK-NEXT:    store i32 [[INC_I]], ptr @g, align 4
 ; CHECK-NEXT:    br label %[[IF_END]]
 ; CHECK:       [[IF_END]]:
-; CHECK-NEXT:    [[J_NEXT:%.*]] = add nuw nsw i64 [[J]], 1
-; CHECK-NEXT:    [[EXITCOND_I:%.*]] = icmp eq i64 [[J_NEXT]], 3
-; CHECK-NEXT:    br label %[[FOR_LATCH]]
-; CHECK:       [[IF_END_SPLIT]]:
 ; CHECK-NEXT:    [[TMP0]] = add nuw nsw i64 [[J]], 1
 ; CHECK-NEXT:    [[TMP1:%.*]] = icmp eq i64 [[TMP0]], 3
-; CHECK-NEXT:    br i1 [[TMP1]], label %[[EXIT:.*]], label %[[INNERLOOP]]
+; CHECK-NEXT:    br i1 [[TMP1]], label %[[FOR_LATCH]], label %[[INNERLOOP]]
 ; CHECK:       [[FOR_LATCH]]:
 ; CHECK-NEXT:    [[INDVARS_IV_NEXT21_I]] = add nsw i64 [[I]], 1
 ; CHECK-NEXT:    [[CMP_I:%.*]] = icmp slt i64 [[I]], 2
-; CHECK-NEXT:    br i1 [[CMP_I]], label %[[OUTERLOOP]], label %[[IF_END_SPLIT]]
+; CHECK-NEXT:    br i1 [[CMP_I]], label %[[OUTERLOOP]], label %[[EXIT:.*]]
 ; CHECK:       [[EXIT]]:
 ; CHECK-NEXT:    [[I3:%.*]] = load i32, ptr @g, align 4
 ; CHECK-NEXT:    ret i32 [[I3]]
