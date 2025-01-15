@@ -2858,6 +2858,9 @@ Instruction *InstCombinerImpl::visitAnd(BinaryOperator &I) {
                                       /*SimplifyOnly*/ false, *this))
     return BinaryOperator::CreateAnd(Op0, V);
 
+  if (Instruction *R = foldOpWithTwoPossibleValuesToSelect(I))
+    return R;
+
   return nullptr;
 }
 
