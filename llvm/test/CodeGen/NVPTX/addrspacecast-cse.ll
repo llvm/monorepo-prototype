@@ -13,7 +13,7 @@ define void @foo(ptr %p) {
 ; CHECK-LABEL: ===== Instruction selection begins
 ;
   %a1 = addrspacecast ptr %p to ptr addrspace(5)
-  call void @llvm.stackrestore(ptr %p)
+  call void @llvm.stackrestore.p0(ptr %p)
   store ptr %p, ptr addrspace(5) %a1
   ret void
 }
