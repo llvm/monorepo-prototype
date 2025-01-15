@@ -537,8 +537,8 @@ bool Sema::ConstantFoldAttrArgs(const AttributeCommonInfo &CI,
         Diag(Note.first, Note.second);
       return false;
     }
-    assert(Eval.Val.hasValue());
-    E = ConstantExpr::Create(Context, E, Eval.Val);
+    if (Eval.Val.hasValue())
+      E = ConstantExpr::Create(Context, E, Eval.Val);
   }
 
   return true;
