@@ -1071,31 +1071,66 @@ void ARMTargetInfo::getTargetDefines(const LangOptions &Opts,
   }
 }
 
-static constexpr Builtin::Info BuiltinInfo[] = {
-#define BUILTIN(ID, TYPE, ATTRS)                                               \
-  {#ID, TYPE, ATTRS, nullptr, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
-#define LIBBUILTIN(ID, TYPE, ATTRS, HEADER)                                    \
-  {#ID, TYPE, ATTRS, nullptr, HeaderDesc::HEADER, ALL_LANGUAGES},
-#define TARGET_BUILTIN(ID, TYPE, ATTRS, FEATURE)                               \
-  {#ID, TYPE, ATTRS, FEATURE, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
-#include "clang/Basic/BuiltinsNEON.def"
+static constexpr int NumBuiltins = ARM::LastTSBuiltin - Builtin::FirstTSBuiltin;
+static constexpr int NumNeonBuiltins =
+    NEON::FirstFp16Builtin - Builtin::FirstTSBuiltin;
+static constexpr int NumFp16Builtins =
+    NEON::FirstTSBuiltin - NEON::FirstFp16Builtin;
+static constexpr int NumARMBuiltins = ARM::LastTSBuiltin - NEON::FirstTSBuiltin;
+static_assert(NumBuiltins ==
+              (NumNeonBuiltins + NumFp16Builtins + NumARMBuiltins));
 
-#define BUILTIN(ID, TYPE, ATTRS)                                               \
-  {#ID, TYPE, ATTRS, nullptr, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
-#define LANGBUILTIN(ID, TYPE, ATTRS, LANG)                                     \
-  {#ID, TYPE, ATTRS, nullptr, HeaderDesc::NO_HEADER, LANG},
-#define LIBBUILTIN(ID, TYPE, ATTRS, HEADER)                                    \
-  {#ID, TYPE, ATTRS, nullptr, HeaderDesc::HEADER, ALL_LANGUAGES},
-#define TARGET_BUILTIN(ID, TYPE, ATTRS, FEATURE)                               \
-  {#ID, TYPE, ATTRS, FEATURE, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
-#define TARGET_HEADER_BUILTIN(ID, TYPE, ATTRS, HEADER, LANGS, FEATURE)         \
-  {#ID, TYPE, ATTRS, FEATURE, HeaderDesc::HEADER, LANGS},
-#include "clang/Basic/BuiltinsARM.def"
+namespace clang {
+namespace NEON {
+#define GET_NEON_BUILTIN_STR_TABLE
+#include "clang/Basic/arm_neon.inc"
+#undef GET_NEON_BUILTIN_STR_TABLE
+
+static constexpr std::array<Builtin::Info, NumNeonBuiltins> BuiltinInfos = {
+#define GET_NEON_BUILTIN_INFOS
+#include "clang/Basic/arm_neon.inc"
+#undef GET_NEON_BUILTIN_INFOS
 };
 
-ArrayRef<Builtin::Info> ARMTargetInfo::getTargetBuiltins() const {
-  return llvm::ArrayRef(BuiltinInfo,
-                        clang::ARM::LastTSBuiltin - Builtin::FirstTSBuiltin);
+namespace FP16 {
+#define GET_NEON_BUILTIN_STR_TABLE
+#include "clang/Basic/arm_fp16.inc"
+#undef GET_NEON_BUILTIN_STR_TABLE
+
+static constexpr std::array<Builtin::Info, NumFp16Builtins> BuiltinInfos = {
+#define GET_NEON_BUILTIN_INFOS
+#include "clang/Basic/arm_fp16.inc"
+#undef GET_NEON_BUILTIN_INFOS
+};
+} // namespace FP16
+} // namespace NEON
+} // namespace clang
+
+static constexpr llvm::StringTable BuiltinStrings =
+    CLANG_BUILTIN_STR_TABLE_START
+#define BUILTIN CLANG_BUILTIN_STR_TABLE
+#define TARGET_BUILTIN CLANG_TARGET_BUILTIN_STR_TABLE
+#define TARGET_HEADER_BUILTIN CLANG_TARGET_HEADER_BUILTIN_STR_TABLE
+#include "clang/Basic/BuiltinsARM.def"
+    ; // namespace clang
+
+static constexpr auto BuiltinInfos = Builtin::MakeInfos<NumARMBuiltins>({
+#define BUILTIN CLANG_BUILTIN_ENTRY
+#define LANGBUILTIN CLANG_LANGBUILTIN_ENTRY
+#define LIBBUILTIN CLANG_LIBBUILTIN_ENTRY
+#define TARGET_BUILTIN CLANG_TARGET_BUILTIN_ENTRY
+#define TARGET_HEADER_BUILTIN CLANG_TARGET_HEADER_BUILTIN_ENTRY
+#include "clang/Basic/BuiltinsARM.def"
+});
+
+llvm::SmallVector<Builtin::InfosShard>
+ARMTargetInfo::getTargetBuiltins() const {
+  return {
+      {&NEON::BuiltinStrings, NEON::BuiltinInfos, "__builtin_neon_"},
+      {&NEON::FP16::BuiltinStrings, NEON::FP16::BuiltinInfos,
+       "__builtin_neon_"},
+      {&BuiltinStrings, BuiltinInfos},
+  };
 }
 
 bool ARMTargetInfo::isCLZForZeroUndef() const { return false; }
