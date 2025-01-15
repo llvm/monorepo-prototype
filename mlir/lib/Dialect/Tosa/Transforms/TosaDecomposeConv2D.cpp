@@ -14,6 +14,7 @@
 #include "mlir/Dialect/Tosa/IR/TosaOps.h"
 #include "mlir/Dialect/Tosa/Transforms/Passes.h"
 #include "mlir/Dialect/Tosa/Utils/ConversionUtils.h"
+#include "mlir/IR/Matchers.h"
 
 using namespace mlir;
 using namespace mlir::tosa;
@@ -62,9 +63,14 @@ struct Conv2DIsFullyConnected : public OpRewritePattern<tosa::Conv2DOp> {
     if (llvm::any_of(pad, [](int64_t p) { return p != 0; })) {
       Type inputETy = inputType.getElementType();
       Attribute zeroAttr = rewriter.getZeroAttr(inputETy);
-      if (op.getQuantizationInfo()) {
-        auto quantizationInfo = op.getQuantizationInfo();
-        int64_t iZp = quantizationInfo->getInputZp();
+      ElementsAttr inputZpAttr;
+      if (!matchPattern(op.getInputZp(), m_Constant(&inputZpAttr)))
+        return rewriter.notifyMatchFailure(
+            op,
+            "bail out if the actual value of zero points cannot be determined");
+
+      int64_t iZp;
+      if (tosa::getZeroPoint(inputZpAttr, iZp).succeeded()) {
 
         if (!validIntegerRange(cast<IntegerType>(inputETy), iZp))
           return rewriter.notifyMatchFailure(
@@ -129,13 +135,41 @@ struct Conv2DIsFullyConnected : public OpRewritePattern<tosa::Conv2DOp> {
     auto fullyConnectedShapeType =
         RankedTensorType::get(fullyConnectedShape, resultType.getElementType());
 
+    ElementsAttr inputZpAttr;
+    ElementsAttr weightZpAttr;
+    if (!matchPattern(op.getInputZp(), m_Constant(&inputZpAttr)) ||
+        !matchPattern(op.getWeightZp(), m_Constant(&weightZpAttr)))
+      return rewriter.notifyMatchFailure(
+          op,
+          "bail out if the actual value of zero points cannot be determined");
+
+    // Get and verify explicit zero points.
+    int64_t iZp;
+    int64_t wZp;
+
+    if (tosa::getZeroPoint(inputZpAttr, iZp).failed() ||
+        tosa::verifyZeroPoint<tosa::DepthwiseConv2DOp>(
+            getElementTypeOrSelf(inputZpAttr), iZp)
+            .failed())
+      return rewriter.notifyMatchFailure(
+          op, "input zero point must be zero for non-int8 integer types");
+
+    if (tosa::getZeroPoint(weightZpAttr, wZp).failed() ||
+        tosa::verifyZeroPoint<tosa::DepthwiseConv2DOp>(
+            getElementTypeOrSelf(weightZpAttr), wZp)
+            .failed())
+      return rewriter.notifyMatchFailure(
+          op, "weight zero point must be zero for non-int8 integer types");
+
     Value fullyConnectedValue;
-    if (op.getQuantizationInfo()) {
+    if (iZp != 0 || wZp != 0) {
+      auto zeroPointAttr =
+          rewriter.getAttr<tosa::ConvOpQuantizationAttr>(iZp, wZp);
       fullyConnectedValue =
           rewriter
               .create<tosa::FullyConnectedOp>(
                   op.getLoc(), fullyConnectedShapeType, reshapedInput,
-                  reshapedWeight, op.getBias(), *op.getQuantizationInfo())
+                  reshapedWeight, op.getBias(), zeroPointAttr)
               .getResult();
     } else {
       fullyConnectedValue = rewriter

@@ -14,6 +14,7 @@
 #include "mlir/Dialect/Tosa/IR/TosaOps.h"
 #include "mlir/Dialect/Tosa/Transforms/Passes.h"
 #include "mlir/Dialect/Tosa/Utils/ConversionUtils.h"
+#include "mlir/IR/Matchers.h"
 #include "mlir/Pass/Pass.h"
 
 using namespace mlir;
@@ -60,19 +61,47 @@ struct DepthwiseConv2DIsMul : public OpRewritePattern<tosa::DepthwiseConv2DOp> {
                     rewriter.getDenseI64ArrayAttr(revisedInputShape))
                 .getResult();
 
-    if (inputType.getElementType() != resultType.getElementType()) {
-      inputType = inputType.clone(resultType.getElementType());
+    Type inputETy = inputType.getElementType();
+    Type weightETy = weightType.getElementType();
+    Type resultETy = resultType.getElementType();
+
+    if (inputETy != resultETy) {
+      inputType = inputType.clone(resultETy);
       input = rewriter.create<tosa::CastOp>(op.getLoc(), inputType, input);
     }
 
-    if (weightType.getElementType() != resultType.getElementType()) {
-      weightType = weightType.clone(resultType.getElementType());
+    if (weightETy != resultETy) {
+      weightType = weightType.clone(resultETy);
       weight = rewriter.create<tosa::CastOp>(op.getLoc(), weightType, weight);
     }
 
-    if (auto quantizationInfo = op.getQuantizationInfo()) {
-      auto iZp = quantizationInfo->getInputZp();
-      auto wZp = quantizationInfo->getWeightZp();
+    ElementsAttr inputZpAttr;
+    ElementsAttr weightZpAttr;
+    if (!matchPattern(op.getInputZp(), m_Constant(&inputZpAttr)) ||
+        !matchPattern(op.getWeightZp(), m_Constant(&weightZpAttr)))
+      return rewriter.notifyMatchFailure(
+          op,
+          "bail out if the actual value of zero points cannot be determined");
+
+    // Get and verify explicit zero points.
+    int64_t iZp;
+    int64_t wZp;
+
+    if (tosa::getZeroPoint(inputZpAttr, iZp).failed() ||
+        tosa::verifyZeroPoint<tosa::DepthwiseConv2DOp>(
+            getElementTypeOrSelf(inputZpAttr), iZp)
+            .failed())
+      return rewriter.notifyMatchFailure(
+          op, "input zero point must be zero for non-int8 integer types");
+
+    if (tosa::getZeroPoint(weightZpAttr, wZp).failed() ||
+        tosa::verifyZeroPoint<tosa::DepthwiseConv2DOp>(
+            getElementTypeOrSelf(weightZpAttr), wZp)
+            .failed())
+      return rewriter.notifyMatchFailure(
+          op, "weight zero point must be zero for non-int8 integer types");
+
+    if (iZp != 0 || wZp != 0) {
 
       auto applyZp = [&](Value val, int64_t zp) -> Value {
         if (zp == 0)
@@ -98,7 +127,6 @@ struct DepthwiseConv2DIsMul : public OpRewritePattern<tosa::DepthwiseConv2DOp> {
       pad[it.index() + 2] = it.value();
 
     if (llvm::any_of(pad, [](int64_t p) { return p != 0; })) {
-      Type inputETy = inputType.getElementType();
       Attribute zeroAttr = rewriter.getZeroAttr(inputETy);
 
       llvm::SmallVector<int64_t> newShape(inputType.getShape());
