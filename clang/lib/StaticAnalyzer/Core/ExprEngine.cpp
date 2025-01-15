@@ -3519,7 +3519,7 @@ ProgramStateRef ExprEngine::processPointerEscapedOnBind(
 
     // Case (2) continued.
     if (isa<UnknownSpaceRegion>(MR)) {
-      const MemSpaceRegion *MS = memspace::getMemSpaceTrait(State, MR);
+      const MemSpaceRegion *MS = memspace::getMemSpace(State, MR);
       if (!isa<StackSpaceRegion, StaticGlobalSpaceRegion>(MS)) {
         Escaped.push_back(LocAndVal.second);
         continue;

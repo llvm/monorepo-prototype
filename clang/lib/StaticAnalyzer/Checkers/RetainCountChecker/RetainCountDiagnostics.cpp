@@ -695,7 +695,7 @@ static AllocationInfo GetAllocationSite(ProgramStateManager &StateMgr,
           dyn_cast<StackSpaceRegion>(R->getMemorySpace());
       if (!MR)
         MR = dyn_cast_if_present<StackSpaceRegion>(
-            memspace::getMemSpaceTrait(St, R));
+            memspace::getMemSpace(St, R));
 
       if (MR && MR->getStackFrame() == LeakContext->getStackFrame())
         FirstBinding = R;

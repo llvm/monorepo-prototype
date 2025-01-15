@@ -1198,7 +1198,7 @@ static bool isInitializationOfVar(const ExplodedNode *N, const VarRegion *VR) {
 
   if (isa<UnknownSpaceRegion>(VarSpace)) {
     ProgramStateRef State = N->getState();
-    const MemSpaceRegion *MemSpace = memspace::getMemSpaceTrait(State, VR);
+    const MemSpaceRegion *MemSpace = memspace::getMemSpace(State, VR);
     FrameSpace = dyn_cast_if_present<StackSpaceRegion>(MemSpace);
   } else {
     FrameSpace = dyn_cast<StackSpaceRegion>(VarSpace);

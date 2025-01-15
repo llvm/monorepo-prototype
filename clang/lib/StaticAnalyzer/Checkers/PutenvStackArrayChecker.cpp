@@ -51,7 +51,7 @@ void PutenvStackArrayChecker::checkPostCall(const CallEvent &Call,
   const auto *SSR = dyn_cast<StackSpaceRegion>(MR->getMemorySpace());
   if (!SSR)
     SSR = dyn_cast_if_present<StackSpaceRegion>(
-        memspace::getMemSpaceTrait(C.getState(), MR));
+        memspace::getMemSpace(C.getState(), MR));
   if (!SSR)
     return;
 

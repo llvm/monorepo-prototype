@@ -2213,7 +2213,7 @@ MallocChecker::FreeMemAux(CheckerContext &C, const Expr *ArgExpr,
   // - The region has unknown memspace and no trait for further clarification
   //   (i.e., just unknown)
   // - The region has unknown memspace and a heap memspace trait
-  const MemSpaceRegion *MSTrait = memspace::getMemSpaceTrait(State, R);
+  const MemSpaceRegion *MSTrait = memspace::getMemSpace(State, R);
   bool HasHeapOrUnknownTrait = !MSTrait || isa<HeapSpaceRegion>(MSTrait);
   if (!(isa<HeapSpaceRegion>(MS) ||
         (isa<UnknownSpaceRegion>(MS) && HasHeapOrUnknownTrait))) {
@@ -2414,7 +2414,7 @@ bool MallocChecker::SummarizeRegion(ProgramStateRef State, raw_ostream &os,
     return true;
   default: {
     const MemSpaceRegion *MS = MR->getMemorySpace();
-    const MemSpaceRegion *MSTrait = memspace::getMemSpaceTrait(State, MR);
+    const MemSpaceRegion *MSTrait = memspace::getMemSpace(State, MR);
 
     if (isa<StackLocalsSpaceRegion>(MS) ||
         isa_and_nonnull<StackLocalsSpaceRegion>(MSTrait)) {

@@ -48,15 +48,13 @@ bool hasMemSpaceTrait(ProgramStateRef State, const MemRegion *MR) {
   return Result;
 }
 
-const MemSpaceRegion *getMemSpaceTrait(ProgramStateRef State,
+const MemSpaceRegion *getMemSpace(ProgramStateRef State,
                                        const MemRegion *MR) {
-  if (!isa<UnknownSpaceRegion>(MR->getMemorySpace()))
-    return nullptr;
-
   const MemSpaceRegion *const *Result = State->get<MemSpacesMap>(MR);
-  if (!Result)
-    return nullptr;
-  return *Result;
+  if (Result)
+    return *Result;
+
+  return MR->getMemorySpace();
 }
 
 } // namespace memspace
