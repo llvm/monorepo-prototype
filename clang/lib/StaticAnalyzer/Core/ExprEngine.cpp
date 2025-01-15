@@ -3512,13 +3512,7 @@ ProgramStateRef ExprEngine::processPointerEscapedOnBind(
     // Cases (1) and (2).
     const MemRegion *MR = LocAndVal.first.getAsRegion();
     if (!MR ||
-        !isa<StackSpaceRegion, StaticGlobalSpaceRegion>(MR->getMemorySpace())) {
-      Escaped.push_back(LocAndVal.second);
-      continue;
-    }
-
-    // Case (2) continued.
-    if (memspace::isMemSpace<StackSpaceRegion, StaticGlobalSpaceRegion>(State, MR)) {
+        !memspace::isMemSpace<StackSpaceRegion, StaticGlobalSpaceRegion>(State, MR)) {
       Escaped.push_back(LocAndVal.second);
       continue;
     }
