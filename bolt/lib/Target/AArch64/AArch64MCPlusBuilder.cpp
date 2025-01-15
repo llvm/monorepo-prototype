@@ -23,6 +23,7 @@
 #include "llvm/MC/MCFixupKindInfo.h"
 #include "llvm/MC/MCInstBuilder.h"
 #include "llvm/MC/MCInstrInfo.h"
+#include "llvm/MC/MCRegister.h"
 #include "llvm/MC/MCRegisterInfo.h"
 #include "llvm/Support/DataExtractor.h"
 #include "llvm/Support/Debug.h"
@@ -146,6 +147,60 @@ public:
 
   bool shortenInstruction(MCInst &, const MCSubtargetInfo &) const override {
     return false;
+  }
+
+  MCPhysReg getAuthenticatedReg(const MCInst &Inst) const override {
+    switch (Inst.getOpcode()) {
+    case AArch64::AUTIAZ:
+    case AArch64::AUTIBZ:
+    case AArch64::AUTIASP:
+    case AArch64::AUTIBSP:
+    case AArch64::RETAA:
+    case AArch64::RETAB:
+      return AArch64::LR;
+    case AArch64::AUTIA1716:
+    case AArch64::AUTIB1716:
+      return AArch64::X17;
+    case AArch64::ERETAA:
+    case AArch64::ERETAB:
+      return AArch64::LR;
+
+    case AArch64::AUTIA:
+    case AArch64::AUTIB:
+    case AArch64::AUTDA:
+    case AArch64::AUTDB:
+    case AArch64::AUTIZA:
+    case AArch64::AUTIZB:
+    case AArch64::AUTDZA:
+    case AArch64::AUTDZB:
+      return Inst.getOperand(0).getReg();
+
+    default:
+      return getNoRegister();
+    }
+  }
+
+  bool isAuthenticationOfReg(const MCInst &Inst,
+                             MCPhysReg AuthenticatedReg) const override {
+    if (AuthenticatedReg == getNoRegister())
+      return false;
+    return getAuthenticatedReg(Inst) == AuthenticatedReg;
+  }
+
+  MCPhysReg getRegUsedAsRetDest(const MCInst &Inst) const override {
+    assert(isReturn(Inst));
+    switch (Inst.getOpcode()) {
+    case AArch64::RET:
+      return Inst.getOperand(0).getReg();
+    case AArch64::RETAA:
+    case AArch64::RETAB:
+    case AArch64::ERETAA:
+    case AArch64::ERETAB:
+    case AArch64::ERET:
+      return AArch64::LR;
+    default:
+      llvm_unreachable("Unhandled return instruction");
+    }
   }
 
   bool isADRP(const MCInst &Inst) const override {
