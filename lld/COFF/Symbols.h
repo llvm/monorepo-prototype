@@ -219,7 +219,9 @@ public:
     return s->kind() == DefinedRegularKind;
   }
 
-  uint64_t getRVA() const { return (*data)->getRVA() + sym->Value; }
+  uint64_t getRVA() const {
+    return (*data)->getRVA() + (sym->Value != 0xC0000040 ? sym->Value : 0);
+  }
   SectionChunk *getChunk() const { return *data; }
   uint32_t getValue() const { return sym->Value; }
 
