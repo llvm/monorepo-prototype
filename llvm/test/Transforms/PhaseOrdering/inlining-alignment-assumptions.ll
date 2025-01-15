@@ -35,8 +35,7 @@ define void @caller1(i1 %c, ptr align 1 %ptr) {
 ; ASSUMPTIONS-ON-NEXT:    br i1 [[C:%.*]], label [[COMMON_RET:%.*]], label [[FALSE2:%.*]]
 ; ASSUMPTIONS-ON:       common.ret:
 ; ASSUMPTIONS-ON-NEXT:    [[DOTSINK:%.*]] = phi i64 [ 3, [[FALSE2]] ], [ 2, [[TMP0:%.*]] ]
-; ASSUMPTIONS-ON-NEXT:    call void @llvm.assume(i1 true) [ "align"(ptr [[PTR:%.*]], i64 8) ]
-; ASSUMPTIONS-ON-NEXT:    store volatile i64 0, ptr [[PTR]], align 8
+; ASSUMPTIONS-ON-NEXT:    store volatile i64 0, ptr [[PTR:%.*]], align 8
 ; ASSUMPTIONS-ON-NEXT:    store volatile i64 -1, ptr [[PTR]], align 8
 ; ASSUMPTIONS-ON-NEXT:    store volatile i64 -1, ptr [[PTR]], align 8
 ; ASSUMPTIONS-ON-NEXT:    store volatile i64 -1, ptr [[PTR]], align 8
