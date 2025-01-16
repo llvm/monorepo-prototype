@@ -254,8 +254,10 @@ class MapInfoFinalizationPass
     return llvm::to_underlying(
         hasImplicitMap
             ? llvm::omp::OpenMPOffloadMappingFlags::OMP_MAP_TO |
-                  llvm::omp::OpenMPOffloadMappingFlags::OMP_MAP_IMPLICIT
-            : llvm::omp::OpenMPOffloadMappingFlags::OMP_MAP_TO);
+                  llvm::omp::OpenMPOffloadMappingFlags::OMP_MAP_IMPLICIT |
+                  llvm::omp::OpenMPOffloadMappingFlags::OMP_MAP_ALWAYS
+            : llvm::omp::OpenMPOffloadMappingFlags::OMP_MAP_TO |
+                  llvm::omp::OpenMPOffloadMappingFlags::OMP_MAP_ALWAYS);
   }
 
   mlir::omp::MapInfoOp genDescriptorMemberMaps(mlir::omp::MapInfoOp op,
