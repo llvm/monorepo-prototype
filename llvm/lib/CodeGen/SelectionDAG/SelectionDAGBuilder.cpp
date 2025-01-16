@@ -8293,6 +8293,15 @@ void SelectionDAGBuilder::visitIntrinsicCall(const CallInst &I,
     visitVectorExtractLastActive(I, Intrinsic);
     return;
   }
+  case Intrinsic::experimental_get_alias_lane_mask: {
+    auto IntrinsicVT = EVT::getEVT(I.getType());
+    SmallVector<SDValue, 4> Ops;
+    for (auto &Op : I.operands())
+      Ops.push_back(getValue(Op));
+    SDValue Mask =
+        DAG.getNode(ISD::EXPERIMENTAL_ALIAS_LANE_MASK, sdl, IntrinsicVT, Ops);
+    setValue(&I, Mask);
+  }
   }
 }
 
