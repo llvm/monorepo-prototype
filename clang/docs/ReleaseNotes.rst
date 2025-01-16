@@ -788,6 +788,8 @@ Improvements to Clang's diagnostics
       require(scope); // Warning!  Requires mu1.
     }
 
+- Clang now diagnoses ``-Wunused-member-function`` with a specific message for constructors.
+
 Improvements to Clang's time-trace
 ----------------------------------
 
