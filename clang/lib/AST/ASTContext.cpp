@@ -3442,7 +3442,6 @@ uint16_t ASTContext::getPointerAuthTypeDiscriminator(QualType T) {
     encodeTypeForFunctionPointerAuth(*this, Out, T);
   } else {
     T = T.getUnqualifiedType();
-    // Drop exception specification from member function pointer type.
     // Calls to member function pointers don't need to worry about
     // language interop or the laxness of the C type compatibility rules.
     // We just mangle the member pointer type directly, which is
