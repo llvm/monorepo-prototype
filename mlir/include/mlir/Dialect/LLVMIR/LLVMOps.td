@@ -699,6 +699,7 @@ def LLVM_CallOp : LLVM_MemAccessOpBase<"call",
                     [AttrSizedOperandSegments,
                      DeclareOpInterfaceMethods<FastmathFlagsInterface>,
                      DeclareOpInterfaceMethods<CallOpInterface>,
+                     DeclareOpInterfaceMethods<ArgumentAttributesOpInterface>,
                      DeclareOpInterfaceMethods<SymbolUserOpInterface>,
                      DeclareOpInterfaceMethods<BranchWeightOpInterface>]> {
   let summary = "Call to an LLVM function.";
@@ -755,7 +756,9 @@ def LLVM_CallOp : LLVM_MemAccessOpBase<"call",
                   VariadicOfVariadic<LLVM_Type,
                                      "op_bundle_sizes">:$op_bundle_operands,
                   DenseI32ArrayAttr:$op_bundle_sizes,
-                  OptionalAttr<ArrayAttr>:$op_bundle_tags);
+                  OptionalAttr<ArrayAttr>:$op_bundle_tags,
+                  OptionalAttr<DictArrayAttr>:$arg_attrs,
+                  OptionalAttr<DictArrayAttr>:$res_attrs);
   // Append the aliasing related attributes defined in LLVM_MemAccessOpBase.
   let arguments = !con(args, aliasAttrs);
   let results = (outs Optional<LLVM_Type>:$result);
