@@ -302,9 +302,10 @@ void test1(Base0 *a0, MethodTy0 a1) {
   (a0->*a1)();
 }
 
+// CXX17: define{{.*}} void @_Z14test1_noexceptP5Base0MS_DoFvvE(
 // CXX17: %[[V14:.*]] = phi ptr [ %{{.*}}, {{.*}} ], [ %{{.*}}, {{.*}} ]
 // CXX17: %[[V15:.*]] = phi i64 [ 0, {{.*}} ], [ [[TYPEDISC0]], {{.*}} ]
-// CXX17: call void %[[V14]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(8) %[[V4]]) {{.*}}[ "ptrauth"(i32 0, i64 %[[V15]]) ]
+// CXX17: call void %[[V14]](ptr noundef nonnull align {{[0-9]+}} dereferenceable(8) %{{.*}}) {{.*}}[ "ptrauth"(i32 0, i64 %[[V15]]) ]
 #if __cplusplus >= 201703L
 void test1_noexcept(Base0 *a0, NoExceptMethodTy0 a1) {
   (a0->*a1)();
