@@ -45,7 +45,8 @@ private:
   /// right decision when generating code for different targets.
   const WebAssemblySubtarget *Subtarget;
 
-  bool shouldExpandPartialReductionIntrinsic(const IntrinsicInst *I) const override;
+  bool
+  shouldExpandPartialReductionIntrinsic(const IntrinsicInst *I) const override;
   AtomicExpansionKind shouldExpandAtomicRMWInIR(AtomicRMWInst *) const override;
   bool shouldScalarizeBinop(SDValue VecOp) const override;
   FastISel *createFastISel(FunctionLoweringInfo &FuncInfo,
