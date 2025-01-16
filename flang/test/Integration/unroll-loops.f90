@@ -4,7 +4,7 @@
 ! RUN: %flang_fc1 -emit-llvm -O1 -mllvm -force-vector-width=2 -o- %s | FileCheck %s --check-prefixes=CHECK,NO-UNROLL
 
 ! CHECK-LABEL: @unroll
-! CHECK-SAME: (ptr nocapture writeonly %[[ARG0:.*]])
+! CHECK-SAME: (ptr writeonly captures(none) %[[ARG0:.*]])
 subroutine unroll(a)
   integer(kind=8), intent(out) :: a(1000)
   integer(kind=8) :: i
