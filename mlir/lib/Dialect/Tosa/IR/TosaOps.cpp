@@ -839,7 +839,7 @@ LogicalResult tosa::PadOp::inferReturnTypeComponents(
   SmallVector<int64_t> paddingValues;
   // If the paddings value is not a constant, all dimensions must be dynamic.
   if (!tosa::ExtractConstShapeValue(adaptor.getPadding().getDefiningOp(),
-                               paddingValues)) {
+                                    paddingValues)) {
     outputShape.resize(inputShape.getRank(), ShapedType::kDynamic);
     inferredReturnShapes.push_back(ShapedTypeComponents(outputShape));
     return success();
