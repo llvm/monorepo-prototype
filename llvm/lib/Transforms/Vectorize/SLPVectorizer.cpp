@@ -4514,7 +4514,7 @@ BoUpSLP::~BoUpSLP() {
         I->insertBefore(F->getEntryBlock(),
                         F->getEntryBlock().getFirstNonPHIIt());
       else
-        I->insertBefore(F->getEntryBlock().getTerminator());
+        I->insertBefore(F->getEntryBlock().getTerminator()->getIterator());
       continue;
     }
     for (Use &U : I->operands()) {
@@ -16548,7 +16548,7 @@ BoUpSLP::vectorizeTree(const ExtraValueToDebugLocsMap &ExternallyUsedValues,
               Ex = EE;
             } else {
               auto *CloneInst = Inst->clone();
-              CloneInst->insertBefore(Inst);
+              CloneInst->insertBefore(Inst->getIterator());
               if (Inst->hasName())
                 CloneInst->takeName(Inst);
               Ex = CloneInst;
@@ -17005,7 +17005,7 @@ void BoUpSLP::optimizeGatherSequence() {
       continue;
 
     // We can hoist this instruction. Move it to the pre-header.
-    I->moveBefore(PreHeader->getTerminator());
+    I->moveBefore(PreHeader->getTerminator()->getIterator());
     CSEBlocks.insert(PreHeader);
   }
 
