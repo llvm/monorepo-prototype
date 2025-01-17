@@ -1621,12 +1621,8 @@ static void DumpSymbolContextList(
     if (!first_module)
       strm.EOL();
 
-    AddressRange range;
-
-    sc.GetAddressRange(eSymbolContextEverything, 0, true, range);
-
-    DumpAddress(exe_scope, range.GetBaseAddress(), verbose, all_ranges, strm,
-                settings);
+    Address addr = sc.GetAddress(eSymbolContextEverything, true);
+    DumpAddress(exe_scope, addr, verbose, all_ranges, strm, settings);
     first_module = false;
   }
   strm.IndentLess();
@@ -3570,16 +3566,13 @@ protected:
         continue;
       if (!sc.module_sp || sc.module_sp->GetObjectFile() == nullptr)
         continue;
-      AddressRange range;
-      if (!sc.GetAddressRange(eSymbolContextFunction | eSymbolContextSymbol, 0,
-                              false, range))
-        continue;
-      if (!range.GetBaseAddress().IsValid())
+      Address addr = sc.GetAddress(eSymbolContextFunction | eSymbolContextSymbol, false);
+      if (!addr.IsValid())
         continue;
       ConstString funcname(sc.GetFunctionName());
       if (funcname.IsEmpty())
         continue;
-      addr_t start_addr = range.GetBaseAddress().GetLoadAddress(target);
+      addr_t start_addr = addr.GetLoadAddress(target);
       if (abi)
         start_addr = abi->FixCodeAddress(start_addr);
 

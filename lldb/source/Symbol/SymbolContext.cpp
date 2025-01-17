@@ -370,6 +370,31 @@ bool SymbolContext::GetAddressRange(uint32_t scope, uint32_t range_idx,
   return false;
 }
 
+Address SymbolContext::GetAddress(uint32_t scope,
+                                  bool use_inline_block_range) const {
+  if ((scope & eSymbolContextLineEntry) && line_entry.IsValid())
+    return line_entry.range.GetBaseAddress();
+
+  if (scope & eSymbolContextBlock) {
+    Block *block_to_use = (block && use_inline_block_range)
+                              ? block->GetContainingInlinedBlock()
+                              : block;
+    if (block_to_use) {
+      Address addr;
+      block_to_use->GetStartAddress(addr);
+      return addr;
+    }
+  }
+
+  if ((scope & eSymbolContextFunction) && (function != nullptr))
+    return function->GetAddress();
+
+  if ((scope & eSymbolContextSymbol) && (symbol != nullptr))
+    return symbol->GetAddress();
+
+  return Address();
+}
+
 LanguageType SymbolContext::GetLanguage() const {
   LanguageType lang;
   if (function && (lang = function->GetLanguage()) != eLanguageTypeUnknown) {

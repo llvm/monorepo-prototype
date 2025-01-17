@@ -192,6 +192,33 @@ public:
   bool GetAddressRange(uint32_t scope, uint32_t range_idx,
                        bool use_inline_block_range, AddressRange &range) const;
 
+  /// Get the address represented by this symbol context.
+  ///
+  /// The exact meaning of the address depends on object being queried and the
+  /// flags. Priority is as follows:
+  ///     - The beginning (lowest address) of the line_entry if line_entry is
+  ///     valid and eSymbolContextLineEntry is set in \a scope
+  ///     - The beginning of the block if block is not nullptr and
+  ///     eSymbolContextBlock is set in \a scope
+  ///     - function address (entry point) if function is not nullptr and
+  ///     eSymbolContextFunction is set in \a scope
+  ///     - symbol address if symbol is not nullptr and eSymbolContextSymbol is
+  ///     set in \a scope
+  ///
+  /// \param[in] scope
+  ///     A mask of symbol context bits telling this function which
+  ///     address ranges it can use when trying to extract one from
+  ///     the valid (non-nullptr) symbol context classes.
+  ///
+  /// \param[in] use_inline_block_range
+  ///     If \a scope has the eSymbolContextBlock bit set, and there
+  ///     is a valid block in the symbol context, return the block
+  ///     address range for the containing inline function block, not
+  ///     the deepest most block. This allows us to extract information
+  ///     for the address range of the inlined function block, not
+  ///     the deepest lexical block.
+  Address GetAddress(uint32_t scope, bool use_inline_block_range) const;
+
   llvm::Error GetAddressRangeFromHereToEndLine(uint32_t end_line,
                                                AddressRange &range);
 
