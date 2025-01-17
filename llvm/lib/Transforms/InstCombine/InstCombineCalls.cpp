@@ -3242,15 +3242,70 @@ Instruction *InstCombinerImpl::visitCallInst(CallInst &CI) {
           MDNode *MD = MDNode::get(II->getContext(), {});
           LI->setMetadata(LLVMContext::MD_noundef, MD);
         } else {
-          // Try to get the instruction before the assumption to use as context.
-          Instruction *CtxI = nullptr;
-          if (CtxI && II->getParent()->begin() != II->getIterator())
-            CtxI = II->getPrevNode();
+          auto *C = dyn_cast<Constant>(RK.WasOn);
+          if (C && C->isNullValue()) {
+          } else {
+            Value *UO = getUnderlyingObject(RK.WasOn);
 
-          auto Known = computeKnownBits(RK.WasOn, 1, CtxI);
-          unsigned KnownAlign = 1 << Known.countMinTrailingZeros();
-          if (KnownAlign < RK.ArgValue)
-            continue;
+            bool CanUseAlign = false;
+            SetVector<const Instruction *> WorkList;
+            for (const User *U : RK.WasOn->users())
+              if (auto *I = dyn_cast<Instruction>(U))
+                WorkList.insert(I);
+
+            for (unsigned I = 0; I != WorkList.size(); ++I) {
+              auto *Curr = WorkList[I];
+              if (!DT.dominates(II, Curr))
+                continue;
+              if (auto *LI = dyn_cast<LoadInst>(Curr)) {
+                if (LI->getAlign().value() < RK.ArgValue) {
+                  CanUseAlign = true;
+                  break;
+                }
+                continue;
+              }
+              if (auto *SI = dyn_cast<StoreInst>(Curr)) {
+                auto *PtrOpI = dyn_cast<Instruction>(SI->getPointerOperand());
+                if (PtrOpI && WorkList.contains(PtrOpI) &&
+                    SI->getAlign().value() < RK.ArgValue) {
+                  CanUseAlign = true;
+                  break;
+                }
+                continue;
+              }
+              if (isa<ReturnInst, CallBase>(Curr)) {
+                CanUseAlign = true;
+                break;
+              }
+              if (isa<ICmpInst>(Curr) &&
+                  !isa<Constant>(cast<Instruction>(Curr)->getOperand(0)) &&
+                  !isa<Constant>(cast<Instruction>(Curr)->getOperand(1))) {
+                CanUseAlign = true;
+                break;
+              }
+              if (!Curr->getType()->isPointerTy())
+                continue;
+
+              if (WorkList.size() > 16) {
+                CanUseAlign = true;
+                break;
+              }
+              for (const User *U : Curr->users())
+                WorkList.insert(cast<Instruction>(U));
+            }
+            if (CanUseAlign && (!UO || isa<Argument>(UO)))
+              continue;
+            // Try to get the instruction before the assumption to use as
+            // context.
+            Instruction *CtxI = nullptr;
+            if (CtxI && II->getParent()->begin() != II->getIterator())
+              CtxI = II->getPrevNode();
+
+            auto Known = computeKnownBits(RK.WasOn, 1, CtxI);
+            unsigned KnownAlign = 1 << Known.countMinTrailingZeros();
+            if (CanUseAlign && KnownAlign < RK.ArgValue)
+              continue;
+          }
         }
         auto *New = CallBase::removeOperandBundle(II, OBU.getTagID());
         return New;

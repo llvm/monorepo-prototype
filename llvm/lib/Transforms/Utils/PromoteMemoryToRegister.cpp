@@ -485,7 +485,8 @@ static void convertMetadataToAssumes(LoadInst *LI, Value *Val,
     addAssumeNonNull(AC, LI);
 
   if (AC && LI->getMetadata(LLVMContext::MD_align) &&
-      LI->getMetadata(LLVMContext::MD_noundef)) {
+      (LI->getMetadata(LLVMContext::MD_noundef) ||
+       programUndefinedIfPoison(LI))) {
     auto *AlignMD = LI->getMetadata(LLVMContext::MD_align);
     auto *B = mdconst::extract<ConstantInt>(AlignMD->getOperand(0));
 
@@ -494,9 +495,7 @@ static void convertMetadataToAssumes(LoadInst *LI, Value *Val,
    if (AlignFromKB < B->getZExtValue()) {
       addAssumeAlign(DL, LI, Val);
 }
-
-}
-
+  }
 }
 
 static void removeIntrinsicUsers(AllocaInst *AI) {
