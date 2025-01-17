@@ -11,11 +11,11 @@
 cbuffer A {
     // JSON: "kind": "VarDecl",
     // JSON: "name": "a",
-    // JSON: "qualType": "float"
+    // JSON: "qualType": "hlsl_constant float"
     float a;
     // JSON: "kind": "VarDecl",
     // JSON: "name": "b",
-    // JSON: "qualType": "int"
+    // JSON: "qualType": "hlsl_constant int"
     int b;
 }
 
@@ -29,11 +29,11 @@ cbuffer A {
 tbuffer B {
     // JSON: "kind": "VarDecl",
     // JSON: "name": "c",
-    // JSON: "qualType": "float"
+    // JSON: "qualType": "hlsl_constant float"
     float c;
     // JSON: "kind": "VarDecl",
     // JSON: "name": "d",
-    // JSON: "qualType": "int"
+    // JSON: "qualType": "hlsl_constant int"
     int d;
 }
 
@@ -43,8 +43,8 @@ tbuffer B {
 // AST-NEXT: FullComment
 // AST-NEXT: ParagraphComment
 // AST-NEXT: TextComment {{.*}} Text=" CBuffer decl."
-// AST-NEXT: VarDecl {{.*}} a 'float'
-// AST-NEXT: VarDecl {{.*}} b 'int'
+// AST-NEXT: VarDecl {{.*}} a 'hlsl_constant float'
+// AST-NEXT: VarDecl {{.*}} b 'hlsl_constant int'
 // AST-NEXT: CXXRecordDecl {{.*}} implicit class __layout.A definition
 // AST: FieldDecl {{.*}} a 'float'
 // AST-NEXT: FieldDecl {{.*}} b 'int'
@@ -55,8 +55,8 @@ tbuffer B {
 // AST-NEXT: FullComment
 // AST-NEXT: ParagraphComment
 // AST-NEXT: TextComment {{.*}} Text=" TBuffer decl."
-// AST-NEXT: VarDecl {{.*}} c 'float'
-// AST-NEXT: VarDecl {{.*}} d 'int'
+// AST-NEXT: VarDecl {{.*}} c 'hlsl_constant float'
+// AST-NEXT: VarDecl {{.*}} d 'hlsl_constant int'
 // AST-NEXT: CXXRecordDecl {{.*}} implicit class __layout.B definition
 // AST: FieldDecl {{.*}} c 'float'
 // AST-NEXT: FieldDecl {{.*}} d 'int'
