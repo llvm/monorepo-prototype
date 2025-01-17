@@ -3232,8 +3232,8 @@ Instruction *InstCombinerImpl::visitCallInst(CallInst &CI) {
         if (LI &&
             isValidAssumeForContext(II, LI, &DT, /*AllowEphemerals=*/true)) {
 
-        if (!CleanupAssumptions && isa<Argument>(LI->getPointerOperand()))
-          continue;
+/*        if (!CleanupAssumptions && isa<Argument>(LI->getPointerOperand()))*/
+          /*continue;*/
 
           LI->setMetadata(
               LLVMContext::MD_align,
