@@ -892,10 +892,14 @@ private:
   // Internal Implementation Details
   //===------------------------------------------------------------------===//
 
-  void emitJumpTableEntry(const MachineJumpTableInfo *MJTI,
+  template <typename Iterator>
+  void emitJumpTableImpl(const MachineJumpTableInfo &MJTI,
+                         const llvm::iterator_range<Iterator> &JumpTableIndices,
+                         bool JTInDiffSection);
+  void emitJumpTableEntry(const MachineJumpTableInfo &MJTI,
                           const MachineBasicBlock *MBB, unsigned uid) const;
 
-  void emitJumpTableSizesSection(const MachineJumpTableInfo *MJTI,
+  void emitJumpTableSizesSection(const MachineJumpTableInfo &MJTI,
                                  const Function &F) const;
 
   void emitLLVMUsedList(const ConstantArray *InitList);
