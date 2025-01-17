@@ -6,8 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "src/time/time_constants.h"
 #include "src/time/time_utils.h"
+#include "src/time/time_constants.h"
 
 namespace LIBC_NAMESPACE_DECL {
 namespace time_utils {
