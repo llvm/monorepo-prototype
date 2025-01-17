@@ -3566,7 +3566,8 @@ protected:
         continue;
       if (!sc.module_sp || sc.module_sp->GetObjectFile() == nullptr)
         continue;
-      Address addr = sc.GetAddress(eSymbolContextFunction | eSymbolContextSymbol, false);
+      Address addr =
+          sc.GetAddress(eSymbolContextFunction | eSymbolContextSymbol, false);
       if (!addr.IsValid())
         continue;
       ConstString funcname(sc.GetFunctionName());
