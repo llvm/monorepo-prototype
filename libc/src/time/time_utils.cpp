@@ -9,6 +9,10 @@
 #include "src/time/time_utils.h"
 #include "src/time/time_constants.h"
 
+#ifdef LIBC_TARGET_OS_IS_LINUX
+#include <unistd.h>
+#endif
+
 namespace LIBC_NAMESPACE_DECL {
 namespace time_utils {
 
