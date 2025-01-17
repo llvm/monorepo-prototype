@@ -8,8 +8,7 @@ declare void @llvm.assume(i1 noundef)
 define i32 @earlycse_entry(ptr %p) {
 ; CHECK-LABEL: define i32 @earlycse_entry(
 ; CHECK-SAME: ptr nocapture [[P:%.*]]) local_unnamed_addr {
-; CHECK-NEXT:    [[L_I:%.*]] = load ptr, ptr [[P]], align 8
-; CHECK-NEXT:    call void @llvm.assume(i1 true) [ "align"(ptr [[L_I]], i64 4) ]
+; CHECK-NEXT:    [[L_I:%.*]] = load ptr, ptr [[P]], align 8, !align [[META0:![0-9]+]], !noundef [[META1:![0-9]+]]
 ; CHECK-NEXT:    [[L_ASSUME_ALIGNED_I_I:%.*]] = load i32, ptr [[L_I]], align 4
 ; CHECK-NEXT:    [[R_I_I:%.*]] = tail call i32 @swap(i32 [[L_ASSUME_ALIGNED_I_I]])
 ; CHECK-NEXT:    [[L_2_I:%.*]] = load ptr, ptr [[P]], align 8
@@ -31,8 +30,7 @@ define i32 @earlycse_entry(ptr %p) {
 define i32 @earlycse_fn1(ptr %p) {
 ; CHECK-LABEL: define i32 @earlycse_fn1(
 ; CHECK-SAME: ptr nocapture [[P:%.*]]) local_unnamed_addr {
-; CHECK-NEXT:    [[L:%.*]] = load ptr, ptr [[P]], align 8
-; CHECK-NEXT:    call void @llvm.assume(i1 true) [ "align"(ptr [[L]], i64 4) ]
+; CHECK-NEXT:    [[L:%.*]] = load ptr, ptr [[P]], align 8, !align [[META0]], !noundef [[META1]]
 ; CHECK-NEXT:    [[L_ASSUME_ALIGNED_I:%.*]] = load i32, ptr [[L]], align 4
 ; CHECK-NEXT:    [[R_I:%.*]] = tail call i32 @swap(i32 [[L_ASSUME_ALIGNED_I]])
 ; CHECK-NEXT:    [[L_2:%.*]] = load ptr, ptr [[P]], align 8
@@ -83,8 +81,7 @@ define void @sroa_align_entry(ptr %p) {
 define ptr @sroa_fn1(ptr %p) {
 ; CHECK-LABEL: define ptr @sroa_fn1(
 ; CHECK-SAME: ptr nocapture readonly [[P:%.*]]) local_unnamed_addr #[[ATTR2:[0-9]+]] {
-; CHECK-NEXT:    [[L:%.*]] = load ptr, ptr [[P]], align 8
-; CHECK-NEXT:    call void @llvm.assume(i1 true) [ "align"(ptr [[L]], i64 8) ]
+; CHECK-NEXT:    [[L:%.*]] = load ptr, ptr [[P]], align 8, !align [[META2:![0-9]+]], !noundef [[META1]]
 ; CHECK-NEXT:    [[L_FN3_I_I:%.*]] = load i64, ptr [[L]], align 8
 ; CHECK-NEXT:    [[I_I:%.*]] = inttoptr i64 [[L_FN3_I_I]] to ptr
 ; CHECK-NEXT:    ret ptr [[I_I]]
@@ -118,3 +115,8 @@ define i64 @sroa_fn3(ptr %0) {
   %l.fn3 = load i64, ptr %0, align 1
   ret i64 %l.fn3
 }
+;.
+; CHECK: [[META0]] = !{i64 4}
+; CHECK: [[META1]] = !{}
+; CHECK: [[META2]] = !{i64 8}
+;.
