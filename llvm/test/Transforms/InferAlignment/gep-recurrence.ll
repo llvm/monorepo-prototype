@@ -12,7 +12,7 @@ define void @test_recur_i8_128(ptr align 128 %dst) {
 ; CHECK-NEXT:    br label [[LOOP:%.*]]
 ; CHECK:       loop:
 ; CHECK-NEXT:    [[IV:%.*]] = phi ptr [ [[DST]], [[ENTRY:%.*]] ], [ [[IV_NEXT:%.*]], [[LOOP]] ]
-; CHECK-NEXT:    store i64 0, ptr [[IV]], align 1
+; CHECK-NEXT:    store i64 0, ptr [[IV]], align 128
 ; CHECK-NEXT:    [[IV_NEXT]] = getelementptr inbounds i8, ptr [[IV]], i64 128
 ; CHECK-NEXT:    [[C:%.*]] = call i1 @cond()
 ; CHECK-NEXT:    br i1 [[C]], label [[LOOP]], label [[EXIT:%.*]]
@@ -40,7 +40,7 @@ define void @test_recur_i8_128_no_inbounds(ptr align 128 %dst) {
 ; CHECK-NEXT:    br label [[LOOP:%.*]]
 ; CHECK:       loop:
 ; CHECK-NEXT:    [[IV:%.*]] = phi ptr [ [[DST]], [[ENTRY:%.*]] ], [ [[IV_NEXT:%.*]], [[LOOP]] ]
-; CHECK-NEXT:    store i64 0, ptr [[IV]], align 1
+; CHECK-NEXT:    store i64 0, ptr [[IV]], align 128
 ; CHECK-NEXT:    [[IV_NEXT]] = getelementptr i8, ptr [[IV]], i64 128
 ; CHECK-NEXT:    [[C:%.*]] = call i1 @cond()
 ; CHECK-NEXT:    br i1 [[C]], label [[LOOP]], label [[EXIT:%.*]]
@@ -68,7 +68,7 @@ define void @test_recur_i8_64(ptr align 128 %dst) {
 ; CHECK-NEXT:    br label [[LOOP:%.*]]
 ; CHECK:       loop:
 ; CHECK-NEXT:    [[IV:%.*]] = phi ptr [ [[DST]], [[ENTRY:%.*]] ], [ [[IV_NEXT:%.*]], [[LOOP]] ]
-; CHECK-NEXT:    store i64 0, ptr [[IV]], align 1
+; CHECK-NEXT:    store i64 0, ptr [[IV]], align 64
 ; CHECK-NEXT:    [[IV_NEXT]] = getelementptr inbounds i8, ptr [[IV]], i64 64
 ; CHECK-NEXT:    [[C:%.*]] = call i1 @cond()
 ; CHECK-NEXT:    br i1 [[C]], label [[LOOP]], label [[EXIT:%.*]]
@@ -124,7 +124,7 @@ define void @test_recur_i8_32(ptr align 128 %dst) {
 ; CHECK-NEXT:    br label [[LOOP:%.*]]
 ; CHECK:       loop:
 ; CHECK-NEXT:    [[IV:%.*]] = phi ptr [ [[DST]], [[ENTRY:%.*]] ], [ [[IV_NEXT:%.*]], [[LOOP]] ]
-; CHECK-NEXT:    store i64 0, ptr [[IV]], align 1
+; CHECK-NEXT:    store i64 0, ptr [[IV]], align 32
 ; CHECK-NEXT:    [[IV_NEXT]] = getelementptr inbounds i8, ptr [[IV]], i64 32
 ; CHECK-NEXT:    [[C:%.*]] = call i1 @cond()
 ; CHECK-NEXT:    br i1 [[C]], label [[LOOP]], label [[EXIT:%.*]]
@@ -152,7 +152,7 @@ define void @test_recur_i8_16(ptr align 128 %dst) {
 ; CHECK-NEXT:    br label [[LOOP:%.*]]
 ; CHECK:       loop:
 ; CHECK-NEXT:    [[IV:%.*]] = phi ptr [ [[DST]], [[ENTRY:%.*]] ], [ [[IV_NEXT:%.*]], [[LOOP]] ]
-; CHECK-NEXT:    store i64 0, ptr [[IV]], align 1
+; CHECK-NEXT:    store i64 0, ptr [[IV]], align 16
 ; CHECK-NEXT:    [[IV_NEXT]] = getelementptr inbounds i8, ptr [[IV]], i64 16
 ; CHECK-NEXT:    [[C:%.*]] = call i1 @cond()
 ; CHECK-NEXT:    br i1 [[C]], label [[LOOP]], label [[EXIT:%.*]]
@@ -180,7 +180,7 @@ define void @test_recur_i8_8(ptr align 128 %dst) {
 ; CHECK-NEXT:    br label [[LOOP:%.*]]
 ; CHECK:       loop:
 ; CHECK-NEXT:    [[IV:%.*]] = phi ptr [ [[DST]], [[ENTRY:%.*]] ], [ [[IV_NEXT:%.*]], [[LOOP]] ]
-; CHECK-NEXT:    store i64 0, ptr [[IV]], align 1
+; CHECK-NEXT:    store i64 0, ptr [[IV]], align 8
 ; CHECK-NEXT:    [[IV_NEXT]] = getelementptr inbounds i8, ptr [[IV]], i64 8
 ; CHECK-NEXT:    [[C:%.*]] = call i1 @cond()
 ; CHECK-NEXT:    br i1 [[C]], label [[LOOP]], label [[EXIT:%.*]]
@@ -208,7 +208,7 @@ define void @test_recur_i8_4(ptr align 128 %dst) {
 ; CHECK-NEXT:    br label [[LOOP:%.*]]
 ; CHECK:       loop:
 ; CHECK-NEXT:    [[IV:%.*]] = phi ptr [ [[DST]], [[ENTRY:%.*]] ], [ [[IV_NEXT:%.*]], [[LOOP]] ]
-; CHECK-NEXT:    store i64 0, ptr [[IV]], align 1
+; CHECK-NEXT:    store i64 0, ptr [[IV]], align 4
 ; CHECK-NEXT:    [[IV_NEXT]] = getelementptr inbounds i8, ptr [[IV]], i64 4
 ; CHECK-NEXT:    [[C:%.*]] = call i1 @cond()
 ; CHECK-NEXT:    br i1 [[C]], label [[LOOP]], label [[EXIT:%.*]]
@@ -236,7 +236,7 @@ define void @test_recur_i8_2(ptr align 128 %dst) {
 ; CHECK-NEXT:    br label [[LOOP:%.*]]
 ; CHECK:       loop:
 ; CHECK-NEXT:    [[IV:%.*]] = phi ptr [ [[DST]], [[ENTRY:%.*]] ], [ [[IV_NEXT:%.*]], [[LOOP]] ]
-; CHECK-NEXT:    store i64 0, ptr [[IV]], align 1
+; CHECK-NEXT:    store i64 0, ptr [[IV]], align 2
 ; CHECK-NEXT:    [[IV_NEXT]] = getelementptr inbounds i8, ptr [[IV]], i64 2
 ; CHECK-NEXT:    [[C:%.*]] = call i1 @cond()
 ; CHECK-NEXT:    br i1 [[C]], label [[LOOP]], label [[EXIT:%.*]]
@@ -285,6 +285,126 @@ exit:
   ret void
 }
 
+define void @test_recur_i8_unknown_step(ptr align 128 %dst, i64 %off) {
+; CHECK-LABEL: define void @test_recur_i8_unknown_step
+; CHECK-SAME: (ptr align 128 [[DST:%.*]], i64 [[OFF:%.*]]) {
+; CHECK-NEXT:  entry:
+; CHECK-NEXT:    br label [[LOOP:%.*]]
+; CHECK:       loop:
+; CHECK-NEXT:    [[IV:%.*]] = phi ptr [ [[DST]], [[ENTRY:%.*]] ], [ [[IV_NEXT:%.*]], [[LOOP]] ]
+; CHECK-NEXT:    store i64 0, ptr [[IV]], align 1
+; CHECK-NEXT:    [[IV_NEXT]] = getelementptr inbounds i8, ptr [[IV]], i64 [[OFF]]
+; CHECK-NEXT:    [[C:%.*]] = call i1 @cond()
+; CHECK-NEXT:    br i1 [[C]], label [[LOOP]], label [[EXIT:%.*]]
+; CHECK:       exit:
+; CHECK-NEXT:    ret void
+;
+entry:
+  br label %loop
+
+loop:
+  %iv = phi ptr [ %dst, %entry ], [ %iv.next, %loop ]
+  store i64 0, ptr %iv, align 1
+  %iv.next = getelementptr inbounds i8, ptr %iv, i64 %off
+  %c = call i1 @cond()
+  br i1 %c, label %loop, label %exit
+
+exit:
+  ret void
+}
+
+define void @test_recur_i8_step_known_multiple(ptr align 128 %dst, i64 %off) {
+; CHECK-LABEL: define void @test_recur_i8_step_known_multiple
+; CHECK-SAME: (ptr align 128 [[DST:%.*]], i64 [[OFF:%.*]]) {
+; CHECK-NEXT:  entry:
+; CHECK-NEXT:    [[UREM:%.*]] = urem i64 [[OFF]], 128
+; CHECK-NEXT:    [[C_UREM:%.*]] = icmp eq i64 [[UREM]], 0
+; CHECK-NEXT:    [[C_POS:%.*]] = icmp sge i64 [[OFF]], 0
+; CHECK-NEXT:    [[AND:%.*]] = and i1 [[C_UREM]], [[C_POS]]
+; CHECK-NEXT:    br i1 [[AND]], label [[LOOP:%.*]], label [[EXIT:%.*]]
+; CHECK:       loop:
+; CHECK-NEXT:    [[IV:%.*]] = phi ptr [ [[DST]], [[ENTRY:%.*]] ], [ [[IV_NEXT:%.*]], [[LOOP]] ]
+; CHECK-NEXT:    store i64 0, ptr [[IV]], align 1
+; CHECK-NEXT:    [[IV_NEXT]] = getelementptr inbounds i8, ptr [[IV]], i64 [[OFF]]
+; CHECK-NEXT:    [[C:%.*]] = call i1 @cond()
+; CHECK-NEXT:    br i1 [[C]], label [[LOOP]], label [[EXIT]]
+; CHECK:       exit:
+; CHECK-NEXT:    ret void
+;
+entry:
+  %urem = urem i64 %off, 128
+  %c.urem = icmp eq i64 %urem, 0
+  %c.pos = icmp sge i64 %off, 0
+  %and = and i1 %c.urem, %c.pos
+  br i1 %and, label %loop, label %exit
+
+loop:
+  %iv = phi ptr [ %dst, %entry ], [ %iv.next, %loop ]
+  store i64 0, ptr %iv, align 1
+  %iv.next = getelementptr inbounds i8, ptr %iv, i64 %off
+  %c = call i1 @cond()
+  br i1 %c, label %loop, label %exit
+
+exit:
+  ret void
+}
+
+define void @test_recur_i8_i16_128(ptr align 128 %dst) {
+; CHECK-LABEL: define void @test_recur_i8_i16_128
+; CHECK-SAME: (ptr align 128 [[DST:%.*]]) {
+; CHECK-NEXT:  entry:
+; CHECK-NEXT:    br label [[LOOP:%.*]]
+; CHECK:       loop:
+; CHECK-NEXT:    [[IV:%.*]] = phi ptr [ [[DST]], [[ENTRY:%.*]] ], [ [[IV_NEXT:%.*]], [[LOOP]] ]
+; CHECK-NEXT:    store i64 0, ptr [[IV]], align 1
+; CHECK-NEXT:    [[IV_NEXT]] = getelementptr inbounds i8, ptr [[IV]], i16 128
+; CHECK-NEXT:    [[C:%.*]] = call i1 @cond()
+; CHECK-NEXT:    br i1 [[C]], label [[LOOP]], label [[EXIT:%.*]]
+; CHECK:       exit:
+; CHECK-NEXT:    ret void
+;
+entry:
+  br label %loop
+
+loop:
+  %iv = phi ptr [ %dst, %entry ], [ %iv.next, %loop ]
+  store i64 0, ptr %iv, align 1
+  %iv.next = getelementptr inbounds i8, ptr %iv, i16 128
+  %c = call i1 @cond()
+  br i1 %c, label %loop, label %exit
+
+exit:
+  ret void
+}
+
+define void @test_recur_i8_i8_132(ptr align 128 %dst) {
+; CHECK-LABEL: define void @test_recur_i8_i8_132
+; CHECK-SAME: (ptr align 128 [[DST:%.*]]) {
+; CHECK-NEXT:  entry:
+; CHECK-NEXT:    br label [[LOOP:%.*]]
+; CHECK:       loop:
+; CHECK-NEXT:    [[IV:%.*]] = phi ptr [ [[DST]], [[ENTRY:%.*]] ], [ [[IV_NEXT:%.*]], [[LOOP]] ]
+; CHECK-NEXT:    store i64 0, ptr [[IV]], align 1
+; CHECK-NEXT:    [[IV_NEXT]] = getelementptr inbounds i8, ptr [[IV]], i8 -124
+; CHECK-NEXT:    [[C:%.*]] = call i1 @cond()
+; CHECK-NEXT:    br i1 [[C]], label [[LOOP]], label [[EXIT:%.*]]
+; CHECK:       exit:
+; CHECK-NEXT:    ret void
+;
+entry:
+  br label %loop
+
+loop:
+  %iv = phi ptr [ %dst, %entry ], [ %iv.next, %loop ]
+  store i64 0, ptr %iv, align 1
+  %iv.next = getelementptr inbounds i8, ptr %iv, i8 132
+  %c = call i1 @cond()
+  br i1 %c, label %loop, label %exit
+
+exit:
+  ret void
+}
+
 define void @test_recur_i32_4(ptr align 128 %dst) {
 ; CHECK-LABEL: define void @test_recur_i32_4
 ; CHECK-SAME: (ptr align 128 [[DST:%.*]]) {
@@ -312,7 +432,6 @@ loop:
 exit:
   ret void
 }
-
 
 define void @test_recur_i32_3(ptr align 128 %dst) {
 ; CHECK-LABEL: define void @test_recur_i32_3
@@ -349,7 +468,7 @@ define void @test_recur_i8_neg_128(ptr align 128 %dst) {
 ; CHECK-NEXT:    br label [[LOOP:%.*]]
 ; CHECK:       loop:
 ; CHECK-NEXT:    [[IV:%.*]] = phi ptr [ [[DST]], [[ENTRY:%.*]] ], [ [[IV_NEXT:%.*]], [[LOOP]] ]
-; CHECK-NEXT:    store i64 0, ptr [[IV]], align 1
+; CHECK-NEXT:    store i64 0, ptr [[IV]], align 128
 ; CHECK-NEXT:    [[IV_NEXT]] = getelementptr inbounds i8, ptr [[IV]], i64 -128
 ; CHECK-NEXT:    [[C:%.*]] = call i1 @cond()
 ; CHECK-NEXT:    br i1 [[C]], label [[LOOP]], label [[EXIT:%.*]]
@@ -377,7 +496,7 @@ define void @test_recur_i8_neg64(ptr align 128 %dst) {
 ; CHECK-NEXT:    br label [[LOOP:%.*]]
 ; CHECK:       loop:
 ; CHECK-NEXT:    [[IV:%.*]] = phi ptr [ [[DST]], [[ENTRY:%.*]] ], [ [[IV_NEXT:%.*]], [[LOOP]] ]
-; CHECK-NEXT:    store i64 0, ptr [[IV]], align 1
+; CHECK-NEXT:    store i64 0, ptr [[IV]], align 64
 ; CHECK-NEXT:    [[IV_NEXT]] = getelementptr inbounds i8, ptr [[IV]], i64 -64
 ; CHECK-NEXT:    [[C:%.*]] = call i1 @cond()
 ; CHECK-NEXT:    br i1 [[C]], label [[LOOP]], label [[EXIT:%.*]]
@@ -433,7 +552,7 @@ define void @test_recur_i8_neg_32(ptr align 128 %dst) {
 ; CHECK-NEXT:    br label [[LOOP:%.*]]
 ; CHECK:       loop:
 ; CHECK-NEXT:    [[IV:%.*]] = phi ptr [ [[DST]], [[ENTRY:%.*]] ], [ [[IV_NEXT:%.*]], [[LOOP]] ]
-; CHECK-NEXT:    store i64 0, ptr [[IV]], align 1
+; CHECK-NEXT:    store i64 0, ptr [[IV]], align 32
 ; CHECK-NEXT:    [[IV_NEXT]] = getelementptr inbounds i8, ptr [[IV]], i64 -32
 ; CHECK-NEXT:    [[C:%.*]] = call i1 @cond()
 ; CHECK-NEXT:    br i1 [[C]], label [[LOOP]], label [[EXIT:%.*]]
