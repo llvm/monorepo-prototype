@@ -1,4 +1,4 @@
-// RUN: fir-opt --add-debug-info --mlir-print-debuginfo %s | FileCheck %s
+// RUN: fir-test-opt --add-debug-info --mlir-print-debuginfo %s | FileCheck %s
 
 // check conversion of complex type of different size. Both fir and mlir
 // variants are checked.

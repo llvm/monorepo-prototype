@@ -1,5 +1,5 @@
 // Test for the array-value-copy pass
-// RUN: fir-opt --split-input-file --array-value-copy %s | FileCheck %s
+// RUN: fir-test-opt --split-input-file --array-value-copy %s | FileCheck %s
 
 // Test simple fir.array_load/fir.array_fetch conversion to fir.array_coor
 func.func @array_fetch_conversion(%arr1 : !fir.ref<!fir.array<?x?xf32>>, %m: index, %n: index) {

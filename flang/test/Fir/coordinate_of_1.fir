@@ -1,4 +1,4 @@
-// RUN: fir-opt --split-input-file --verify-diagnostics %s
+// RUN: fir-test-opt --split-input-file --verify-diagnostics %s
 
 func.func @_QPcoordinate_box_derived_with_fir_len(%arg0: !fir.box<!fir.type<derived_2{len1:i32}>>) -> i32 {
   %lp = arith.constant 22 : i32

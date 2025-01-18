@@ -1,4 +1,4 @@
-// RUN: fir-opt --canonicalize %s | FileCheck %s
+// RUN: fir-test-opt --canonicalize %s | FileCheck %s
 
 // CHECK-LABEL: @ftest
 func.func @ftest(%x : i1) -> i1 {

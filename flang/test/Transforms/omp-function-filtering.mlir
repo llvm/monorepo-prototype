@@ -1,4 +1,4 @@
-// RUN: fir-opt -split-input-file --omp-function-filtering %s | FileCheck %s
+// RUN: fir-test-opt -split-input-file --omp-function-filtering %s | FileCheck %s
 
 // CHECK: func.func @any
 // CHECK: return

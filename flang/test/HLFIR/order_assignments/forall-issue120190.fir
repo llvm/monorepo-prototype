@@ -1,7 +1,7 @@
 // Regression test for https://github.com/llvm/llvm-project/issues/120190
 // Verify that hlfir.forall lowering does not try hoisting mask evaluation
 // that refer to the forall index inside nested regions only.
-// RUN: fir-opt %s --lower-hlfir-ordered-assignments | FileCheck %s
+// RUN: fir-test-opt %s --lower-hlfir-ordered-assignments | FileCheck %s
 
 func.func @issue120190(%array: !fir.ref<!fir.array<100xf32>>, %cdt: i1) {
   %cst = arith.constant 0.000000e+00 : f32

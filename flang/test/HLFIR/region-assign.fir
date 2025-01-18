@@ -1,6 +1,6 @@
 // Test hlfir.region_assign and hlfir.yield operation parse, verify (no errors),
 // and unparse.
-// RUN: fir-opt %s | fir-opt | FileCheck %s
+// RUN: fir-test-opt %s | fir-test-opt | FileCheck %s
 
 func.func @region_assign_test(%y : !fir.box<!fir.array<?xi64>>, %x: !fir.box<!fir.array<?xf32>>) {
   %c100 = arith.constant 100 : index

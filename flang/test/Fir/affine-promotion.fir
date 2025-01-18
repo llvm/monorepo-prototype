@@ -1,6 +1,6 @@
 // Test affine promotion pass
 
-// RUN: fir-opt --split-input-file --promote-to-affine --affine-loop-invariant-code-motion --cse %s | FileCheck %s
+// RUN: fir-test-opt --split-input-file --promote-to-affine --affine-loop-invariant-code-motion --cse %s | FileCheck %s
 
 !arr_d1 = !fir.ref<!fir.array<?xf32>>
 #arr_len = affine_map<()[j1,k1] -> (k1 - j1 + 1)>

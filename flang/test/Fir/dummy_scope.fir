@@ -1,5 +1,5 @@
-// RUN: fir-opt %s | fir-opt | FileCheck %s
-// RUN: fir-opt %s | fir-opt -cse | FileCheck %s
+// RUN: fir-test-opt %s | fir-test-opt | FileCheck %s
+// RUN: fir-test-opt %s | fir-test-opt -cse | FileCheck %s
 
 // CHECK-LABEL:   func.func @dummy_scope(
 // CHECK-SAME:                           %[[VAL_0:.*]]: !fir.ref<f32>) {

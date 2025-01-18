@@ -1,7 +1,7 @@
 // Test that bind_c derived type results are not moved to a hidden argument
 // by the abstract-result pass. They will be dealt with according to the C
 // struct returning ABI for the target in the target-rewrite pass.
-// RUN: fir-opt %s --abstract-result | FileCheck %s
+// RUN: fir-test-opt %s --abstract-result | FileCheck %s
 
 !t = !fir.type<t{i:f32, j: i32, k: f32}>
 !cptr = !fir.type<_QM__fortran_builtinsT__builtin_c_ptr{__address:i64}>

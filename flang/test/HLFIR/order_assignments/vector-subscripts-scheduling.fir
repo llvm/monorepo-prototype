@@ -1,7 +1,7 @@
 // Test local alloca and store inside hlfir.region_assign do not trigger the
 // creation of a temporary for the LHS.
 
-// RUN: fir-opt -o - -lower-hlfir-ordered-assignments --debug-only=flang-ordered-assignment -flang-dbg-order-assignment-schedule-only %s 2>&1 | FileCheck %s
+// RUN: fir-test-opt -o - -lower-hlfir-ordered-assignments --debug-only=flang-ordered-assignment -flang-dbg-order-assignment-schedule-only %s 2>&1 | FileCheck %s
 // REQUIRES: asserts
 
 func.func @simple(%arg0: !fir.ref<!fir.array<100x10xf32>> , %arg1: !fir.ref<!fir.array<10xi64>> , %arg2: !fir.ref<!fir.array<10xf32>>, %i: i64, %f: f32) {

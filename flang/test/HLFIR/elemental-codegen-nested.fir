@@ -1,5 +1,5 @@
 // Test nested hlfir.elemental code generation
-// RUN: fir-opt %s --bufferize-hlfir | FileCheck %s
+// RUN: fir-test-opt %s --bufferize-hlfir | FileCheck %s
 
 // CHECK-LABEL:   func.func @_QPtest(
 // CHECK-SAME:                       %[[VAL_0:.*]]: !fir.ref<f32> {fir.bindc_name = "pi"},

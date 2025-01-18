@@ -1,4 +1,4 @@
-// RUN: fir-opt --opt-bufferization %s | FileCheck %s
+// RUN: fir-test-opt --opt-bufferization %s | FileCheck %s
 
 // Verify that the shape match is not required for optimizing
 // elemental assignment, when lhs not an allocatable.

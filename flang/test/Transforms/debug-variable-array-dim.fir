@@ -1,4 +1,4 @@
-// RUN: fir-opt --add-debug-info --mlir-print-debuginfo %s | FileCheck %s
+// RUN: fir-test-opt --add-debug-info --mlir-print-debuginfo %s | FileCheck %s
 
 module attributes {dlti.dl_spec = #dlti.dl_spec<>} {
   func.func @foo_(%arg0: !fir.ref<!fir.array<?x?xi32>> {fir.bindc_name = "a"}, %arg1: !fir.ref<i32> {fir.bindc_name = "n"}, %arg2: !fir.ref<i32> {fir.bindc_name = "m"}, %arg3: !fir.ref<i32> {fir.bindc_name = "p"}) attributes {fir.internal_name = "_QPfoo"} {

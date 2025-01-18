@@ -1,4 +1,4 @@
-// RUN: fir-opt --fir-polymorphic-op %s | FileCheck %s
+// RUN: fir-test-opt --fir-polymorphic-op %s | FileCheck %s
 
 // Test that cf.br for the default select case passes the blocks argument
 // as expected.

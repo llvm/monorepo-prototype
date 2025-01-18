@@ -1,4 +1,4 @@
-// RUN: fir-opt --fir-to-llvm-ir %s | FileCheck %s
+// RUN: fir-test-opt --fir-to-llvm-ir %s | FileCheck %s
 
 #access_group = #llvm.access_group<id = distinct[0]<>>
 // CHECK: #[[ACCESS:.*]] = #llvm.access_group<id = distinct[0]<>>

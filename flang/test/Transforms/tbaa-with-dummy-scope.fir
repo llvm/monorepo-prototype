@@ -1,4 +1,4 @@
-// RUN: fir-opt --fir-add-alias-tags --split-input-file %s | FileCheck %s
+// RUN: fir-test-opt --fir-add-alias-tags --split-input-file %s | FileCheck %s
 
 // subroutine test(x, y)
 //   real, target :: x, y

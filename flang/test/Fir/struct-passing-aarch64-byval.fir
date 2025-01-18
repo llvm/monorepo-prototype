@@ -1,5 +1,5 @@
 // Test AArch64 ABI rewrite of struct passed by value (BIND(C), VALUE derived types).
-// RUN: fir-opt --target-rewrite="target=aarch64-unknown-linux-gnu" %s | FileCheck %s
+// RUN: fir-test-opt --target-rewrite="target=aarch64-unknown-linux-gnu" %s | FileCheck %s
 
 // CHECK-LABEL: func.func private @small_i32(!fir.array<2xi64>)
 func.func private @small_i32(!fir.type<small_i32{i:i32,j:i32,k:i32}>)

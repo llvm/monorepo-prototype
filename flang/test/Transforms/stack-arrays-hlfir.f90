@@ -6,7 +6,7 @@
 
 
 ! RUN: %flang_fc1 -emit-hlfir -fopenmp %s -o - \
-! RUN: | fir-opt --lower-hlfir-ordered-assignments \
+! RUN: | fir-test-opt --lower-hlfir-ordered-assignments \
 ! RUN:           --bufferize-hlfir \
 ! RUN:           --convert-hlfir-to-fir \
 ! RUN:           --array-value-copy \

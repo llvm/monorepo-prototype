@@ -1,5 +1,5 @@
 // Test hlfir.where operation parse, verify (no errors), and unparse.
-// RUN: fir-opt %s | fir-opt | FileCheck %s
+// RUN: fir-test-opt %s | fir-test-opt | FileCheck %s
 
 func.func @test_where(%mask: !fir.ref<!fir.array<10x!fir.logical<4>>>, %x: !fir.ref<!fir.array<10xf32>>, %y: !fir.box<!fir.array<?xf32>>) {
   hlfir.where {

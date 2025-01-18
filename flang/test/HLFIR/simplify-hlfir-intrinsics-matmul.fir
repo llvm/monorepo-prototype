@@ -1,7 +1,7 @@
 // Test hlfir.cshift simplification to hlfir.elemental:
-// RUN: fir-opt --simplify-hlfir-intrinsics=allow-new-side-effects=false %s | FileCheck %s --check-prefixes=ALL,NOANSE
-// RUN: fir-opt --simplify-hlfir-intrinsics=allow-new-side-effects=true %s | FileCheck %s --check-prefixes=ALL,ANSE
-// RUN: fir-opt --simplify-hlfir-intrinsics -flang-inline-matmul-as-elemental %s | FileCheck %s --check-prefixes=ALL,ELEMENTAL
+// RUN: fir-test-opt --simplify-hlfir-intrinsics=allow-new-side-effects=false %s | FileCheck %s --check-prefixes=ALL,NOANSE
+// RUN: fir-test-opt --simplify-hlfir-intrinsics=allow-new-side-effects=true %s | FileCheck %s --check-prefixes=ALL,ANSE
+// RUN: fir-test-opt --simplify-hlfir-intrinsics -flang-inline-matmul-as-elemental %s | FileCheck %s --check-prefixes=ALL,ELEMENTAL
 
 func.func @matmul_matrix_matrix_integer(%arg0: !hlfir.expr<?x?xi16>, %arg1: !hlfir.expr<?x?xi32>) -> !hlfir.expr<?x?xi32> {
   %res = hlfir.matmul %arg0 %arg1 : (!hlfir.expr<?x?xi16>, !hlfir.expr<?x?xi32>) -> !hlfir.expr<?x?xi32>

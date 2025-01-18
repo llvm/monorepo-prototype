@@ -1,5 +1,5 @@
 // Test hlfir.set_length operation lowering to operations operating on memory.
-// RUN: fir-opt %s -bufferize-hlfir | FileCheck %s
+// RUN: fir-test-opt %s -bufferize-hlfir | FileCheck %s
 
 func.func @test_cst_len(%str : !fir.boxchar<1>) {
   %c10 = arith.constant 10 : index

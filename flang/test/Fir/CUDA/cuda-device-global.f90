@@ -1,5 +1,5 @@
 
-// RUN: fir-opt --split-input-file --cuf-device-global %s | FileCheck %s
+// RUN: fir-test-opt --split-input-file --cuf-device-global %s | FileCheck %s
 
 
 module attributes {fir.defaultkind = "a1c4d8i4l4r4", fir.kindmap = "", gpu.container_module} {

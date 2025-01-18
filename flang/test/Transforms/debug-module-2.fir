@@ -1,4 +1,4 @@
-// RUN: fir-opt --fir-to-llvm-ir="target=x86_64-unknown-linux-gnu" --mlir-print-debuginfo %s | FileCheck %s
+// RUN: fir-test-opt --fir-to-llvm-ir="target=x86_64-unknown-linux-gnu" --mlir-print-debuginfo %s | FileCheck %s
 
 module {
   fir.global @_QMhelperEgli : i32 {

@@ -1,6 +1,6 @@
 // Check that an elemental result of a derived type with an allocatable
 // component is shallow-copied into the array result.
-// RUN: fir-opt %s --bufferize-hlfir | FileCheck %s
+// RUN: fir-test-opt %s --bufferize-hlfir | FileCheck %s
 
 func.func @_QMtypesPtest() {
   %false = arith.constant false

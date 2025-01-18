@@ -1,5 +1,5 @@
 // Test hlfir.transpose operation lowering to fir runtime call
-// RUN: fir-opt %s -lower-hlfir-intrinsics | FileCheck %s
+// RUN: fir-test-opt %s -lower-hlfir-intrinsics | FileCheck %s
 
 func.func @_QPtranspose1(%arg0: !fir.ref<!fir.array<1x2xi32>> {fir.bindc_name = "m"}, %arg1: !fir.ref<!fir.array<2x1xi32>> {fir.bindc_name = "res"}) {
   %c1 = arith.constant 1 : index

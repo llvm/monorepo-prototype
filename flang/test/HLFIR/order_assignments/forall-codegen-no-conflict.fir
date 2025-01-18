@@ -1,5 +1,5 @@
 // Test code generation of hlfir.forall, hlfir.forall_index, and hlfir.forall_mask.
-// RUN: fir-opt %s --lower-hlfir-ordered-assignments | FileCheck %s
+// RUN: fir-test-opt %s --lower-hlfir-ordered-assignments | FileCheck %s
 
 func.func @test_simple(%x: !fir.ref<!fir.array<10xi32>>) {
   hlfir.forall lb {

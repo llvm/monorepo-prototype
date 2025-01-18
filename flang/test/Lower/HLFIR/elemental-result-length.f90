@@ -1,4 +1,4 @@
-! RUN: bbc -emit-hlfir -o - %s | fir-opt --canonicalize | FileCheck %s
+! RUN: bbc -emit-hlfir -o - %s | fir-test-opt --canonicalize | FileCheck %s
 
 module m1
 contains

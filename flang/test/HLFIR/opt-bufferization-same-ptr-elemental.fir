@@ -1,4 +1,4 @@
-// RUN: fir-opt --opt-bufferization %s | FileCheck %s
+// RUN: fir-test-opt --opt-bufferization %s | FileCheck %s
 
 // Verify that the hlfir.assign of hlfir.elemental is optimized
 // into element-per-element assignment:

@@ -1,4 +1,4 @@
-// RUN: fir-opt --split-input-file %s | fir-opt --split-input-file | FileCheck %s
+// RUN: fir-test-opt --split-input-file %s | fir-test-opt --split-input-file | FileCheck %s
 
 // Simple round trip test of operations.
 

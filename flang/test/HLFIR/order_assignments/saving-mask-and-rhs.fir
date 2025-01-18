@@ -1,6 +1,6 @@
 // Test when the saved mask is used in the same run to save
 // another value (like the RHS).
-// RUN: fir-opt %s --lower-hlfir-ordered-assignments | FileCheck %s
+// RUN: fir-test-opt %s --lower-hlfir-ordered-assignments | FileCheck %s
 
 func.func @saving_mask_and_rhs(%arg0: !fir.ref<!fir.array<10xi32>>) {
   %c-1 = arith.constant -1 : index

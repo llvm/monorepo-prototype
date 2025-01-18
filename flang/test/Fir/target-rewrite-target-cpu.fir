@@ -1,11 +1,11 @@
-// RUN: fir-opt --target-rewrite %s | FileCheck %s --check-prefixes=ALL_MLIR,UNCHANGED_MLIR
-// RUN: fir-opt --target-rewrite="target-cpu=gfx90a" %s | FileCheck %s --check-prefixes=ALL_MLIR,CHANGED_MLIR
+// RUN: fir-test-opt --target-rewrite %s | FileCheck %s --check-prefixes=ALL_MLIR,UNCHANGED_MLIR
+// RUN: fir-test-opt --target-rewrite="target-cpu=gfx90a" %s | FileCheck %s --check-prefixes=ALL_MLIR,CHANGED_MLIR
 
 // RUN: tco %s | FileCheck %s --check-prefixes=ALL_LLVM,UNCHANGED_LLVM
 // RUN: tco -target-cpu=gfx90a %s | FileCheck %s --check-prefixes=ALL_LLVM,CHANGED_LLVM
 
 
-// Check MLIR output from the 'fir-opt' tool
+// Check MLIR output from the 'fir-test-opt' tool
 
 // ALL_MLIR: module attributes {
 // ALL_MLIR-SAME: fir.target_cpu =

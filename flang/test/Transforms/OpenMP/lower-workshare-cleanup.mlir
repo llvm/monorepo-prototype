@@ -1,4 +1,4 @@
-// RUN: fir-opt --split-input-file --lower-workshare --allow-unregistered-dialect %s | FileCheck %s
+// RUN: fir-test-opt --split-input-file --lower-workshare --allow-unregistered-dialect %s | FileCheck %s
 
 // Check that we cleanup unused pure operations from the parallel and single
 // regions

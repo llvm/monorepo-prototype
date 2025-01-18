@@ -1,6 +1,6 @@
 // Test code generation of hlfir.forall and hlfir.where when temporary
 // storage is needed and can be allocated inline.
-// RUN: fir-opt %s --lower-hlfir-ordered-assignments | FileCheck %s
+// RUN: fir-test-opt %s --lower-hlfir-ordered-assignments | FileCheck %s
 
 func.func @test_scalar_save(%arg0: !fir.box<!fir.array<?xi32>>) {
   %c10_i32 = arith.constant 10 : i32

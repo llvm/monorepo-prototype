@@ -1,8 +1,8 @@
 // Test array-copy-value pass (copy elision) with array assignment
 // involving Fortran pointers. Focus in only on wether copy ellision
 // is made or not.
-// RUN: fir-opt %s --array-value-copy -split-input-file | FileCheck --check-prefixes=ALL,NOOPT %s
-// RUN: fir-opt %s --array-value-copy="optimize-conflicts=true" -split-input-file | FileCheck --check-prefixes=ALL,OPT %s
+// RUN: fir-test-opt %s --array-value-copy -split-input-file | FileCheck --check-prefixes=ALL,NOOPT %s
+// RUN: fir-test-opt %s --array-value-copy="optimize-conflicts=true" -split-input-file | FileCheck --check-prefixes=ALL,OPT %s
 
 // Test `pointer(:) = array(:)`
 // ALL-LABEL: func @maybe_overlap

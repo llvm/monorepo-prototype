@@ -1,4 +1,4 @@
-// RUN: fir-opt --boxed-procedure %s | FileCheck %s
+// RUN: fir-test-opt --boxed-procedure %s | FileCheck %s
 // Test the boxed procedure pass with OpenMP declaration operations.
 // Check minimally, only arguments, yields and the private types.
 

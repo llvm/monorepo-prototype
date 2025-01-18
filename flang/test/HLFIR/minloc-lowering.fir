@@ -1,5 +1,5 @@
 // Test hlfir.minloc operation lowering to fir runtime call
-// RUN: fir-opt %s -lower-hlfir-intrinsics | FileCheck %s
+// RUN: fir-test-opt %s -lower-hlfir-intrinsics | FileCheck %s
 
 // simple one argument minloc
 func.func @_QPminloc1(%arg0: !fir.box<!fir.array<?xi32>> {fir.bindc_name = "a"}, %arg1: !fir.box<!fir.array<?xi32>> {fir.bindc_name = "s"}) {

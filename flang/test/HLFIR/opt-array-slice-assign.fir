@@ -5,7 +5,7 @@
 // or completely disjoint. In case they are identical, we still
 // need to make sure that the one-based indices are used
 // uniformly for both LHS and RHS.
-// RUN: fir-opt --opt-bufferization %s | FileCheck %s
+// RUN: fir-test-opt --opt-bufferization %s | FileCheck %s
 
 func.func @_QPtest1(%arg0: !fir.ref<!fir.array<8000x120x3xf32>> {fir.bindc_name = "x"}) {
   %c7998 = arith.constant 7998 : index

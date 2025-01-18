@@ -1,4 +1,4 @@
-// RUN: fir-opt --lower-workshare --allow-unregistered-dialect %s | FileCheck %s
+// RUN: fir-test-opt --lower-workshare --allow-unregistered-dialect %s | FileCheck %s
 
 // Checks that fir.alloca is hoisted out and copyprivate'd
 func.func @wsfunc() {

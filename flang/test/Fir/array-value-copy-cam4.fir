@@ -1,5 +1,5 @@
-// RUN: fir-opt --array-value-copy %s | FileCheck --check-prefix=NOOPT %s
-// RUN: fir-opt --array-value-copy="optimize-conflicts=true" %s | FileCheck --check-prefix=OPT %s
+// RUN: fir-test-opt --array-value-copy %s | FileCheck --check-prefix=NOOPT %s
+// RUN: fir-test-opt --array-value-copy="optimize-conflicts=true" %s | FileCheck --check-prefix=OPT %s
 
 // Reproducer from SPEC CPU2017/527.cam4_r:
 // module cam4

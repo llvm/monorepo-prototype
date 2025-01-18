@@ -1,5 +1,5 @@
 // Test hlfir.parent_comp operation parse, verify (no errors), and unparse.
-// RUN: fir-opt %s | fir-opt | FileCheck %s
+// RUN: fir-test-opt %s | fir-test-opt | FileCheck %s
 
 func.func @test_scalar(%arg0: !fir.ref<!fir.type<t2{i:i32,j:i32}>>) {
   %1 = hlfir.parent_comp %arg0 : (!fir.ref<!fir.type<t2{i:i32,j:i32}>>) -> !fir.ref<!fir.type<t1{i:i32}>>

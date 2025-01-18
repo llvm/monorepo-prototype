@@ -1,7 +1,7 @@
 // Test code generation of hlfir.region_assign when the LHS computed
 // address must be saved before the assignment is evaluated. Because
 // the assignment would modify the LHS evaluation.
-// RUN: fir-opt %s --lower-hlfir-ordered-assignments | FileCheck %s
+// RUN: fir-test-opt %s --lower-hlfir-ordered-assignments | FileCheck %s
 
 // Test simplified IR for:
 //

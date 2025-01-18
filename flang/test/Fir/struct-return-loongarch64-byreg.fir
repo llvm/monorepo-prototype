@@ -8,7 +8,7 @@
 /// while the other examples only check the signatures.
 
 // REQUIRES: loongarch-registered-target
-// RUN: fir-opt --split-input-file --target-rewrite="target=loongarch64-unknown-linux-gnu" %s | FileCheck %s
+// RUN: fir-test-opt --split-input-file --target-rewrite="target=loongarch64-unknown-linux-gnu" %s | FileCheck %s
 
 
 /// *********************** Struct with a single intrinsic component *********************** ///

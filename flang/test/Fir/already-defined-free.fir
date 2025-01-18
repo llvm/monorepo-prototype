@@ -1,7 +1,7 @@
 // Test that FIR codegen handles cases when free and malloc have
 // already been defined in FIR (either by the user in Fortran via
 // BIND(C) or by some FIR pass in between).
-// RUN: fir-opt --fir-to-llvm-ir %s | FileCheck %s
+// RUN: fir-test-opt --fir-to-llvm-ir %s | FileCheck %s
 
 
 func.func @already_declared_free_malloc() {

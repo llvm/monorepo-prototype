@@ -1,4 +1,4 @@
-// RUN: fir-opt --canonicalize %s -split-input-file | FileCheck %s
+// RUN: fir-test-opt --canonicalize %s -split-input-file | FileCheck %s
 
 // CHECK-LABEL: func @check_no_folding
 func.func @check_no_folding(%arg0 : !fir.ref<!fir.array<?xi32>>) {

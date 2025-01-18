@@ -1,6 +1,6 @@
 // Test hlfir.associate/hlfir.end_associate operation code generation to FIR.
 
-// RUN: fir-opt %s -bufferize-hlfir | FileCheck %s
+// RUN: fir-test-opt %s -bufferize-hlfir | FileCheck %s
 
 func.func @associate_int() {
   %c42_i32 = arith.constant 42 : i32

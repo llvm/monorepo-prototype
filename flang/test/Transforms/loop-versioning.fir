@@ -1,4 +1,4 @@
-// RUN: fir-opt --loop-versioning %s | FileCheck %s
+// RUN: fir-test-opt --loop-versioning %s | FileCheck %s
 
 
 //  subroutine sum1d(a, n)

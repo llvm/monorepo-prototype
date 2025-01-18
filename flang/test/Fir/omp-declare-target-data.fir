@@ -1,4 +1,4 @@
-// RUN: fir-opt --fir-to-llvm-ir %s | FileCheck %s
+// RUN: fir-test-opt --fir-to-llvm-ir %s | FileCheck %s
 
 module attributes {omp.is_target_device = false} {
 

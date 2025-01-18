@@ -1,5 +1,5 @@
-// RUN: fir-opt --fir-to-llvm-ir="target=aarch64-unknown-linux-gnu" %s | FileCheck %s -DHYPOTF=hypotf
-// RUN: fir-opt --fir-to-llvm-ir="target=aarch64-pc-windows-msvc" %s | FileCheck %s -DHYPOTF=_hypotf
+// RUN: fir-test-opt --fir-to-llvm-ir="target=aarch64-unknown-linux-gnu" %s | FileCheck %s -DHYPOTF=hypotf
+// RUN: fir-test-opt --fir-to-llvm-ir="target=aarch64-pc-windows-msvc" %s | FileCheck %s -DHYPOTF=_hypotf
 
 // Test hypotf renaming
 

@@ -1,6 +1,6 @@
 // Test buffer destruction for hlfir.destroy operations with
 // operands of derived types.
-// RUN: fir-opt --bufferize-hlfir %s | FileCheck %s
+// RUN: fir-test-opt --bufferize-hlfir %s | FileCheck %s
 
 func.func @_QPtest1(%arg0: !fir.box<!fir.array<?x!fir.type<_QMtypesTt1{x:!fir.box<!fir.heap<f32>>}>>> {fir.bindc_name = "x"}) {
   %c0 = arith.constant 0 : index

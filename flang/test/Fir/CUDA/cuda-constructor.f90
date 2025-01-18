@@ -1,4 +1,4 @@
-! RUN: bbc -fcuda -emit-hlfir %s -o - | fir-opt --cuf-add-constructor | FileCheck %s
+! RUN: bbc -fcuda -emit-hlfir %s -o - | fir-test-opt --cuf-add-constructor | FileCheck %s
 
 program main
   real, device :: ahost(10)

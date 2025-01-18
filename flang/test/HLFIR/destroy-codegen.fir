@@ -1,7 +1,7 @@
 // Test hlfir.destroy code generation and hlfir.yield_element "implicit
 // hlfir.destroy" aspect.
 
-// RUN: fir-opt %s -bufferize-hlfir | FileCheck %s
+// RUN: fir-test-opt %s -bufferize-hlfir | FileCheck %s
 
 func.func @test_move_with_cleanup(%arg0 : !fir.ref<!fir.array<100xi32>>) {
   %must_free = arith.constant true

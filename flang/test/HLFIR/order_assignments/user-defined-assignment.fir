@@ -1,6 +1,6 @@
 // Test code generation of hlfir.region_assign with user defined
 // assignment.
-// RUN: fir-opt %s --lower-hlfir-ordered-assignments | FileCheck %s
+// RUN: fir-test-opt %s --lower-hlfir-ordered-assignments | FileCheck %s
 
 func.func @test_simple_scalar(%i: !fir.ref<i32>, %l: !fir.ref<!fir.logical<4>>) {
   hlfir.region_assign {

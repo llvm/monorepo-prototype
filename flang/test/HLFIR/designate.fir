@@ -1,6 +1,6 @@
 // Test hlfir.designate operation parse, verify (no errors), and unparse.
 
-// RUN: fir-opt %s | fir-opt | FileCheck %s
+// RUN: fir-test-opt %s | fir-test-opt | FileCheck %s
 
 // array(1)
 func.func @array_ref(%arg0 : !fir.ref<!fir.array<10xi32>>) {

@@ -1,4 +1,4 @@
-// RUN: fir-opt %s --opt-bufferization | FileCheck %s
+// RUN: fir-test-opt %s --opt-bufferization | FileCheck %s
 
 // Test that alias analysis doesn't crash determining if the arguments to
 // hlfir.assign alias.

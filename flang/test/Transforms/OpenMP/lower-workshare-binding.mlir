@@ -1,4 +1,4 @@
-// RUN: fir-opt --split-input-file --lower-workshare --allow-unregistered-dialect %s | FileCheck %s
+// RUN: fir-test-opt --split-input-file --lower-workshare --allow-unregistered-dialect %s | FileCheck %s
 
 // Checks that the omp.workshare.loop_wrapper binds to the correct omp.workshare
 

@@ -1,5 +1,5 @@
 // Test hlfir.product operation lowering to fir runtime call
-// RUN: fir-opt %s -lower-hlfir-intrinsics | FileCheck %s
+// RUN: fir-test-opt %s -lower-hlfir-intrinsics | FileCheck %s
 
 // one argument product
 func.func @_QPproduct1(%arg0: !fir.box<!fir.array<?xi32>> {fir.bindc_name = "a"}, %arg1: !fir.ref<i32> {fir.bindc_name = "s"}) {

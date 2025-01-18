@@ -1,6 +1,6 @@
 // Test hlfir.as_expr code generation
 
-// RUN: fir-opt %s -bufferize-hlfir | FileCheck %s
+// RUN: fir-test-opt %s -bufferize-hlfir | FileCheck %s
 
 func.func @char_expr(%addr: !fir.ref<!fir.char<1,?>>, %len: index) {
   %0:2 = hlfir.declare %addr typeparams %len {uniq_name = "c"} : (!fir.ref<!fir.char<1,?>>, index) -> (!fir.boxchar<1>, !fir.ref<!fir.char<1,?>>)

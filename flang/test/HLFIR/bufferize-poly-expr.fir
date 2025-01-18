@@ -1,4 +1,4 @@
-// RUN: fir-opt --bufferize-hlfir %s | FileCheck %s
+// RUN: fir-test-opt --bufferize-hlfir %s | FileCheck %s
 
 func.func @test_poly_expr_without_associate() {
   %5 = fir.alloca !fir.class<!fir.heap<!fir.type<_QFtestTt{c:i32}>>> {bindc_name = "r", uniq_name = "_QFtestEr"}

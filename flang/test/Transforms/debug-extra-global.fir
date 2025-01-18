@@ -1,4 +1,4 @@
-// RUN: fir-opt --add-debug-info --mlir-print-debuginfo %s | FileCheck %s
+// RUN: fir-test-opt --add-debug-info --mlir-print-debuginfo %s | FileCheck %s
 
 module attributes {dlti.dl_spec = #dlti.dl_spec<>} {
   fir.global linkonce_odr @_QFEXnXxcx constant target : !fir.char<1,3> {

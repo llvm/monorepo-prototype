@@ -1,10 +1,10 @@
 !This test checks that when compiling an OpenMP program for the target device
 !CSE is not done across target op region boundaries. It also checks that when
 !compiling for the host CSE is done.
-!RUN: %flang_fc1 -fopenmp-is-target-device -emit-mlir -fopenmp %s -o - | fir-opt -cse | FileCheck %s -check-prefix=CHECK-DEVICE
-!RUN: %flang_fc1 -emit-mlir -fopenmp %s -o - | fir-opt -cse | FileCheck %s -check-prefix=CHECK-HOST
-!RUN: bbc -fopenmp-is-target-device -emit-fir -fopenmp %s -o - | fir-opt -cse | FileCheck %s -check-prefix=CHECK-DEVICE
-!RUN: bbc -emit-fir -fopenmp %s -o - | fir-opt -cse | FileCheck %s -check-prefix=CHECK-HOST
+!RUN: %flang_fc1 -fopenmp-is-target-device -emit-mlir -fopenmp %s -o - | fir-test-opt -cse | FileCheck %s -check-prefix=CHECK-DEVICE
+!RUN: %flang_fc1 -emit-mlir -fopenmp %s -o - | fir-test-opt -cse | FileCheck %s -check-prefix=CHECK-HOST
+!RUN: bbc -fopenmp-is-target-device -emit-fir -fopenmp %s -o - | fir-test-opt -cse | FileCheck %s -check-prefix=CHECK-DEVICE
+!RUN: bbc -emit-fir -fopenmp %s -o - | fir-test-opt -cse | FileCheck %s -check-prefix=CHECK-HOST
 
 !Constant should be present inside target region.
 !CHECK-DEVICE: omp.target

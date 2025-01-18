@@ -1,4 +1,4 @@
-// RUN: fir-opt %s --opt-bufferization | FileCheck %s 
+// RUN: fir-test-opt %s --opt-bufferization | FileCheck %s 
 
 // Check that OpenACC attributes are propagated to the defining operations when
 // fir.box_addr is folded in bufferization optimization.

@@ -1,4 +1,4 @@
-// RUN: fir-opt %s | tco | FileCheck %s
+// RUN: fir-test-opt %s | tco | FileCheck %s
 
 // CHECK-LABEL: @set_all_n
 func.func @set_all_n(%n : index, %x : i32) {

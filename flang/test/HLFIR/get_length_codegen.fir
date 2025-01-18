@@ -1,5 +1,5 @@
 // Test hlfir.get_length code generation
-// RUN: fir-opt %s --bufferize-hlfir | FileCheck %s
+// RUN: fir-test-opt %s --bufferize-hlfir | FileCheck %s
 
 func.func @_QPtest_char_get_length(%arg0: !fir.boxchar<1> {fir.bindc_name = "ch"}) -> index {
   %c3 = arith.constant 3 : index

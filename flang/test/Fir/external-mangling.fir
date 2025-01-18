@@ -1,5 +1,5 @@
-// RUN: fir-opt --external-name-interop="append-underscore=true" %s | FileCheck %s --check-prefix=CHECK-UNDER
-// RUN: fir-opt --external-name-interop="append-underscore=false" %s | FileCheck %s --check-prefix=CHECK-NOUNDER
+// RUN: fir-test-opt --external-name-interop="append-underscore=true" %s | FileCheck %s --check-prefix=CHECK-UNDER
+// RUN: fir-test-opt --external-name-interop="append-underscore=false" %s | FileCheck %s --check-prefix=CHECK-NOUNDER
 // RUN: tco --external-name-interop="append-underscore=true" %s | FileCheck %s --check-prefix=CHECK-UNDER
 // RUN: tco --external-name-interop="append-underscore=false" %s | FileCheck %s --check-prefix=CHECK-NOUNDER
 // RUN: tco --external-name-interop="append-underscore=true" %s | tco --fir-to-llvm-ir | FileCheck %s --check-prefix=LLVMIR-UNDER

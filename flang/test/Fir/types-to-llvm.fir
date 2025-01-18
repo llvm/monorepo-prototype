@@ -1,6 +1,6 @@
 // Test FIR types conversion.
 
-// RUN: fir-opt --split-input-file --fir-to-llvm-ir="target=x86_64-unknown-linux-gnu" %s | FileCheck %s
+// RUN: fir-test-opt --split-input-file --fir-to-llvm-ir="target=x86_64-unknown-linux-gnu" %s | FileCheck %s
 
 
 // Test sequence types `!fir.array`

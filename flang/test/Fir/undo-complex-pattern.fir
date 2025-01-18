@@ -1,5 +1,5 @@
 // Test regrouping of + and - operations on complex components into complex operations
-// RUN: fir-opt --canonicalize %s | FileCheck %s
+// RUN: fir-test-opt --canonicalize %s | FileCheck %s
 
 
 // CHECK-LABEL: @add

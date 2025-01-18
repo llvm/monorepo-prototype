@@ -1,5 +1,5 @@
 // Test hlfir.apply code generation
-// RUN: fir-opt %s -bufferize-hlfir | FileCheck %s
+// RUN: fir-test-opt %s -bufferize-hlfir | FileCheck %s
 
 func.func @numeric_apply(%arg0 : !fir.ref<!fir.array<100xi32>>) {
   %expr = hlfir.as_expr %arg0 : (!fir.ref<!fir.array<100xi32>>) -> !hlfir.expr<100xi32>

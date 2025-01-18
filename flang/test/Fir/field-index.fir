@@ -1,5 +1,5 @@
 // Test fir.field_index llvm code generation
-// RUN: fir-opt %s | tco | FileCheck %s
+// RUN: fir-test-opt %s | tco | FileCheck %s
 
 
 // CHECK-DAG: %[[a:.*]] = type { float, i32 }

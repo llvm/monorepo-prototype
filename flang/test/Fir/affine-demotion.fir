@@ -1,6 +1,6 @@
 // Test affine demotion pass
 
-// RUN: fir-opt --split-input-file --demote-affine %s | FileCheck %s
+// RUN: fir-test-opt --split-input-file --demote-affine %s | FileCheck %s
 
 #map0 = affine_map<()[s0, s1] -> (s1 - s0 + 1)>
 #map1 = affine_map<()[s0] -> (s0 + 1)>

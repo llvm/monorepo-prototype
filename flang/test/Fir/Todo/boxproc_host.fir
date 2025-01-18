@@ -1,4 +1,4 @@
-// RUN: not fir-opt --fir-to-llvm-ir="target=x86_64-unknown-linux-gnu" %s 2>&1 | FileCheck %s
+// RUN: not fir-test-opt --fir-to-llvm-ir="target=x86_64-unknown-linux-gnu" %s 2>&1 | FileCheck %s
 
 // Test that `fir.boxproc_host` fails conversion to llvm.
 // At the moment this test fails since `fir.boxproc` type does not have a conversion.

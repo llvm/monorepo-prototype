@@ -1,4 +1,4 @@
-// RUN: fir-opt --bufferize-hlfir %s | FileCheck %s
+// RUN: fir-test-opt --bufferize-hlfir %s | FileCheck %s
 
 // CHECK-LABEL:   func.func @simple(
 // CHECK-SAME:                      %[[VAL_0:.*]]: !fir.ref<!fir.array<42xi32>>) {

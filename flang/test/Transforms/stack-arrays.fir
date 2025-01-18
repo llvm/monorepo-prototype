@@ -1,4 +1,4 @@
-// RUN: fir-opt --stack-arrays %s | FileCheck %s
+// RUN: fir-test-opt --stack-arrays %s | FileCheck %s
 
 // Simplest transformation
 func.func @simple() {

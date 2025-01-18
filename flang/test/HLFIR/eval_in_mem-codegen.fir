@@ -1,6 +1,6 @@
 // Test hlfir.eval_in_mem default code generation.
 
-// RUN: fir-opt %s --bufferize-hlfir -o - | FileCheck %s
+// RUN: fir-test-opt %s --bufferize-hlfir -o - | FileCheck %s
 
 func.func @_QPtest() {
   %c10 = arith.constant 10 : index

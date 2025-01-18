@@ -1,6 +1,6 @@
 // Test code generation of hlfir.region_assign with user defined
 // assignment implying finalization of the RHS.
-// RUN: fir-opt %s --lower-hlfir-ordered-assignments | FileCheck %s
+// RUN: fir-test-opt %s --lower-hlfir-ordered-assignments | FileCheck %s
 
 //! module types
 //!   type ud_assign

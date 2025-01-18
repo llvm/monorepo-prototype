@@ -1,4 +1,4 @@
-// RUN: fir-opt --split-input-file --external-name-interop %s | FileCheck %s
+// RUN: fir-test-opt --split-input-file --external-name-interop %s | FileCheck %s
 
 module @mod attributes {gpu.container_module} {
 

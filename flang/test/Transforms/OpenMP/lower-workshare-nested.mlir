@@ -1,4 +1,4 @@
-// RUN: fir-opt --lower-workshare --allow-unregistered-dialect %s | FileCheck %s
+// RUN: fir-test-opt --lower-workshare --allow-unregistered-dialect %s | FileCheck %s
 
 // Checks that the nested loop_wrapper gets parallelized
 func.func @wsfunc(%cond : i1) {

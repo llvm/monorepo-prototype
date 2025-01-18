@@ -1,5 +1,5 @@
 // Test hlfir.parent_comp code generation to FIR
-// RUN: fir-opt %s -convert-hlfir-to-fir | FileCheck %s
+// RUN: fir-test-opt %s -convert-hlfir-to-fir | FileCheck %s
 
 func.func @test_scalar(%arg0: !fir.ref<!fir.type<t2{i:i32,j:i32}>>) {
   %1 = hlfir.parent_comp %arg0 : (!fir.ref<!fir.type<t2{i:i32,j:i32}>>) -> !fir.ref<!fir.type<t1{i:i32}>>

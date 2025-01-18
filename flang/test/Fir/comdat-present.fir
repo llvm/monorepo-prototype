@@ -1,5 +1,5 @@
-// RUN: fir-opt %s --fir-to-llvm-ir="target=x86_64-unknown-linux-gnu" | FileCheck %s
-// RUN: fir-opt %s --fir-to-llvm-ir="target=x86_64-pc-windows-msvc" | FileCheck %s
+// RUN: fir-test-opt %s --fir-to-llvm-ir="target=x86_64-unknown-linux-gnu" | FileCheck %s
+// RUN: fir-test-opt %s --fir-to-llvm-ir="target=x86_64-pc-windows-msvc" | FileCheck %s
 
 fir.global linkonce_odr @global_linkonce_odr constant : i32 {
   %0 = arith.constant 0 : i32

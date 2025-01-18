@@ -1,5 +1,5 @@
-// RUN: fir-opt --target-rewrite="target=x86_64-unknown-linux-gnu no-complex-conversion" %s | FileCheck --check-prefix=CMPLXOFF %s
-// RUN: fir-opt --target-rewrite="target=x86_64-unknown-linux-gnu no-character-conversion" %s | FileCheck --check-prefix=CHAROFF %s
+// RUN: fir-test-opt --target-rewrite="target=x86_64-unknown-linux-gnu no-complex-conversion" %s | FileCheck --check-prefix=CMPLXOFF %s
+// RUN: fir-test-opt --target-rewrite="target=x86_64-unknown-linux-gnu no-character-conversion" %s | FileCheck --check-prefix=CHAROFF %s
 
 // Verify that selective TargetRewrite with no-complex-conversion and
 // no-character-conversion options works as expected.

@@ -1,5 +1,5 @@
 // Test hlfir.cshift simplification to hlfir.elemental:
-// RUN: fir-opt --simplify-hlfir-intrinsics %s | FileCheck %s
+// RUN: fir-test-opt --simplify-hlfir-intrinsics %s | FileCheck %s
 
 func.func @cshift_vector(%arg0: !fir.box<!fir.array<?xi32>>, %arg1: !fir.ref<i32>) -> !hlfir.expr<?xi32>{
   %res = hlfir.cshift %arg0 %arg1 : (!fir.box<!fir.array<?xi32>>, !fir.ref<i32>) -> !hlfir.expr<?xi32>

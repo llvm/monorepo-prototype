@@ -1,5 +1,5 @@
 // Test hlfir.all operation lowering to fir runtime call
-// RUN: fir-opt %s -lower-hlfir-intrinsics | FileCheck %s
+// RUN: fir-test-opt %s -lower-hlfir-intrinsics | FileCheck %s
 
 func.func @_QPall1(%arg0: !fir.box<!fir.array<?x!fir.logical<4>>> {fir.bindc_name = "a"}, %arg1: !fir.ref<!fir.logical<4>> {fir.bindc_name = "s"}) {
   %0:2 = hlfir.declare %arg0 {uniq_name = "_QFall1Ea"} : (!fir.box<!fir.array<?x!fir.logical<4>>>) -> (!fir.box<!fir.array<?x!fir.logical<4>>>, !fir.box<!fir.array<?x!fir.logical<4>>>)

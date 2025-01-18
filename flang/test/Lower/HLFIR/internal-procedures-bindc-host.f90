@@ -2,7 +2,7 @@
 ! and host procedure in FIR even when BIND(C) is involved.
 
 ! RUN: bbc -emit-hlfir -o - %s | FileCheck %s
-! RUN: bbc -emit-hlfir -o - %s | fir-opt -external-name-interop -o - |FileCheck %s --check-prefix=AFTER_RENAME_PASS
+! RUN: bbc -emit-hlfir -o - %s | fir-test-opt -external-name-interop -o - |FileCheck %s --check-prefix=AFTER_RENAME_PASS
 
 subroutine foo() bind(c, name="some_c_name")
   call bar()

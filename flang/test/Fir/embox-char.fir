@@ -9,7 +9,7 @@
 // is computed in elements of the type used for the GEP
 // computing the base of the slice.
 
-// RUN: fir-opt -o - -cg-rewrite --fir-to-llvm-ir %s | FileCheck %s
+// RUN: fir-test-opt -o - -cg-rewrite --fir-to-llvm-ir %s | FileCheck %s
 // RUN: tco -o - -cg-rewrite --fir-to-llvm-ir %s | FileCheck %s
 
 // subroutine test(x)

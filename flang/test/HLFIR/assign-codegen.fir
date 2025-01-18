@@ -1,6 +1,6 @@
 // Test hlfir.assign code generation to FIR
 
-// RUN: fir-opt %s -convert-hlfir-to-fir | FileCheck %s
+// RUN: fir-test-opt %s -convert-hlfir-to-fir | FileCheck %s
 
 func.func @scalar_int(%arg0: !fir.ref<i32>, %arg1: !fir.ref<i32>) {
   hlfir.assign %arg0 to %arg1 : !fir.ref<i32>, !fir.ref<i32>

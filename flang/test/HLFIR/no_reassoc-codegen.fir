@@ -1,6 +1,6 @@
 // Test hlfir.noreassoc code generation to FIR.
 
-// RUN: fir-opt %s -bufferize-hlfir -convert-hlfir-to-fir | FileCheck %s
+// RUN: fir-test-opt %s -bufferize-hlfir -convert-hlfir-to-fir | FileCheck %s
 
 func.func @no_reassoc_expr(%addr: !fir.ref<!fir.char<1,?>>, %len: index) {
   %0:2 = hlfir.declare %addr typeparams %len {uniq_name = "c"} : (!fir.ref<!fir.char<1,?>>, index) -> (!fir.boxchar<1>, !fir.ref<!fir.char<1,?>>)

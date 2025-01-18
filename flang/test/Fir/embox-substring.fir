@@ -1,4 +1,4 @@
-// RUN: fir-opt -o - -cg-rewrite --fir-to-llvm-ir %s | FileCheck %s
+// RUN: fir-test-opt -o - -cg-rewrite --fir-to-llvm-ir %s | FileCheck %s
 // RUN: tco -o - -cg-rewrite --fir-to-llvm-ir %s | FileCheck %s
 
 // CHECK-LABEL: llvm.func @embox_index_substr(

@@ -1,6 +1,6 @@
 // Test hlfir.transpose operation parse, verify (no errors), and unparse
 
-// RUN: fir-opt %s | fir-opt | FileCheck %s
+// RUN: fir-test-opt %s | fir-test-opt | FileCheck %s
 
 // square matrix of known shape
 func.func @transpose0(%arg0: !hlfir.expr<2x2xi32>) {

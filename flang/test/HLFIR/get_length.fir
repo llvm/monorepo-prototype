@@ -1,9 +1,9 @@
 // Test hlfir.get_length operation parse, verify (no errors), and unparse.
 
-// RUN: fir-opt %s | fir-opt | FileCheck %s --check-prefix CHECK --check-prefix CHECK-ALL
+// RUN: fir-test-opt %s | fir-test-opt | FileCheck %s --check-prefix CHECK --check-prefix CHECK-ALL
 
 // Test canonicalization.
-// RUN: fir-opt %s --canonicalize | FileCheck %s --check-prefix CHECK-CANON --check-prefix CHECK-ALL
+// RUN: fir-test-opt %s --canonicalize | FileCheck %s --check-prefix CHECK-CANON --check-prefix CHECK-ALL
 
 func.func @fixed_len_scalar(%arg0: !hlfir.expr<!fir.char<1,10>>) -> index {
   %1 = hlfir.get_length %arg0 : (!hlfir.expr<!fir.char<1,10>>) -> index

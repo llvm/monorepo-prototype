@@ -1,5 +1,5 @@
 // Test hlfir.shape_of lowering
-// RUN: fir-opt %s -bufferize-hlfir | FileCheck %s
+// RUN: fir-test-opt %s -bufferize-hlfir | FileCheck %s
 
 func.func @shapeof_asexpr(%arg0: !fir.box<!fir.heap<!fir.array<?xf32>>>) -> !fir.shape<1> {
   %c0 = arith.constant 0 : index

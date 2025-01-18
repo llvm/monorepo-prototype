@@ -1,4 +1,4 @@
-// RUN: %not_todo_cmd fir-opt --fir-to-llvm-ir="target=x86_64-unknown-linux-gnu" %s 2>&1 | FileCheck %s
+// RUN: %not_todo_cmd fir-test-opt --fir-to-llvm-ir="target=x86_64-unknown-linux-gnu" %s 2>&1 | FileCheck %s
 
 // `!fir.coordinate_of` - derived type with `!fir.len_param_index`. As
 // `!fir.len_param_index` is not implemented yet, the error that we hit is

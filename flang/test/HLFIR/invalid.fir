@@ -1,6 +1,6 @@
 // HLFIR ops diagnotic tests
 
-// RUN: fir-opt -strict-intrinsic-verifier -split-input-file -verify-diagnostics %s
+// RUN: fir-test-opt -strict-intrinsic-verifier -split-input-file -verify-diagnostics %s
 
 func.func @bad_declare(%arg0: !fir.ref<f32>) {
   // expected-error@+1 {{'hlfir.declare' op first result type is inconsistent with variable properties: expected '!fir.ref<f32>'}}
