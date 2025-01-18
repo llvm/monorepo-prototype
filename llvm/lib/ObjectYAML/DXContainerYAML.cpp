@@ -14,6 +14,7 @@
 #include "llvm/ObjectYAML/DXContainerYAML.h"
 #include "llvm/ADT/ScopeExit.h"
 #include "llvm/BinaryFormat/DXContainer.h"
+#include "llvm/Object/DXContainer.h"
 #include "llvm/Support/ScopedPrinter.h"
 #include <cstdint>
 
@@ -31,16 +32,17 @@ DXContainerYAML::ShaderFeatureFlags::ShaderFeatureFlags(uint64_t FlagData) {
 }
 
 DXContainerYAML::RootSignatureDesc::RootSignatureDesc(
-    const dxbc::RootSignatureDesc &Data)
-    : Version(Data.Version) {
-#define ROOT_ELEMENT_FLAG(Num, Val)                                            \
-  Val = (Data.Flags & (uint32_t)dxbc::RootElementFlag::Val) > 0;
+    const object::DirectX::RootSignature &Data)
+    : Version(Data.getVersion()) {
+  uint32_t Flags = Data.getFlags();
+#define ROOT_ELEMENT_FLAG(Num, Val, Str)                                       \
+  Val = (Flags & (uint32_t)dxbc::RootElementFlag::Val) > 0;
 #include "llvm/BinaryFormat/DXContainerConstants.def"
 }
 
 uint32_t DXContainerYAML::RootSignatureDesc::getEncodedFlags() {
   uint64_t Flag = 0;
-#define ROOT_ELEMENT_FLAG(Num, Val)                                            \
+#define ROOT_ELEMENT_FLAG(Num, Val, Str)                                       \
   if (Val)                                                                     \
     Flag |= (uint32_t)dxbc::RootElementFlag::Val;
 #include "llvm/BinaryFormat/DXContainerConstants.def"
@@ -209,7 +211,7 @@ void MappingTraits<DXContainerYAML::Signature>::mapping(
 void MappingTraits<DXContainerYAML::RootSignatureDesc>::mapping(
     IO &IO, DXContainerYAML::RootSignatureDesc &S) {
   IO.mapRequired("Version", S.Version);
-#define ROOT_ELEMENT_FLAG(Num, Val) IO.mapRequired(#Val, S.Val);
+#define ROOT_ELEMENT_FLAG(Num, Val, Str) IO.mapRequired(#Val, S.Val);
 #include "llvm/BinaryFormat/DXContainerConstants.def"
 }
 
