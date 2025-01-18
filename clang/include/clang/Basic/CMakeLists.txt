@@ -61,6 +61,10 @@ clang_tablegen(BuiltinsBPF.inc -gen-clang-builtins
   SOURCE BuiltinsBPF.td
   TARGET ClangBuiltinsBPF)
 
+clang_tablegen(BuiltinsHexagon.inc -gen-clang-builtins
+  SOURCE BuiltinsHexagon.td
+  TARGET ClangBuiltinsHexagon)
+
 clang_tablegen(BuiltinsRISCV.inc -gen-clang-builtins
   SOURCE BuiltinsRISCV.td
   TARGET ClangBuiltinsRISCV)
