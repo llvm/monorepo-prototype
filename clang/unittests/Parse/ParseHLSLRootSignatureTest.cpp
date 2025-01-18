@@ -130,4 +130,94 @@ TEST_F(ParseHLSLRootSignatureTest, LexValidTokensTest) {
   CheckTokens(Tokens, Expected);
 }
 
+TEST_F(ParseHLSLRootSignatureTest, ParseValidDTClausesTest) {
+  const llvm::StringLiteral Source = R"cc(
+    DescriptorTable(
+      CBV(b0),
+      SRV(t42, numDescriptors = 4, offset = 32),
+      Sampler(s987, space = 2, flags = 0),
+      UAV(u987234,
+        flags = Descriptors_Volatile | Data_Volatile
+              | Data_Static_While_Set_At_Execute | Data_Static
+              | Descriptors_Static_Keeping_Buffer_Bounds_Checks
+      ),
+      visibility = Shader_Visibility_Pixel
+    ),
+    DescriptorTable()
+  )cc";
+
+  TrivialModuleLoader ModLoader;
+  auto PP = CreatePP(Source, ModLoader);
+  auto TokLoc = SourceLocation();
+
+  RootSignatureLexer Lexer(Source, TokLoc, *PP);
+
+  SmallVector<RootSignatureToken> Tokens;
+  ASSERT_FALSE(Lexer.Lex(Tokens));
+
+  SmallVector<RootElement> Elements;
+  RootSignatureParser Parser(Elements, Tokens);
+
+  ASSERT_FALSE(Parser.Parse());
+  ASSERT_EQ((int)Elements.size(), 6);
+
+  // Test default values are set correctly
+  RootElement Elem = Elements[0];
+  ASSERT_EQ(Elem.Tag, RootElement::ElementType::DescriptorTableClause);
+  ASSERT_EQ(Elem.Clause.Type, ClauseType::CBV);
+  ASSERT_EQ(Elem.Clause.Register.ViewType, RegisterType::BReg);
+  ASSERT_EQ(Elem.Clause.Register.Number, (uint32_t)0);
+  ASSERT_EQ(Elem.Clause.NumDescriptors, (uint32_t)1);
+  ASSERT_EQ(Elem.Clause.Space, (uint32_t)0);
+  ASSERT_EQ(Elem.Clause.Offset, (uint32_t)DescriptorTableOffsetAppend);
+  ASSERT_EQ(Elem.Clause.Flags,
+            DescriptorRangeFlags::DataStaticWhileSetAtExecute);
+
+  // Test optionally specified 'numDescriptors' and 'offset' parameters
+  Elem = Elements[1];
+  ASSERT_EQ(Elem.Tag, RootElement::ElementType::DescriptorTableClause);
+  ASSERT_EQ(Elem.Clause.Type, ClauseType::SRV);
+  ASSERT_EQ(Elem.Clause.Register.ViewType, RegisterType::TReg);
+  ASSERT_EQ(Elem.Clause.Register.Number, (uint32_t)42);
+  ASSERT_EQ(Elem.Clause.NumDescriptors, (uint32_t)4);
+  ASSERT_EQ(Elem.Clause.Space, (uint32_t)0);
+  ASSERT_EQ(Elem.Clause.Offset, (uint32_t)32);
+  ASSERT_EQ(Elem.Clause.Flags,
+            DescriptorRangeFlags::DataStaticWhileSetAtExecute);
+
+  // Test specified 'space' and the '0' flag in 'flags'
+  Elem = Elements[2];
+  ASSERT_EQ(Elem.Tag, RootElement::ElementType::DescriptorTableClause);
+  ASSERT_EQ(Elem.Clause.Type, ClauseType::Sampler);
+  ASSERT_EQ(Elem.Clause.Register.ViewType, RegisterType::SReg);
+  ASSERT_EQ(Elem.Clause.Register.Number, (uint32_t)987);
+  ASSERT_EQ(Elem.Clause.NumDescriptors, (uint32_t)1);
+  ASSERT_EQ(Elem.Clause.Space, (uint32_t)2);
+  ASSERT_EQ(Elem.Clause.Offset, (uint32_t)DescriptorTableOffsetAppend);
+  ASSERT_EQ(Elem.Clause.Flags, DescriptorRangeFlags::None);
+
+  // Test that we can specify all valid flags
+  Elem = Elements[3];
+  ASSERT_EQ(Elem.Tag, RootElement::ElementType::DescriptorTableClause);
+  ASSERT_EQ(Elem.Clause.Type, ClauseType::UAV);
+  ASSERT_EQ(Elem.Clause.Register.ViewType, RegisterType::UReg);
+  ASSERT_EQ(Elem.Clause.Register.Number, (uint32_t)987234);
+  ASSERT_EQ(Elem.Clause.NumDescriptors, (uint32_t)1);
+  ASSERT_EQ(Elem.Clause.Space, (uint32_t)0);
+  ASSERT_EQ(Elem.Clause.Offset, (uint32_t)DescriptorTableOffsetAppend);
+  ASSERT_EQ(Elem.Clause.Flags, DescriptorRangeFlags::ValidFlags);
+
+  // Test generated DescriptorTable start has correct values
+  Elem = Elements[4];
+  ASSERT_EQ(Elem.Tag, RootElement::ElementType::DescriptorTable);
+  ASSERT_EQ(Elem.Table.NumClauses, (uint32_t)4);
+  ASSERT_EQ(Elem.Table.Visibility, ShaderVisibility::Pixel);
+
+  // Test generated DescriptorTable start has correct default values
+  Elem = Elements[5];
+  ASSERT_EQ(Elem.Tag, RootElement::ElementType::DescriptorTable);
+  ASSERT_EQ(Elem.Table.NumClauses, (uint32_t)0);
+  ASSERT_EQ(Elem.Table.Visibility, ShaderVisibility::All);
+}
+
 } // anonymous namespace

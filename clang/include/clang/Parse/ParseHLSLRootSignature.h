@@ -21,6 +21,8 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/StringSwitch.h"
 
+#include "llvm/Frontend/HLSL/HLSLRootSignature.h"
+
 namespace llvm {
 namespace hlsl {
 namespace root_signature {
@@ -87,6 +89,72 @@ private:
     Buffer = Buffer.drop_front(NumCharacters);
     SourceLoc = SourceLoc.getLocWithOffset(NumCharacters);
   }
+};
+
+class RootSignatureParser {
+public:
+  RootSignatureParser(SmallVector<RootElement> &Elements,
+                      const SmallVector<RootSignatureToken> &Tokens);
+
+  // Iterates over the provided tokens and constructs the in-memory
+  // representations of the RootElements.
+  //
+  // The return value denotes if there was a failure and the method will
+  // return on the first encountered failure, or, return false if it
+  // can sucessfully reach the end of the tokens.
+  bool Parse();
+
+private:
+  bool ReportError(); // TODO: Implement this to report error through Diags
+
+  // Root Element helpers
+  bool ParseRootElement();
+  bool ParseDescriptorTable();
+  bool ParseDescriptorTableClause();
+
+  // Common parsing helpers
+  bool ParseRegister(Register &Register);
+
+  // Various flags/enum parsing helpers
+  bool ParseDescriptorRangeFlags(DescriptorRangeFlags &Flags);
+  bool ParseShaderVisibility(ShaderVisibility &Flag);
+
+  // Increment the token iterator if we have not reached the end.
+  // Return value denotes if we were already at the last token.
+  bool ConsumeNextToken();
+
+  // Attempt to retrieve the next token, if TokenKind is invalid then there was
+  // no next token.
+  RootSignatureToken PeekNextToken();
+
+  // Peek if the next token is of the expected kind.
+  //
+  // Return value denotes if it failed to match the expected kind, either it is
+  // the end of the stream or it didn't match any of the expected kinds.
+  bool PeekExpectedToken(TokenKind Expected);
+  bool PeekExpectedToken(ArrayRef<TokenKind> AnyExpected);
+
+  // Consume the next token and report an error if it is not of the expected
+  // kind.
+  //
+  // Return value denotes if it failed to match the expected kind, either it is
+  // the end of the stream or it didn't match any of the expected kinds.
+  bool ConsumeExpectedToken(TokenKind Expected);
+  bool ConsumeExpectedToken(ArrayRef<TokenKind> AnyExpected);
+
+  // Peek if the next token is of the expected kind and if it is then consume
+  // it.
+  //
+  // Return value denotes if it failed to match the expected kind, either it is
+  // the end of the stream or it didn't match any of the expected kinds. It will
+  // not report an error if there isn't a match.
+  bool TryConsumeExpectedToken(TokenKind Expected);
+  bool TryConsumeExpectedToken(ArrayRef<TokenKind> Expected);
+
+private:
+  SmallVector<RootElement> &Elements;
+  SmallVector<RootSignatureToken>::const_iterator CurTok;
+  SmallVector<RootSignatureToken>::const_iterator LastTok;
 };
 
 } // namespace root_signature
