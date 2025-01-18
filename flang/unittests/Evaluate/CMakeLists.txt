@@ -33,7 +33,6 @@ add_flang_nongtest_unittest(intrinsics
   FortranDecimal
   FortranSemantics
   FortranParser
-  flang_rt
 )
 
 add_flang_nongtest_unittest(logical
