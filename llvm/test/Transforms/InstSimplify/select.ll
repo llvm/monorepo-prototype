@@ -1771,3 +1771,14 @@ define i8 @bittest_trunc_not_or(i8 %x) {
   %cond = select i1 %not, i8 %or, i8 %x
   ret i8 %cond
 }
+
+define i8 @bittest_look_thru_trunc(i8 %x) {
+; CHECK-LABEL: @bittest_look_thru_trunc(
+; CHECK-NEXT:    ret i8 [[X:%.*]]
+;
+  %trunc1 = trunc i8 %x to i4
+  %trunc2 = trunc i4 %trunc1 to i1
+  %or = or i8 %x, 1
+  %cond = select i1 %trunc2, i8 %or, i8 %x
+  ret i8 %cond
+}
