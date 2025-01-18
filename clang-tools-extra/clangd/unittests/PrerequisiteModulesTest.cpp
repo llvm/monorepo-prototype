@@ -39,28 +39,6 @@ public:
 
   void addFile(llvm::StringRef Path, llvm::StringRef Contents);
 
-  std::unique_ptr<ProjectModules> getProjectModules(PathRef) const override {
-    auto Modules = scanningProjectModules(MockedCDBPtr, TFS);
-    Modules->setCommandProvider(
-        [this](tooling::CompileCommand &Command, PathRef) {
-          for (auto &Flag : ExcludeFlags) {
-            auto const It = std::find(Command.CommandLine.begin(),
-                                      Command.CommandLine.end(), Flag);
-            if (It != Command.CommandLine.end())
-              Command.CommandLine.erase(It);
-          }
-        });
-    return Modules;
-  }
-
-  void addExtraClangFlag(std::string Flag) {
-    this->ExtraClangFlags.push_back(std::move(Flag));
-  }
-
-  void addExcludedFlag(std::string Flag) {
-    this->ExcludeFlags.push_back(std::move(Flag));
-  }
-
 private:
   class MockClangCompilationDatabase : public tooling::CompilationDatabase {
   public:
@@ -85,7 +63,6 @@ private:
   };
 
   std::shared_ptr<MockClangCompilationDatabase> MockedCDBPtr;
-  std::vector<std::string> ExcludeFlags;
   const ThreadsafeFS &TFS;
 };
 
@@ -214,7 +191,7 @@ export module M;
 TEST_F(PrerequisiteModulesTests, ModuleWithArgumentPatch) {
   MockDirectoryCompilationDatabase CDB(TestDir, FS);
 
-  CDB.addExtraClangFlag("-invalid-unknown-flag");
+  CDB.ExtraClangFlags.push_back("-invalid-unknown-flag");
 
   CDB.addFile("Dep.cppm", R"cpp(
 export module Dep;
@@ -225,11 +202,23 @@ export module M;
 import Dep;
   )cpp");
 
+  // An invalid flag will break the module compilation and the
+  // getRequiredModules would return an empty array
   auto ProjectModules = CDB.getProjectModules(getFullPath("M.cppm"));
   EXPECT_TRUE(
       ProjectModules->getRequiredModules(getFullPath("M.cppm")).empty());
 
-  CDB.addExcludedFlag("-invalid-unknown-flag");
+  // Set the mangler to filter out the invalid flag
+  ProjectModules->setCommandMangler(
+      [](tooling::CompileCommand &Command, PathRef) {
+        auto const It =
+            std::find(Command.CommandLine.begin(), Command.CommandLine.end(),
+                      "-invalid-unknown-flag");
+        Command.CommandLine.erase(It);
+      });
+
+  // And now it returns a non-empty list of required modules since the
+  // compilation succeeded
   EXPECT_FALSE(
       ProjectModules->getRequiredModules(getFullPath("M.cppm")).empty());
 }

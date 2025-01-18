@@ -12,11 +12,14 @@
 #include "support/Function.h"
 #include "support/Path.h"
 #include "support/ThreadsafeFS.h"
-#include "clang/Tooling/CompilationDatabase.h"
 
 #include <memory>
 
 namespace clang {
+namespace tooling {
+class CompileCommand;
+} // namespace tooling
+
 namespace clangd {
 
 /// An interface to query the modules information in the project.
@@ -38,7 +41,7 @@ namespace clangd {
 /// `<primary-module-name>[:partition-name]`. So module names covers partitions.
 class ProjectModules {
 public:
-  using CommandProvider =
+  using CommandMangler =
       llvm::unique_function<void(tooling::CompileCommand &, PathRef) const>;
 
   virtual std::vector<std::string> getRequiredModules(PathRef File) = 0;
@@ -46,7 +49,7 @@ public:
   getSourceForModuleName(llvm::StringRef ModuleName,
                          PathRef RequiredSrcFile = PathRef()) = 0;
 
-  virtual void setCommandProvider(CommandProvider Provider) {}
+  virtual void setCommandMangler(CommandMangler Mangler) {}
 
   virtual ~ProjectModules() = default;
 };
