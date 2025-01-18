@@ -3266,11 +3266,24 @@ Instruction *InstCombinerImpl::visitCallInst(CallInst &CI) {
               }
               if (auto *SI = dyn_cast<StoreInst>(Curr)) {
                 auto *PtrOpI = dyn_cast<Instruction>(SI->getPointerOperand());
-                if (PtrOpI && WorkList.contains(PtrOpI) &&
+                if ((SI->getPointerOperand() == RK.WasOn || (PtrOpI && WorkList.contains(PtrOpI))) &&
                     SI->getAlign().value() < RK.ArgValue) {
                   CanUseAlign = true;
                   break;
                 }
+                continue;
+              }
+              if (auto *II = dyn_cast<IntrinsicInst>(Curr)) {
+                for (const auto &[Idx, Arg] : enumerate(II->args())) {
+                  if (Arg != RK.WasOn)
+                    continue;
+                  if (II->getParamAlign(Idx) >= RK.ArgValue)
+                    continue;
+                  CanUseAlign = true;
+                  break;
+                }
+                if (CanUseAlign)
+                  break;
                 continue;
               }
               if (isa<ReturnInst, CallBase>(Curr)) {
