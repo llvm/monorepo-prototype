@@ -159,6 +159,7 @@ Sections:
 # RUN: not yaml2obj --docnum=5 2>&1 %s | FileCheck %s --check-prefix=NOSIZE
 
 ## NOSIZE: error: missing required key 'Size'
+## NOSIZE-NOT: "Size" can't be 0
 
 --- !ELF
 FileHeader:
