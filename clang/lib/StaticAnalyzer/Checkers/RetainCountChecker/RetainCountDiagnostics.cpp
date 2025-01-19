@@ -13,6 +13,7 @@
 
 #include "RetainCountDiagnostics.h"
 #include "RetainCountChecker.h"
+#include "clang/StaticAnalyzer/Core/PathSensitive/MemSpaces.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallVector.h"
 #include <optional>
@@ -690,9 +691,11 @@ static AllocationInfo GetAllocationSite(ProgramStateManager &StateMgr,
       const MemRegion *R = FB.getRegion();
       // Do not show local variables belonging to a function other than
       // where the error is reported.
-      if (auto MR = dyn_cast<StackSpaceRegion>(R->getMemorySpace()))
-        if (MR->getStackFrame() == LeakContext->getStackFrame())
-          FirstBinding = R;
+      const StackSpaceRegion *SSR =
+          dyn_cast_if_present<StackSpaceRegion>(memspace::getMemSpace(St, R));
+
+      if (SSR && SSR->getStackFrame() == LeakContext->getStackFrame())
+        FirstBinding = R;
     }
 
     // AllocationNode is the last node in which the symbol was tracked.
