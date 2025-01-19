@@ -603,6 +603,7 @@ private:
   void mangleInitListElements(const InitListExpr *InitList);
   void mangleRequirement(SourceLocation RequiresExprLoc,
                          const concepts::Requirement *Req);
+  void mangleReferenceToPack(const NamedDecl* ND);
   void mangleExpression(const Expr *E, unsigned Arity = UnknownArity,
                         bool AsTemplateArg = false);
   void mangleCXXCtorType(CXXCtorType T, const CXXRecordDecl *InheritedFrom);
@@ -4348,8 +4349,12 @@ void CXXNameMangler::mangleType(const PackExpansionType *T) {
 }
 
 void CXXNameMangler::mangleType(const PackIndexingType *T) {
-  if (!T->hasSelectedType())
+  // <type>  ::= Dy <type> <expression>  # pack indexing type (C++23)
+  if (!T->hasSelectedType()) {
+    Out << "Dy";
     mangleType(T->getPattern());
+    mangleExpression(T->getIndexExpr());
+  }
   else
     mangleType(T->getSelectedType());
 }
@@ -4785,6 +4790,19 @@ void CXXNameMangler::mangleRequirement(SourceLocation RequiresExprLoc,
   }
 }
 
+void CXXNameMangler::mangleReferenceToPack(const NamedDecl* Pack) {
+    if (const TemplateTypeParmDecl *TTP = dyn_cast<TemplateTypeParmDecl>(Pack))
+        mangleTemplateParameter(TTP->getDepth(), TTP->getIndex());
+    else if (const NonTypeTemplateParmDecl *NTTP
+              = dyn_cast<NonTypeTemplateParmDecl>(Pack))
+        mangleTemplateParameter(NTTP->getDepth(), NTTP->getIndex());
+    else if (const TemplateTemplateParmDecl *TempTP
+                                  = dyn_cast<TemplateTemplateParmDecl>(Pack))
+        mangleTemplateParameter(TempTP->getDepth(), TempTP->getIndex());
+    else
+        mangleFunctionParam(cast<ParmVarDecl>(Pack));
+}
+
 void CXXNameMangler::mangleExpression(const Expr *E, unsigned Arity,
                                       bool AsTemplateArg) {
   // <expression> ::= <unary operator-name> <expression>
@@ -4803,6 +4821,7 @@ void CXXNameMangler::mangleExpression(const Expr *E, unsigned Arity,
   //              ::= fpT                            # 'this' expression (part of <function-param>)
   //              ::= sr <type> <unqualified-name>                   # dependent name
   //              ::= sr <type> <unqualified-name> <template-args>   # dependent template-id
+  //              ::= sy <expression> <expression>                   # pack indexing expression
   //              ::= ds <expression> <expression>                   # expr.*expr
   //              ::= sZ <template-param>                            # size of a parameter pack
   //              ::= sZ <function-param>    # size of a function parameter pack
@@ -4886,7 +4905,6 @@ recurse:
   case Expr::OMPIteratorExprClass:
   case Expr::CXXInheritedCtorInitExprClass:
   case Expr::CXXParenListInitExprClass:
-  case Expr::PackIndexingExprClass:
     llvm_unreachable("unexpected statement kind");
 
   case Expr::ConstantExprClass:
@@ -5788,17 +5806,7 @@ recurse:
     }
 
     Out << "sZ";
-    const NamedDecl *Pack = SPE->getPack();
-    if (const TemplateTypeParmDecl *TTP = dyn_cast<TemplateTypeParmDecl>(Pack))
-      mangleTemplateParameter(TTP->getDepth(), TTP->getIndex());
-    else if (const NonTypeTemplateParmDecl *NTTP
-                = dyn_cast<NonTypeTemplateParmDecl>(Pack))
-      mangleTemplateParameter(NTTP->getDepth(), NTTP->getIndex());
-    else if (const TemplateTemplateParmDecl *TempTP
-                                    = dyn_cast<TemplateTemplateParmDecl>(Pack))
-      mangleTemplateParameter(TempTP->getDepth(), TempTP->getIndex());
-    else
-      mangleFunctionParam(cast<ParmVarDecl>(Pack));
+    mangleReferenceToPack(SPE->getPack());
     break;
   }
 
@@ -5826,6 +5834,19 @@ recurse:
     if (FE->getRHS())
       mangleExpression(FE->getRHS());
     break;
+  }
+
+  case Expr::PackIndexingExprClass: {
+      auto *PE = cast<PackIndexingExpr>(E);
+      if(PE->isFullySubstituted()) {
+          E = PE->getSelectedExpr();
+          goto recurse;
+      }
+      NotPrimaryExpr();
+      Out << "sy";
+      mangleReferenceToPack(PE->getPackDecl());
+      mangleExpression(PE->getIndexExpr());
+      break;
   }
 
   case Expr::CXXThisExprClass:
