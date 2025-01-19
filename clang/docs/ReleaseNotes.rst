@@ -377,6 +377,7 @@ C Language Changes
 ------------------
 
 - Extend clang's ``<limits.h>`` to define ``LONG_LONG_*`` macros for Android's bionic.
+- Clang now allows ``restrict`` qualifier for array types with pointer elements (#GH92847).
 
 C2y Feature Support
 ^^^^^^^^^^^^^^^^^^^
