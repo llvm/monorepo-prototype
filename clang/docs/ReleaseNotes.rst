@@ -791,6 +791,8 @@ Improvements to Clang's diagnostics
     }
 - Diagnose invalid declarators in the declaration of constructors and destructors (#GH121706).
 
+- Clang now diagnoses missing format attributes for non-template functions and class/struct/union members. (#GH60718)
+
 Improvements to Clang's time-trace
 ----------------------------------
 
