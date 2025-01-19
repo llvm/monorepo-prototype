@@ -975,6 +975,7 @@ unsigned Decl::getIdentifierNamespaceForKind(Kind DeclKind) {
 
     case UsingDirective:
     case BuiltinTemplate:
+    case CVRefQualifyingTemplate:
     case ClassTemplateSpecialization:
     case ClassTemplatePartialSpecialization:
     case VarTemplateSpecialization:

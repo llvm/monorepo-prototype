@@ -7214,6 +7214,7 @@ CXCursor clang_getCursorDefinition(CXCursor C) {
   case Decl::OMPRequires:
   case Decl::ObjCTypeParam:
   case Decl::BuiltinTemplate:
+  case Decl::CVRefQualifyingTemplate:
   case Decl::PragmaComment:
   case Decl::PragmaDetectMismatch:
   case Decl::UsingPack:
