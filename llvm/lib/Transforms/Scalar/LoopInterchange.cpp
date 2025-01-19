@@ -64,6 +64,15 @@ using LoopVector = SmallVector<Loop *, 8>;
 // TODO: Check if we can use a sparse matrix here.
 using CharMatrix = std::vector<std::vector<char>>;
 
+// Classify direction vectors according to the leftmost non-"=" direction. "S"
+// and "I" are treated the same as "=".
+enum class DirectionVectorOrder {
+  Zero,     ///< The direction vector consists only of "=", "S", and "I".
+  Positive, ///< The leftmost non-"=" direction is "<".
+  Negative, ///< The leftmost non-"=" direction is ">".
+  All,      ///< The leftmost non-"=" direction is "*".
+};
+
 } // end anonymous namespace
 
 // Maximum number of dependencies that can be handled in the dependency matrix.
@@ -185,15 +194,28 @@ static void interChangeDependencies(CharMatrix &DepMatrix, unsigned FromIndx,
 // After interchanging, check if the direction vector is valid.
 // [Theorem] A permutation of the loops in a perfect nest is legal if and only
 // if the direction matrix, after the same permutation is applied to its
-// columns, has no ">" direction as the leftmost non-"=" direction in any row.
-static bool isLexicographicallyPositive(std::vector<char> &DV) {
-  for (unsigned char Direction : DV) {
-    if (Direction == '<')
-      return true;
-    if (Direction == '>' || Direction == '*')
-      return false;
+// columns, each row of it satisfies either the following conditions.
+//
+// - The row consists only of "=", "S", and "I".
+// - The leftmost direction that is not "=", "S" and "I" in the row is
+//   "<" or ">", and it does not change before and after the permutation is
+//   applied.
+static DirectionVectorOrder
+calcDirectionVectorOrder(const std::vector<char> &DV, unsigned Left,
+                         unsigned Right) {
+  assert(Left <= Right && "Left must be less or equal to Right");
+  for (unsigned I = Left; I <= Right; I++) {
+    unsigned char Direction = DV[I];
+    switch (Direction) {
+    case '<':
+      return DirectionVectorOrder::Positive;
+    case '>':
+      return DirectionVectorOrder::Negative;
+    case '*':
+      return DirectionVectorOrder::All;
+    }
   }
-  return true;
+  return DirectionVectorOrder::Zero;
 }
 
 // Checks if it is legal to interchange 2 loops.
@@ -207,10 +229,12 @@ static bool isLegalToInterChangeLoops(CharMatrix &DepMatrix,
     // Create temporary DepVector check its lexicographical order
     // before and after swapping OuterLoop vs InnerLoop
     Cur = DepMatrix[Row];
-    if (!isLexicographicallyPositive(Cur))
+    auto OrderBefore = calcDirectionVectorOrder(Cur, OuterLoopId, InnerLoopId);
+    if (OrderBefore == DirectionVectorOrder::All)
       return false;
     std::swap(Cur[InnerLoopId], Cur[OuterLoopId]);
-    if (!isLexicographicallyPositive(Cur))
+    auto OrderAfter = calcDirectionVectorOrder(Cur, OuterLoopId, InnerLoopId);
+    if (OrderBefore != OrderAfter)
       return false;
   }
   return true;
