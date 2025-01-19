@@ -3,7 +3,7 @@
 ; CHECK:          .p2align 4
 ; CHECK-LABEL:    __cfi_f1:
 ; CHECK-COUNT-11:   nop
-; CHECK-NEXT:       movl $12345678, %eax
+; CHECK-NEXT:       movl $12345678, %ecx
 ; CHECK-LABEL:    .Lcfi_func_end0:
 ; CHECK-NEXT:     .size   __cfi_f1, .Lcfi_func_end0-__cfi_f1
 ; CHECK-LABEL:    f1:
@@ -26,7 +26,7 @@ define void @f2(ptr noundef %x) {
 ; CHECK:          .p2align 4
 ; CHECK-LABEL:    __cfi_f3:
 ; CHECK-NOT:        nop
-; CHECK-NEXT:       movl $12345678, %eax
+; CHECK-NEXT:       movl $12345678, %ecx
 ; CHECK-COUNT-11:   nop
 ; CHECK-LABEL:    f3:
 define void @f3(ptr noundef %x) #0 !kcfi_type !1 {

@@ -16,7 +16,7 @@
 ; ASM-NEXT:    nop
 ; ASM-NEXT:    nop
 ; ASM-NEXT:    nop
-; ASM-NEXT:    movl $12345678, %eax
+; ASM-NEXT:    movl $12345678, %ecx
 ; ASM-LABEL: .Lcfi_func_end0:
 ; ASM-NEXT:  .size   __cfi_f1, .Lcfi_func_end0-__cfi_f1
 define void @f1(ptr noundef %x) !kcfi_type !1 {
@@ -90,7 +90,7 @@ define void @f4(ptr noundef %x) #0 {
 
 ;; Ensure we emit Value + 1 for unwanted values (e.g. endbr64 == 4196274163).
 ; ASM-LABEL: __cfi_f5:
-; ASM: movl $4196274164, %eax # imm = 0xFA1E0FF4
+; ASM: movl $4196274164, %ecx # imm = 0xFA1E0FF4
 define void @f5(ptr noundef %x) !kcfi_type !2 {
 ; ASM-LABEL: f5:
 ; ASM: movl $98693132, %r10d # imm = 0x5E1F00C
@@ -100,7 +100,7 @@ define void @f5(ptr noundef %x) !kcfi_type !2 {
 
 ;; Ensure we emit Value + 1 for unwanted values (e.g. -endbr64 == 98693133).
 ; ASM-LABEL: __cfi_f6:
-; ASM: movl $98693134, %eax # imm = 0x5E1F00E
+; ASM: movl $98693134, %ecx # imm = 0x5E1F00E
 define void @f6(ptr noundef %x) !kcfi_type !3 {
 ; ASM-LABEL: f6:
 ; ASM: movl $4196274162, %r10d # imm = 0xFA1E0FF2
@@ -138,6 +138,60 @@ define void @f8() {
   ret void
 }
 
+%struct.S9 = type { [10 x i64] }
+
+;; Ensure that functions with large (e.g., greater than 8 bytes) arguments passed on the stack are assigned arity=7
+; ASM-LABEL: __cfi_f9:
+; ASM: movl	$199571451, %edi                # imm = 0xBE537FB
+define dso_local void @f9(ptr noundef byval(%struct.S9) align 8 %s) !kcfi_type !4  {
+entry:
+  ret void
+}
+
+;; Ensure that functions with fewer than 7 register arguments and no stack arguments are assigned arity<7
+; ASM-LABEL: __cfi_f10:
+; ASM: movl	$1046421190, %esi               # imm = 0x3E5F1EC6
+define dso_local void @f10(i32 noundef %v1, i32 noundef %v2, i32 noundef %v3, i32 noundef %v4, i32 noundef %v5, i32 noundef %v6) #0 !kcfi_type !5 {
+entry:
+  %v1.addr = alloca i32, align 4
+  %v2.addr = alloca i32, align 4
+  %v3.addr = alloca i32, align 4
+  %v4.addr = alloca i32, align 4
+  %v5.addr = alloca i32, align 4
+  %v6.addr = alloca i32, align 4
+  store i32 %v1, ptr %v1.addr, align 4
+  store i32 %v2, ptr %v2.addr, align 4
+  store i32 %v3, ptr %v3.addr, align 4
+  store i32 %v4, ptr %v4.addr, align 4
+  store i32 %v5, ptr %v5.addr, align 4
+  store i32 %v6, ptr %v6.addr, align 4
+  ret void
+}
+
+;; Ensure that functions with greater than 7 register arguments and no stack arguments are assigned arity=7
+; ASM-LABEL: __cfi_f11:
+; ASM: movl	$1342488295, %edi               # imm = 0x5004BEE7
+define dso_local void @f11(i32 noundef %v1, i32 noundef %v2, i32 noundef %v3, i32 noundef %v4, i32 noundef %v5, i32 noundef %v6, i32 noundef %v7, i32 noundef %v8) #0 !kcfi_type !6 {
+entry:
+  %v1.addr = alloca i32, align 4
+  %v2.addr = alloca i32, align 4
+  %v3.addr = alloca i32, align 4
+  %v4.addr = alloca i32, align 4
+  %v5.addr = alloca i32, align 4
+  %v6.addr = alloca i32, align 4
+  %v7.addr = alloca i32, align 4
+  %v8.addr = alloca i32, align 4
+  store i32 %v1, ptr %v1.addr, align 4
+  store i32 %v2, ptr %v2.addr, align 4
+  store i32 %v3, ptr %v3.addr, align 4
+  store i32 %v4, ptr %v4.addr, align 4
+  store i32 %v5, ptr %v5.addr, align 4
+  store i32 %v6, ptr %v6.addr, align 4
+  store i32 %v7, ptr %v7.addr, align 4
+  store i32 %v8, ptr %v8.addr, align 4
+  ret void
+}
+
 attributes #0 = { "target-features"="+retpoline-indirect-branches,+retpoline-indirect-calls" }
 
 !llvm.module.flags = !{!0}
@@ -145,3 +199,6 @@ attributes #0 = { "target-features"="+retpoline-indirect-branches,+retpoline-ind
 !1 = !{i32 12345678}
 !2 = !{i32 4196274163}
 !3 = !{i32 98693133}
+!4 = !{i32 199571451}
+!5 = !{i32 1046421190}
+!6 = !{i32 1342488295}
