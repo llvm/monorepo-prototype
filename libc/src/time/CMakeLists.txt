@@ -61,11 +61,14 @@ add_entrypoint_object(
     ctime.cpp
   HDRS
     ctime.h
+    time_utils.h
   DEPENDS
     .time_utils
     .time_constants
     libc.hdr.types.time_t
     libc.include.time
+    .${LIBC_TARGET_OS}.localtime_utils
+    .${LIBC_TARGET_OS}.timezone
 )
 
 add_entrypoint_object(
@@ -75,10 +78,52 @@ add_entrypoint_object(
   HDRS
     ctime_r.h
   DEPENDS
+    .${LIBC_TARGET_OS}.localtime_utils
+    .${LIBC_TARGET_OS}.timezone
     .time_utils
     .time_constants
     libc.hdr.types.time_t
     libc.include.time
+    libc.src.stdio.fopen
+)
+
+add_entrypoint_object(
+  localtime
+  SRCS
+    ${LIBC_TARGET_OS}/localtime.cpp
+  HDRS
+    localtime.h
+  DEPENDS
+    .time_utils
+    .${LIBC_TARGET_OS}.localtime_utils
+    .${LIBC_TARGET_OS}.timezone
+    libc.hdr.types.time_t
+)
+
+add_entrypoint_object(
+  localtime_r
+  SRCS
+    ${LIBC_TARGET_OS}/localtime_r.cpp
+  HDRS
+    localtime_r.h
+  DEPENDS
+    .time_utils
+    .${LIBC_TARGET_OS}.localtime_utils
+    .${LIBC_TARGET_OS}.timezone
+    libc.hdr.types.time_t
+)
+
+add_entrypoint_object(
+  localtime_s
+  SRCS
+    ${LIBC_TARGET_OS}/localtime_s.cpp
+  HDRS
+    localtime_s.h
+  DEPENDS
+    .time_utils
+    .${LIBC_TARGET_OS}.localtime_utils
+    .${LIBC_TARGET_OS}.timezone
+    libc.hdr.types.time_t
 )
 
 add_entrypoint_object(
@@ -89,7 +134,6 @@ add_entrypoint_object(
     difftime.h
   DEPENDS
     libc.include.time
-    libc.hdr.types.time_t
 )
 
 add_entrypoint_object(
@@ -101,8 +145,7 @@ add_entrypoint_object(
   DEPENDS
     .time_utils
     libc.include.time
-    libc.hdr.types.time_t
-    libc.hdr.types.struct_tm
+    libc.src.time.clock_gettime
 )
 
 add_entrypoint_object(
@@ -114,8 +157,7 @@ add_entrypoint_object(
   DEPENDS
     .time_utils
     libc.include.time
-    libc.hdr.types.time_t
-    libc.hdr.types.struct_tm
+    libc.src.stdio.fopen
 )
 
 add_entrypoint_object(
@@ -126,11 +168,9 @@ add_entrypoint_object(
     mktime.h
   DEPENDS
     .time_utils
-    .time_constants
     libc.include.time
     libc.src.errno.errno
-    libc.hdr.types.time_t
-    libc.hdr.types.struct_tm
+    libc.src.stdio.fopen
 )
 
 add_entrypoint_object(

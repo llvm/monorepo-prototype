@@ -1,4 +1,4 @@
-//===-- Implementation of asctime_r function ------------------------------===//
+//===-- Implementation header of localtime_r --------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -6,17 +6,16 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "src/time/asctime_r.h"
-#include "src/__support/common.h"
+#ifndef LLVM_LIBC_SRC_TIME_LOCALTIME_R_H
+#define LLVM_LIBC_SRC_TIME_LOCALTIME_R_H
+
+#include "hdr/types/time_t.h"
 #include "src/__support/macros/config.h"
-#include "src/time/time_utils.h"
 
 namespace LIBC_NAMESPACE_DECL {
 
-LLVM_LIBC_FUNCTION(char *, asctime_r,
-                   (const struct tm *timeptr, char *buffer)) {
-  return time_utils::asctime(timeptr, buffer,
-                             time_constants::ASCTIME_MAX_BYTES);
-}
+struct tm *localtime_r(const time_t *timer, struct tm *buf);
 
 } // namespace LIBC_NAMESPACE_DECL
+
+#endif // LLVM_LIBC_SRC_TIME_LOCALTIME_R_H

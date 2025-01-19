@@ -9,22 +9,31 @@
 #ifndef LLVM_LIBC_SRC_TIME_TIME_UTILS_H
 #define LLVM_LIBC_SRC_TIME_TIME_UTILS_H
 
-#include "hdr/types/size_t.h"
-#include "hdr/types/struct_tm.h"
 #include "hdr/types/time_t.h"
-#include "src/__support/common.h"
-#include "src/__support/macros/config.h"
-#include "src/errno/libc_errno.h"
-#include "time_constants.h"
+#include "src/__support/CPP/limits.h"
+#include "src/time/time_constants.h"
+#include <time.h>
 
-#include <stdint.h>
+#ifdef LIBC_TARGET_OS_IS_LINUX
+#include "src/time/linux/localtime_utils.h"
+#include "src/time/linux/timezone.h"
+#endif
 
 namespace LIBC_NAMESPACE_DECL {
 namespace time_utils {
 
+LIBC_INLINE volatile int file_usage;
+
 // Update the "tm" structure's year, month, etc. members from seconds.
 // "total_seconds" is the number of seconds since January 1st, 1970.
 extern int64_t update_from_seconds(int64_t total_seconds, struct tm *tm);
+extern ErrorOr<File *> acquire_file(char *filename);
+extern void release_file(ErrorOr<File *> error_or_file);
+extern unsigned char is_dst(struct tm *tm);
+
+#ifdef LIBC_TARGET_OS_IS_LINUX
+extern char *get_env_var(const char *var_name);
+#endif
 
 // TODO(michaelrj): move these functions to use ErrorOr instead of setting
 // errno. They always accompany a specific return value so we only need the one
@@ -87,11 +96,52 @@ LIBC_INLINE struct tm *gmtime_internal(const time_t *timer, struct tm *result) {
   return result;
 }
 
-// TODO: localtime is not yet implemented and a temporary solution is to
-//       use gmtime, https://github.com/llvm/llvm-project/issues/107597
-LIBC_INLINE struct tm *localtime(const time_t *t_ptr) {
-  static struct tm result;
-  return time_utils::gmtime_internal(t_ptr, &result);
+LIBC_INLINE struct tm *localtime_internal(const time_t *timer, struct tm *buf) {
+  if (timer == nullptr) {
+    invalid_value();
+    return nullptr;
+  }
+
+  // Update the tm structure's year, month, day, etc. from seconds.
+  if (update_from_seconds(static_cast<int64_t>(*timer), buf) < 0) {
+    out_of_range();
+    return nullptr;
+  }
+
+#ifdef LIBC_TARGET_OS_IS_LINUX
+  // timezone::tzset *ptr = localtime_utils::get_localtime(buf);
+  // buf->tm_hour += ptr->global_offset;
+  // buf->tm_isdst = ptr->global_isdst;
+#endif
+
+  return buf;
+}
+
+// for windows only, implemented on gnu/linux for compatibility reasons
+LIBC_INLINE int localtime_s_internal(const time_t *t_ptr, struct tm *input) {
+  if (input == NULL)
+    return -1;
+
+  if ((*t_ptr < 0 || *t_ptr > cpp::numeric_limits<int64_t>::max()) &&
+      input != NULL) {
+    // setting values to -1 for compatibility reasons
+    // https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/localtime-s-localtime32-s-localtime64-s
+    input->tm_sec = -1;
+    input->tm_min = -1;
+    input->tm_hour = -1;
+    input->tm_mday = -1;
+    input->tm_mon = -1;
+    input->tm_year = -1;
+    input->tm_wday = -1;
+    input->tm_yday = -1;
+    input->tm_isdst = -1;
+
+    return -1;
+  }
+
+  localtime_internal(t_ptr, input);
+
+  return 0;
 }
 
 } // namespace time_utils

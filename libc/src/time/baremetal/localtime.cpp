@@ -1,4 +1,4 @@
-//===-- Implementation of asctime_r function ------------------------------===//
+//===-- Implementation of localtime for baremetal -------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -6,17 +6,18 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "src/time/asctime_r.h"
+#include "src/time/localtime.h"
+#include "hdr/time_macros.h"
 #include "src/__support/common.h"
 #include "src/__support/macros/config.h"
-#include "src/time/time_utils.h"
 
 namespace LIBC_NAMESPACE_DECL {
 
-LLVM_LIBC_FUNCTION(char *, asctime_r,
-                   (const struct tm *timeptr, char *buffer)) {
-  return time_utils::asctime(timeptr, buffer,
-                             time_constants::ASCTIME_MAX_BYTES);
+extern "C" bool __llvm_libc_localtime_utc(struct timespec *ts);
+
+LLVM_LIBC_FUNCTION(int, localtime, (struct timespec * ts, int base)) {
+  (void)ts;
+  return base;
 }
 
 } // namespace LIBC_NAMESPACE_DECL
