@@ -50,12 +50,12 @@ public:
         printMatch(os, qs, subOp, "root");
       } else {
         SmallVector<Operation *> printingOps;
-        size_t sizeBefore = matchedOps.size();
+
         if (matcher.match(subOp, tempStorage, options)) {
           os << "Match #" << ++matchCount << ":\n\n";
           SmallVector<Operation *> printingOps(tempStorage.takeVector());
           for (auto op : printingOps) {
-            printMatch(os, qs, op, ""); // Using version without binding text
+            printMatch(os, qs, op, "");
             matchedOps.insert(op);
           }
           printingOps.clear();
