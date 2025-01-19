@@ -162,7 +162,13 @@ constexpr Definition g_thread_child_entries[] = {
     Definition("completed-expression", EntryType::ThreadCompletedExpression)};
 
 constexpr Definition g_target_child_entries[] = {
-    Definition("arch", EntryType::TargetArch)};
+    Definition("arch", EntryType::TargetArch),
+    Entry::DefinitionWithChildren("file", EntryType::TargetFile,
+                                  g_file_child_entries)};
+
+constexpr Definition g_progress_child_entries[] = {
+    Definition("count", EntryType::ProgressCount),
+    Definition("message", EntryType::ProgressMessage)};
 
 #define _TO_STR2(_val) #_val
 #define _TO_STR(_val) _TO_STR2(_val)
@@ -257,7 +263,10 @@ constexpr Definition g_top_level_entries[] = {
     Entry::DefinitionWithChildren("target", EntryType::Invalid,
                                   g_target_child_entries),
     Entry::DefinitionWithChildren("var", EntryType::Variable,
-                                  g_var_child_entries, true)};
+                                  g_var_child_entries, true),
+    Entry::DefinitionWithChildren("progress", EntryType::Invalid,
+                                  g_progress_child_entries),
+};
 
 constexpr Definition g_root = Entry::DefinitionWithChildren(
     "<root>", EntryType::Root, g_top_level_entries);
@@ -322,6 +331,7 @@ const char *FormatEntity::Entry::TypeToCString(Type t) {
     ENUM_TO_CSTR(ScriptThread);
     ENUM_TO_CSTR(ThreadInfo);
     ENUM_TO_CSTR(TargetArch);
+    ENUM_TO_CSTR(TargetFile);
     ENUM_TO_CSTR(ScriptTarget);
     ENUM_TO_CSTR(ModuleFile);
     ENUM_TO_CSTR(File);
@@ -355,6 +365,8 @@ const char *FormatEntity::Entry::TypeToCString(Type t) {
     ENUM_TO_CSTR(LineEntryStartAddress);
     ENUM_TO_CSTR(LineEntryEndAddress);
     ENUM_TO_CSTR(CurrentPCArrow);
+    ENUM_TO_CSTR(ProgressCount);
+    ENUM_TO_CSTR(ProgressMessage);
   }
   return "???";
 }
@@ -1195,13 +1207,13 @@ bool FormatEntity::Format(const Entry &entry, Stream &s,
                                   // FormatEntity::Entry::Definition encoding
     return false;
   case Entry::Type::EscapeCode:
-    if (exe_ctx) {
-      if (Target *target = exe_ctx->GetTargetPtr()) {
-        Debugger &debugger = target->GetDebugger();
-        if (debugger.GetUseColor()) {
-          s.PutCString(entry.string);
-        }
+    if (Target *target = Target::GetTargetFromContexts(exe_ctx, sc)) {
+      Debugger &debugger = target->GetDebugger();
+      if (debugger.GetUseColor()) {
+        s.PutCString(entry.string);
       }
+    } else {
+      assert(false);
     }
     // Always return true, so colors being disabled is transparent.
     return true;
@@ -1464,6 +1476,19 @@ bool FormatEntity::Format(const Entry &entry, Stream &s,
         if (arch.IsValid()) {
           s.PutCString(arch.GetArchitectureName());
           return true;
+        }
+      }
+    }
+    return false;
+
+  case Entry::Type::TargetFile:
+    if (exe_ctx) {
+      Target *target = exe_ctx->GetTargetPtr();
+      if (target) {
+        Module *exe_module = target->GetExecutableModulePointer();
+        if (exe_module) {
+          if (DumpFile(s, exe_module->GetFileSpec(), (FileKind)entry.number))
+            return true;
         }
       }
     }
@@ -1898,7 +1923,30 @@ bool FormatEntity::Format(const Entry &entry, Stream &s,
       return true;
     }
     return false;
+
+  case Entry::Type::ProgressCount:
+    if (Target *target = Target::GetTargetFromContexts(exe_ctx, sc)) {
+      Debugger &debugger = target->GetDebugger();
+      if (auto progress = debugger.GetCurrentProgressReport()) {
+        if (progress->total != UINT64_MAX) {
+          s.Printf("[%llu/%llu]", progress->completed, progress->total);
+          return true;
+        }
+      }
+    }
+    return false;
+
+  case Entry::Type::ProgressMessage:
+    if (Target *target = Target::GetTargetFromContexts(exe_ctx, sc)) {
+      Debugger &debugger = target->GetDebugger();
+      if (auto progress = debugger.GetCurrentProgressReport()) {
+        s.PutCString(progress->message);
+        return true;
+      }
+    }
+    return false;
   }
+
   return false;
 }
 
