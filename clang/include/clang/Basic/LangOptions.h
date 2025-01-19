@@ -245,6 +245,7 @@ public:
     ///   construction vtable because it hasn't added 'type' as a substitution.
     ///   - Skip mangling enclosing class templates of member-like friend
     ///   function templates.
+    ///   - Incorrectly return C++ records in AVX registers on x86_64.
     Ver19,
 
     /// Conform to the underlying platform's C and C++ ABIs as closely
