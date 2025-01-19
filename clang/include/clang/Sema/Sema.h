@@ -153,6 +153,7 @@ enum class OverloadCandidateParamOrder : char;
 enum OverloadCandidateRewriteKind : unsigned;
 class OverloadCandidateSet;
 class Preprocessor;
+class Sema;
 class SemaAMDGPU;
 class SemaARM;
 class SemaAVR;
@@ -351,6 +352,15 @@ struct SkipBodyInfo {
   bool CheckSameAsPrevious = false;
   NamedDecl *Previous = nullptr;
   NamedDecl *New = nullptr;
+};
+
+/// Implementation of SemaProxy interface that enables constant evaluator
+/// to call Sema and modify AST, e.g. to instantiate templates.
+struct SemaProxyImpl final : SemaProxy {
+  Sema &SemaRef;
+  explicit SemaProxyImpl(Sema &SemaRef);
+  void InstantiateFunctionDefinition(SourceLocation PointOfInstantiation,
+                                     FunctionDecl *Function) override;
 };
 
 /// Describes the result of template argument deduction.
