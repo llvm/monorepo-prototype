@@ -12,6 +12,7 @@
 #include "hdr/types/time_t.h"
 #include "src/__support/CPP/limits.h"
 #include "src/time/time_constants.h"
+#include <time.h>
 
 #ifdef LIBC_TARGET_OS_IS_LINUX
 #include "src/time/linux/localtime_utils.h"
@@ -21,11 +22,12 @@
 namespace LIBC_NAMESPACE_DECL {
 namespace time_utils {
 
+LIBC_INLINE volatile int file_usage;
+
 // Update the "tm" structure's year, month, etc. members from seconds.
 // "total_seconds" is the number of seconds since January 1st, 1970.
 extern int64_t update_from_seconds(int64_t total_seconds, struct tm *tm);
 extern ErrorOr<File *> acquire_file(char *filename);
-LIBC_INLINE volatile int file_usage;
 extern void release_file(ErrorOr<File *> error_or_file);
 extern unsigned char is_dst(struct tm *tm);
 extern char *get_env_var(const char *var_name);
