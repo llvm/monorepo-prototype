@@ -10,7 +10,6 @@
 #define MLIR_TOOLS_MLIRQUERY_QUERY_H
 
 #include "Matcher/VariantValue.h"
-#include "mlir/Analysis/SliceAnalysis.h"
 #include "llvm/ADT/IntrusiveRefCntPtr.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/LineEditor/LineEditor.h"

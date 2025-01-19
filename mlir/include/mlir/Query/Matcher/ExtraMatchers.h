@@ -1,4 +1,5 @@
-//===- Matchers.h - Various common matchers ---------------------*- C++ -*-===//
+//===- ExtraMatchers.h - Various common matchers ---------------------*- C++
+//-*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -36,7 +37,6 @@ private:
   bool matches(Operation *op, SetVector<Operation *> &backwardSlice,
                QueryOptions &options, unsigned tempHops) {
 
-    bool validSlice = true;
     if (op->hasTrait<OpTrait::IsIsolatedFromAbove>()) {
       return false;
     }
@@ -56,16 +56,12 @@ private:
         Operation *parentOp = block->getParentOp();
 
         if (parentOp && backwardSlice.count(parentOp) == 0) {
-          if (parentOp->getNumRegions() == 1 &&
-              parentOp->getRegion(0).getBlocks().size() == 1) {
-            validSlice = false;
-            return;
-          };
-          matches(parentOp, backwardSlice, options, tempHops - 1);
+          assert(parentOp->getNumRegions() == 1 &&
+                 parentOp->getRegion(0).getBlocks().size() == 1);
+          matches(parentOp, backwardSlice, options, tempHops-1);
         }
       } else {
-        validSlice = false;
-        return;
+        llvm_unreachable("No definingOp and not a block argument.");
       }
     };
 
@@ -78,22 +74,13 @@ private:
           for (OpOperand &operand : op->getOpOperands()) {
             if (!descendents.contains(operand.get().getParentRegion()))
               processValue(operand.get());
-            if (!validSlice)
-              return;
           }
         });
       });
     }
 
-    llvm::for_each(op->getOperands(), [&](Value operand) {
-      processValue(operand);
-      if (!validSlice)
-        return;
-    });
+    llvm::for_each(op->getOperands(), processValue);
     backwardSlice.insert(op);
-    if (!validSlice) {
-      return false;
-    }
     return true;
   }
 
