@@ -10,7 +10,8 @@ import lldbgdbserverutils
 class DAPTestCaseBase(TestBase):
     # set timeout based on whether ASAN was enabled or not. Increase
     # timeout by a factor of 10 if ASAN is enabled.
-    timeoutval = 10 * (10 if ('ASAN_OPTIONS' in os.environ) else 1)
+    timeoutval = 10 * (10 if ("ASAN_OPTIONS" in os.environ) else 1)
+    lldbLogChannels = ["default"]
     NO_DEBUG_INFO_TESTCASE = True
 
     def create_debug_adaptor(self, lldbDAPEnv=None):
@@ -18,13 +19,36 @@ class DAPTestCaseBase(TestBase):
         self.assertTrue(
             is_exe(self.lldbDAPExec), "lldb-dap must exist and be executable"
         )
-        log_file_path = self.getBuildArtifact("dap.txt")
+
+        # DAP communication logs.
+        dap_log = self.getBuildArtifact("dap.txt")
+        # Enable lldb logs to aid in debugging failures.
+        lldb_log = self.getBuildArtifact("lldb.log")
+
+        init_commands = self.setUpCommands()
+        init_commands.append(
+            "log enable -Tpn -f {} lldb {}".format(
+                lldb_log, " ".join(self.lldbLogChannels)
+            )
+        )
+
         self.dap_server = dap_server.DebugAdaptorServer(
             executable=self.lldbDAPExec,
-            init_commands=self.setUpCommands(),
-            log_file=log_file_path,
+            init_commands=init_commands,
+            log_file=dap_log,
             env=lldbDAPEnv,
         )
+
+        def dump_log():
+            print("========= LLDB LOGS =========")
+            try:
+                with open(lldb_log, "r") as file:
+                    print(file.read())
+            except FileNotFoundError:
+                print("no lldb log available")
+            print("========= END =========")
+
+        self.addTearDownHook(dump_log)
 
     def build_and_create_debug_adaptor(self, lldbDAPEnv=None):
         self.build()

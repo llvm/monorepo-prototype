@@ -6,6 +6,11 @@
 //
 //===----------------------------------------------------------------------===/
 
+#include "OutputRedirector.h"
+#include "DAP.h"
+#include "llvm/ADT/StringRef.h"
+#include "llvm/Support/Error.h"
+#include <system_error>
 #if defined(_WIN32)
 #include <fcntl.h>
 #include <io.h>
@@ -13,51 +18,90 @@
 #include <unistd.h>
 #endif
 
-#include "DAP.h"
-#include "OutputRedirector.h"
-#include "llvm/ADT/StringRef.h"
+using llvm::createStringError;
+using llvm::Error;
+using llvm::Expected;
+using llvm::inconvertibleErrorCode;
+using llvm::StringRef;
 
-using namespace llvm;
+namespace {
+static bool SetCloexecFlag(int fd) {
+#if defined(FD_CLOEXEC)
+  int flags = ::fcntl(fd, F_GETFD);
+  if (flags == -1)
+    return false;
+  return (::fcntl(fd, F_SETFD, flags | FD_CLOEXEC) == 0);
+#else
+  return true;
+#endif
+}
+} // namespace
 
 namespace lldb_dap {
 
-Error RedirectFd(int fd, std::function<void(llvm::StringRef)> callback) {
-  int new_fd[2];
+Expected<int> OutputRedirector::GetWriteFileDescriptor() {
+  if (m_fd == -1)
+    return createStringError(std::errc::bad_file_descriptor,
+                             "write handle is not open for writing");
+
+  return m_fd;
+}
+
+Error OutputRedirector::RedirectTo(std::function<void(StringRef)> callback) {
+  int new_fd[2] = {0};
 #if defined(_WIN32)
-  if (_pipe(new_fd, 4096, O_TEXT) == -1) {
+  if (::_pipe(new_fd, 4096, O_TEXT) == -1) {
 #else
-  if (pipe(new_fd) == -1) {
+  if (::pipe(new_fd) == -1) {
 #endif
     int error = errno;
     return createStringError(inconvertibleErrorCode(),
-                             "Couldn't create new pipe for fd %d. %s", fd,
-                             strerror(error));
+                             "Couldn't create new pipe: %s", strerror(error));
   }
 
-  if (dup2(new_fd[1], fd) == -1) {
+  if (!SetCloexecFlag(new_fd[0]) || !SetCloexecFlag(new_fd[1])) {
     int error = errno;
     return createStringError(inconvertibleErrorCode(),
-                             "Couldn't override the fd %d. %s", fd,
+                             "Failed to set FD_CLOEXEC on pipe: %s",
                              strerror(error));
   }
 
   int read_fd = new_fd[0];
-  std::thread t([read_fd, callback]() {
+  m_fd = new_fd[1];
+
+  m_forwarder = std::thread([this, read_fd, callback]() {
     char buffer[OutputBufferSize];
-    while (true) {
-      ssize_t bytes_count = read(read_fd, &buffer, sizeof(buffer));
-      if (bytes_count == 0)
-        return;
-      if (bytes_count == -1) {
+    while (!m_stopped) {
+      ssize_t bytes_read = ::read(read_fd, &buffer, sizeof(buffer));
+      // EOF detected
+      if (bytes_read == 0 || m_stopped)
+        break;
+      if (bytes_read == -1) {
         if (errno == EAGAIN || errno == EINTR)
           continue;
         break;
       }
-      callback(StringRef(buffer, bytes_count));
+
+      callback(StringRef(buffer, bytes_read));
     }
   });
-  t.detach();
+
   return Error::success();
+}
+
+void OutputRedirector::Stop() {
+  m_stopped = true;
+
+  if (m_fd != -1) {
+    // Closing the pipe may not be sufficient to wake up the thread in case the
+    // write descriptor is duplicated (to stdout/err or to another process).
+    // Write a null byte to ensure the read call returns.
+    char buf[] = "\0";
+    ::write(m_fd, buf, sizeof(buf));
+    ::close(m_fd);
+    m_fd = -1;
+    m_forwarder.join();
+  }
 }
 
 } // namespace lldb_dap
