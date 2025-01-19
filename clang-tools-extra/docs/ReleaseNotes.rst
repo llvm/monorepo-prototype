@@ -162,6 +162,12 @@ New checks
 
   Finds nondeterministic usages of pointers in unordered containers.
 
+- New :doc:`bugprone-smartptr-reset-ambiguous-call
+  <clang-tidy/checks/bugprone/smartptr-reset-ambiguous-call>` check.
+
+  Finds potentially erroneous calls to ``reset`` method on smart pointers when
+  the pointee type also has a ``reset`` method.
+
 - New :doc:`bugprone-tagged-union-member-count
   <clang-tidy/checks/bugprone/tagged-union-member-count>` check.
 
