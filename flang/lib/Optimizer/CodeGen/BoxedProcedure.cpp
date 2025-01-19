@@ -272,10 +272,24 @@ public:
             // Create the thunk.
             auto module = embox->getParentOfType<mlir::ModuleOp>();
             FirOpBuilder builder(rewriter, module);
+            const auto triple{fir::getTargetTriple(module)};
             auto loc = embox.getLoc();
             mlir::Type i8Ty = builder.getI8Type();
             mlir::Type i8Ptr = builder.getRefType(i8Ty);
-            mlir::Type buffTy = SequenceType::get({32}, i8Ty);
+            // For AArch64, PPC32 and PPC64, the thunk is populated by a call to
+            // __trampoline_setup, which is defined in
+            // compiler-rt/lib/builtins/trampoline_setup.c and requires the
+            // thunk size greater than 32 bytes.  For RISCV and x86_64, the
+            // thunk setup doesn't go through __trampoline_setup and fits in 32
+            // bytes.
+            fir::SequenceType::Extent thunkSize = 32;
+            if (triple.isPPC32())
+              thunkSize = 40;
+            else if (triple.isPPC64())
+              thunkSize = 48;
+            else if (triple.isAArch64())
+              thunkSize = 36;
+            mlir::Type buffTy = SequenceType::get({thunkSize}, i8Ty);
             auto buffer = builder.create<AllocaOp>(loc, buffTy);
             mlir::Value closure =
                 builder.createConvert(loc, i8Ptr, embox.getHost());
