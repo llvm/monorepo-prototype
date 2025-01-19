@@ -4230,6 +4230,12 @@ def MoveIfNsoexcept : CxxLibBuiltin<"utility"> {
   let Namespace = "std";
 }
 
+def Invoke : Builtin {
+  let Spellings = ["__builtin_invoke"];
+  let Attributes = [CustomTypeChecking, Constexpr];
+  let Prototype = "void(...)";
+}
+
 def Annotation : Builtin {
   let Spellings = ["__builtin_annotation"];
   let Attributes = [NoThrow, CustomTypeChecking];
