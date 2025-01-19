@@ -16,9 +16,7 @@
 namespace LIBC_NAMESPACE_DECL {
 namespace time_utils {
 
-#ifdef LIBC_TARGET_OS_IS_LINUX
-extern char **environ;
-#endif
+char **environ;
 
 static int64_t computeRemainingYears(int64_t daysPerYears,
                                      int64_t quotientYears,
