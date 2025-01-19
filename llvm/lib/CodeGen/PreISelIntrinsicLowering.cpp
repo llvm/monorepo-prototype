@@ -33,6 +33,7 @@
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/Scalar/LowerConstantIntrinsics.h"
 #include "llvm/Transforms/Utils/LowerMemIntrinsics.h"
+#include "llvm/Transforms/Utils/LowerVectorIntrinsics.h"
 
 using namespace llvm;
 
@@ -452,6 +453,21 @@ bool PreISelIntrinsicLowering::lowerIntrinsics(Module &M) const {
       break;
     case Intrinsic::objc_sync_exit:
       Changed |= lowerObjCCall(F, "objc_sync_exit");
+      break;
+    case Intrinsic::exp:
+    case Intrinsic::exp2:
+      Changed |= forEachCall(F, [&](CallInst *CI) {
+        unsigned Op = ISD::FEXP;
+        if (F.getIntrinsicID() == Intrinsic::exp2)
+          Op = ISD::FEXP2;
+        Type *Ty = CI->getArgOperand(0)->getType();
+        if (!Ty->isVectorTy() || !Ty->isScalableTy())
+          return false;
+        const TargetLowering *TL = TM->getSubtargetImpl(F)->getTargetLowering();
+        if (!TL->isOperationExpand(Op, EVT::getEVT(Ty)))
+          return false;
+        return lowerUnaryVectorIntrinsicAsLoop(M, CI);
+      });
       break;
     }
   }
