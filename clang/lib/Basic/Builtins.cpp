@@ -14,6 +14,7 @@
 #include "BuiltinTargetFeatures.h"
 #include "clang/Basic/IdentifierTable.h"
 #include "clang/Basic/LangOptions.h"
+#include "clang/Basic/TargetBuiltins.h"
 #include "clang/Basic/TargetInfo.h"
 #include "llvm/ADT/StringRef.h"
 using namespace clang;
@@ -29,54 +30,132 @@ const char *HeaderDesc::getName() const {
   llvm_unreachable("Unknown HeaderDesc::HeaderID enum");
 }
 
-static constexpr Builtin::Info BuiltinInfo[] = {
-    {"not a builtin function", nullptr, nullptr, nullptr, HeaderDesc::NO_HEADER,
-     ALL_LANGUAGES},
-#define BUILTIN(ID, TYPE, ATTRS)                                               \
-  {#ID, TYPE, ATTRS, nullptr, HeaderDesc::NO_HEADER, ALL_LANGUAGES},
-#define LANGBUILTIN(ID, TYPE, ATTRS, LANGS)                                    \
-  {#ID, TYPE, ATTRS, nullptr, HeaderDesc::NO_HEADER, LANGS},
-#define LIBBUILTIN(ID, TYPE, ATTRS, HEADER, LANGS)                             \
-  {#ID, TYPE, ATTRS, nullptr, HeaderDesc::HEADER, LANGS},
-#include "clang/Basic/Builtins.inc"
-};
+static constexpr unsigned NumBuiltins = Builtin::FirstTSBuiltin;
 
-const Builtin::Info &Builtin::Context::getRecord(unsigned ID) const {
-  if (ID < Builtin::FirstTSBuiltin)
-    return BuiltinInfo[ID];
-  assert(((ID - Builtin::FirstTSBuiltin) <
-          (TSRecords.size() + AuxTSRecords.size())) &&
+#define GET_BUILTIN_STR_TABLE
+#include "clang/Basic/Builtins.inc"
+#undef GET_BUILTIN_STR_TABLE
+
+static constexpr Builtin::Info BuiltinInfos[] = {
+    Builtin::Info{}, // No-builtin info entry.
+#define GET_BUILTIN_INFOS
+#include "clang/Basic/Builtins.inc"
+#undef GET_BUILTIN_INFOS
+};
+static_assert(std::size(BuiltinInfos) == NumBuiltins);
+
+std::pair<const Builtin::InfosShard &, const Builtin::Info &>
+Builtin::Context::getShardAndInfo(unsigned ID) const {
+  assert((ID < (Builtin::FirstTSBuiltin + NumTargetBuiltins +
+                NumAuxTargetBuiltins)) &&
          "Invalid builtin ID!");
-  if (isAuxBuiltinID(ID))
-    return AuxTSRecords[getAuxBuiltinID(ID) - Builtin::FirstTSBuiltin];
-  return TSRecords[ID - Builtin::FirstTSBuiltin];
+
+  ArrayRef<InfosShard> Shards = BuiltinShards;
+  if (isAuxBuiltinID(ID)) {
+    Shards = AuxTargetShards;
+    ID = getAuxBuiltinID(ID) - Builtin::FirstTSBuiltin;
+  } else if (ID >= Builtin::FirstTSBuiltin) {
+    Shards = TargetShards;
+    ID -= Builtin::FirstTSBuiltin;
+  }
+
+  // Loop over the shards to find the one matching this ID. We don't expect to
+  // have many shards and so its better to search linearly than with a binary
+  // search.
+  for (const auto &Shard : Shards) {
+    if (ID < Shard.Infos.size()) {
+      return {Shard, Shard.Infos[ID]};
+    }
+
+    ID -= Shard.Infos.size();
+  }
+  llvm_unreachable("Invalid target builtin shard structure!");
 }
+
+std::string Builtin::Info::getName(const Builtin::InfosShard &Shard) const {
+  return (Twine(Shard.NamePrefix) + (*Shard.Strings)[Offsets.Name]).str();
+}
+
+/// Return the identifier name for the specified builtin,
+/// e.g. "__builtin_abs".
+std::string Builtin::Context::getName(unsigned ID) const {
+  const auto &[Shard, I] = getShardAndInfo(ID);
+  return I.getName(Shard);
+}
+
+std::string Builtin::Context::getQuotedName(unsigned ID) const {
+  const auto &[Shard, I] = getShardAndInfo(ID);
+  return (Twine("'") + Shard.NamePrefix + (*Shard.Strings)[I.Offsets.Name] +
+          "'")
+      .str();
+}
+
+const char *Builtin::Context::getTypeString(unsigned ID) const {
+  const auto &[Shard, I] = getShardAndInfo(ID);
+  return (*Shard.Strings)[I.Offsets.Type].data();
+}
+
+const char *Builtin::Context::getAttributesString(unsigned ID) const {
+  const auto &[Shard, I] = getShardAndInfo(ID);
+  return (*Shard.Strings)[I.Offsets.Attributes].data();
+}
+
+const char *Builtin::Context::getRequiredFeatures(unsigned ID) const {
+  const auto &[Shard, I] = getShardAndInfo(ID);
+  return (*Shard.Strings)[I.Offsets.Features].data();
+}
+
+Builtin::Context::Context() : BuiltinShards{{&BuiltinStrings, BuiltinInfos}} {}
 
 void Builtin::Context::InitializeTarget(const TargetInfo &Target,
                                         const TargetInfo *AuxTarget) {
-  assert(TSRecords.empty() && "Already initialized target?");
-  TSRecords = Target.getTargetBuiltins();
-  if (AuxTarget)
-    AuxTSRecords = AuxTarget->getTargetBuiltins();
+  assert(TargetShards.empty() && "Already initialized target?");
+  assert(NumTargetBuiltins == 0 && "Already initialized target?");
+  TargetShards = Target.getTargetBuiltins();
+  for (const auto &Shard : TargetShards)
+    NumTargetBuiltins += Shard.Infos.size();
+  if (AuxTarget) {
+    AuxTargetShards = AuxTarget->getTargetBuiltins();
+    for (const auto &Shard : AuxTargetShards)
+      NumAuxTargetBuiltins += Shard.Infos.size();
+  }
+
+  // FIXME: HACK FOR DEBUG
+  if (Target.getTriple().isX86())
+    DebugHackTargetIsX86 = true;
+  else if (Target.getTriple().isAArch64())
+    DebugHackTargetIsAArch64 = true;
+  else if (Target.getTriple().isARM())
+    DebugHackTargetIsARM = true;
+  else if (Target.getTriple().getArch() == llvm::Triple::hexagon)
+    DebugHackTargetIsHexagon = true;
+  else if (Target.getTriple().isNVPTX())
+    DebugHackTargetIsNVPTX = true;
 }
 
 bool Builtin::Context::isBuiltinFunc(llvm::StringRef FuncName) {
   bool InStdNamespace = FuncName.consume_front("std-");
-  for (unsigned i = Builtin::NotBuiltin + 1; i != Builtin::FirstTSBuiltin;
-       ++i) {
-    if (FuncName == BuiltinInfo[i].Name &&
-        (bool)strchr(BuiltinInfo[i].Attributes, 'z') == InStdNamespace)
-      return strchr(BuiltinInfo[i].Attributes, 'f') != nullptr;
-  }
+  for (const auto &Shard : {InfosShard{&BuiltinStrings, BuiltinInfos}})
+    if (llvm::StringRef FuncNameSuffix = FuncName;
+        FuncNameSuffix.consume_front(Shard.NamePrefix))
+      for (const auto &I : Shard.Infos)
+        if (FuncNameSuffix == (*Shard.Strings)[I.Offsets.Name] &&
+            (bool)strchr((*Shard.Strings)[I.Offsets.Attributes].data(), 'z') ==
+                InStdNamespace)
+          return strchr((*Shard.Strings)[I.Offsets.Attributes].data(), 'f') !=
+                 nullptr;
 
   return false;
 }
 
 /// Is this builtin supported according to the given language options?
-static bool builtinIsSupported(const Builtin::Info &BuiltinInfo,
+static bool builtinIsSupported(const llvm::StringTable &Strings,
+                               const Builtin::Info &BuiltinInfo,
                                const LangOptions &LangOpts) {
+  auto AttributesStr = Strings[BuiltinInfo.Offsets.Attributes];
+
   /* Builtins Unsupported */
-  if (LangOpts.NoBuiltin && strchr(BuiltinInfo.Attributes, 'f') != nullptr)
+  if (LangOpts.NoBuiltin && strchr(AttributesStr.data(), 'f') != nullptr)
     return false;
   /* CorBuiltins Unsupported */
   if (!LangOpts.Coroutines && (BuiltinInfo.Langs & COR_LANG))
@@ -123,7 +202,7 @@ static bool builtinIsSupported(const Builtin::Info &BuiltinInfo,
   if (!LangOpts.CPlusPlus && BuiltinInfo.Langs == CXX_LANG)
     return false;
   /* consteval Unsupported */
-  if (!LangOpts.CPlusPlus20 && strchr(BuiltinInfo.Attributes, 'G') != nullptr)
+  if (!LangOpts.CPlusPlus20 && strchr(AttributesStr.data(), 'G') != nullptr)
     return false;
   return true;
 }
@@ -132,22 +211,62 @@ static bool builtinIsSupported(const Builtin::Info &BuiltinInfo,
 /// appropriate builtin ID # and mark any non-portable builtin identifiers as
 /// such.
 void Builtin::Context::initializeBuiltins(IdentifierTable &Table,
-                                          const LangOptions& LangOpts) {
-  // Step #1: mark all target-independent builtins with their ID's.
-  for (unsigned i = Builtin::NotBuiltin + 1; i != Builtin::FirstTSBuiltin; ++i)
-    if (builtinIsSupported(BuiltinInfo[i], LangOpts)) {
-      Table.get(BuiltinInfo[i].Name).setBuiltinID(i);
-    }
+                                          const LangOptions &LangOpts) {
+  {
+    unsigned ID = 0;
+    // Step #1: mark all target-independent builtins with their ID's.
+    for (const auto &Shard : BuiltinShards)
+      for (const auto &I : Shard.Infos) {
+        // If this is a real builtin (ID != 0) and is supported, add it.
+        if (ID != 0 && builtinIsSupported(*Shard.Strings, I, LangOpts))
+          Table.get(I.getName(Shard)).setBuiltinID(ID);
+        ++ID;
+      }
+    assert(ID == FirstTSBuiltin && "Should have added all non-target IDs!");
 
-  // Step #2: Register target-specific builtins.
-  for (unsigned i = 0, e = TSRecords.size(); i != e; ++i)
-    if (builtinIsSupported(TSRecords[i], LangOpts))
-      Table.get(TSRecords[i].Name).setBuiltinID(i + Builtin::FirstTSBuiltin);
+    // Step #2: Register target-specific builtins.
+    for (const auto &Shard : TargetShards)
+      for (const auto &I : Shard.Infos) {
+        // FIXME: Hacks for debugging
+        if (DebugHackTargetIsX86 && ID == X86::BI__builtin_ia32_packsswb128) {
+          if (I.getName(Shard) != "__builtin_ia32_packsswb128")
+            llvm::report_fatal_error(
+                llvm::Twine("Name for __builtin_ia32_packsswb128 is: '") +
+                I.getName(Shard) + "'!!!");
+        } else if (DebugHackTargetIsAArch64 &&
+                   ID == SVE::BI__builtin_sve_svundef_u8) {
+          if (I.getName(Shard) != "__builtin_sve_svundef_u8")
+            llvm::report_fatal_error(
+                llvm::Twine("Name for __builtin_sve_svundef_u8 is: '") +
+                I.getName(Shard) + "'!!!");
+        } else if (DebugHackTargetIsARM && ID == ARM::BI__ldrexd) {
+          if (I.getName(Shard) != "__ldrexd")
+            llvm::report_fatal_error(llvm::Twine("Name for __ldrexd is: '") +
+                                     I.getName(Shard) + "'!!!");
+        } else if (DebugHackTargetIsHexagon &&
+                   ID == Hexagon::BI__builtin_HEXAGON_V6_vsub_sf_bf) {
+          if (I.getName(Shard) != "__builtin_HEXAGON_V6_vsub_sf_bf")
+            llvm::report_fatal_error(
+                llvm::Twine("Name for __builtin_HEXAGON_V6_vsub_sf_bf is: '") +
+                I.getName(Shard) + "'!!!");
+        } else if (DebugHackTargetIsNVPTX && ID == NVPTX::BI__nvvm_vote_all) {
+          if (I.getName(Shard) != "__nvvm_vote_all")
+            llvm::report_fatal_error(
+                llvm::Twine("Name for __nvvm_vote_all is: '") +
+                I.getName(Shard) + "'!!!");
+        }
+        if (builtinIsSupported(*Shard.Strings, I, LangOpts))
+          Table.get(I.getName(Shard)).setBuiltinID(ID);
+        ++ID;
+      }
 
-  // Step #3: Register target-specific builtins for AuxTarget.
-  for (unsigned i = 0, e = AuxTSRecords.size(); i != e; ++i)
-    Table.get(AuxTSRecords[i].Name)
-        .setBuiltinID(i + Builtin::FirstTSBuiltin + TSRecords.size());
+    // Step #3: Register target-specific builtins for AuxTarget.
+    for (const auto &Shard : AuxTargetShards)
+      for (const auto &I : Shard.Infos) {
+        Table.get(I.getName(Shard)).setBuiltinID(ID);
+        ++ID;
+      }
+  }
 
   // Step #4: Unregister any builtins specified by -fno-builtin-foo.
   for (llvm::StringRef Name : LangOpts.NoBuiltinFuncs) {
@@ -163,12 +282,8 @@ void Builtin::Context::initializeBuiltins(IdentifierTable &Table,
   }
 }
 
-std::string Builtin::Context::getQuotedName(unsigned ID) const {
-  return (llvm::Twine("'") + getName(ID) + "'").str();
-}
-
 unsigned Builtin::Context::getRequiredVectorWidth(unsigned ID) const {
-  const char *WidthPos = ::strchr(getRecord(ID).Attributes, 'V');
+  const char *WidthPos = ::strchr(getAttributesString(ID), 'V');
   if (!WidthPos)
     return 0;
 
@@ -191,7 +306,7 @@ bool Builtin::Context::isLike(unsigned ID, unsigned &FormatIdx,
   assert(::toupper(Fmt[0]) == Fmt[1] &&
          "Format string is not in the form \"xX\"");
 
-  const char *Like = ::strpbrk(getRecord(ID).Attributes, Fmt);
+  const char *Like = ::strpbrk(getAttributesString(ID), Fmt);
   if (!Like)
     return false;
 
@@ -218,7 +333,7 @@ bool Builtin::Context::isScanfLike(unsigned ID, unsigned &FormatIdx,
 
 bool Builtin::Context::performsCallback(unsigned ID,
                                         SmallVectorImpl<int> &Encoding) const {
-  const char *CalleePos = ::strchr(getRecord(ID).Attributes, 'C');
+  const char *CalleePos = ::strchr(getAttributesString(ID), 'C');
   if (!CalleePos)
     return false;
 
