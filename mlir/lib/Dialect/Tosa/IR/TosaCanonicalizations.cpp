@@ -361,7 +361,7 @@ struct ClampClampOptimization : public OpRewritePattern<tosa::ClampOp> {
           op, op.getType(), clampOp.getInput(),
           rewriter.getI64IntegerAttr(minInt),
           rewriter.getI64IntegerAttr(maxInt), rewriter.getF32FloatAttr(minFp),
-          rewriter.getF32FloatAttr(maxFp));
+          rewriter.getF32FloatAttr(maxFp), rewriter.getStringAttr("IGNORE"));
       return success();
     }
 
