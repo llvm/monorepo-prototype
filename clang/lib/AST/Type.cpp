@@ -2527,9 +2527,7 @@ bool Type::isSVESizelessBuiltinType() const {
 #define SVE_PREDICATE_TYPE(Name, MangledName, Id, SingletonId)                 \
   case BuiltinType::Id:                                                        \
     return true;
-#define AARCH64_VECTOR_TYPE(Name, MangledName, Id, SingletonId)                \
-  case BuiltinType::Id:                                                        \
-    return false;
+#define SVE_TYPE(Name, Id, SingletonId)
 #include "clang/Basic/AArch64SVEACLETypes.def"
     default:
       return false;
@@ -2570,6 +2568,21 @@ bool Type::isSveVLSBuiltinType() const {
     case BuiltinType::SveBoolx2:
     case BuiltinType::SveBoolx4:
     case BuiltinType::SveMFloat8:
+      return true;
+    default:
+      return false;
+    }
+  }
+  return false;
+}
+
+bool Type::isNeonVectorBuiltinType() const {
+  if (const BuiltinType *BT = getAs<BuiltinType>()) {
+    switch (BT->getKind()) {
+#define AARCH64_VECTOR_TYPE(Name, MangledName, Id, SingletonId)                \
+  case BuiltinType::Id:
+#define SVE_TYPE(Name, Id, SingletonId)
+#include "clang/Basic/AArch64SVEACLETypes.def"
       return true;
     default:
       return false;
