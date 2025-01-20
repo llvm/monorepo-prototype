@@ -798,6 +798,9 @@ Improvements to Clang's diagnostics
     }
 - Diagnose invalid declarators in the declaration of constructors and destructors (#GH121706).
 
+- A new off-by-default warning ``-Wms-bitfield-compatibility`` has been added to alert to cases where bit-field
+  packing may differ under the MS struct ABI (#GH117428).
+
 Improvements to Clang's time-trace
 ----------------------------------
 
