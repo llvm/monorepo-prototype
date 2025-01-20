@@ -947,9 +947,14 @@ MachineInstr *SIWholeQuadMode::lowerKillI1(MachineBasicBlock &MBB,
         LIS->RemoveMachineInstrFromMaps(MI);
       } else {
         assert(MBB.succ_size() == 1);
-        NewTerm = BuildMI(MBB, MI, DL, TII->get(AMDGPU::S_BRANCH))
-                      .addMBB(*MBB.succ_begin());
-        LIS->ReplaceMachineInstrInMaps(MI, *NewTerm);
+        bool IsLastTerminator = MI.getReverseIterator() == MBB.rbegin();
+        if (IsLastTerminator) {
+          NewTerm = BuildMI(MBB, MI, DL, TII->get(AMDGPU::S_BRANCH))
+                        .addMBB(*MBB.succ_begin());
+          LIS->ReplaceMachineInstrInMaps(MI, *NewTerm);
+        } else {
+          LIS->RemoveMachineInstrFromMaps(MI);
+        }
       }
       MBB.remove(&MI);
       return NewTerm;
