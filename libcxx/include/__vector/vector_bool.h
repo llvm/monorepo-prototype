@@ -417,6 +417,8 @@ private:
     __guard.__complete();
   }
 
+  _LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI void __realloc_and_copy(const vector& __v);
+
   template <class _Iterator, class _Sentinel>
   _LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI void __assign_with_sentinel(_Iterator __first, _Sentinel __last);
 
@@ -545,7 +547,7 @@ vector<bool, _Allocator>::__recommend(size_type __new_size) const {
   const size_type __cap = capacity();
   if (__cap >= __ms / 2)
     return __ms;
-  return std::max(2 * __cap, __align_it(__new_size));
+  return std::max<size_type>(2 * __cap, __align_it(__new_size));
 }
 
 //  Default constructs __n objects starting at __end_
@@ -713,18 +715,26 @@ _LIBCPP_CONSTEXPR_SINCE_CXX20 vector<bool, _Allocator>::vector(const vector& __v
   }
 }
 
+// This function copies each storage word as a whole, which is substantially more efficient than copying
+// individual bits within each word.
+template <class _Allocator>
+_LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI void
+vector<bool, _Allocator>::__realloc_and_copy(const vector& __v) {
+  if (__v.__size_) {
+    if (__v.__size_ > capacity()) {
+      __vdeallocate();
+      __vallocate(__v.__size_);
+    }
+    std::copy(__v.__begin_, __v.__begin_ + __external_cap_to_internal(__v.__size_), __begin_);
+  }
+  __size_ = __v.__size_;
+}
+
 template <class _Allocator>
 _LIBCPP_CONSTEXPR_SINCE_CXX20 vector<bool, _Allocator>& vector<bool, _Allocator>::operator=(const vector& __v) {
   if (this != std::addressof(__v)) {
     __copy_assign_alloc(__v);
-    if (__v.__size_) {
-      if (__v.__size_ > capacity()) {
-        __vdeallocate();
-        __vallocate(__v.__size_);
-      }
-      std::copy(__v.__begin_, __v.__begin_ + __external_cap_to_internal(__v.__size_), __begin_);
-    }
-    __size_ = __v.__size_;
+    __realloc_and_copy(__v);
   }
   return *this;
 }
@@ -772,7 +782,7 @@ vector<bool, _Allocator>::operator=(vector&& __v)
 template <class _Allocator>
 _LIBCPP_CONSTEXPR_SINCE_CXX20 void vector<bool, _Allocator>::__move_assign(vector& __c, false_type) {
   if (__alloc_ != __c.__alloc_)
-    assign(__c.begin(), __c.end());
+    __realloc_and_copy(__c);
   else
     __move_assign(__c, true_type());
 }
