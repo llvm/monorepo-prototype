@@ -2099,9 +2099,12 @@ void VPlanTransforms::handleUncountableEarlyExit(
       Builder.createNaryOp(VPInstruction::AnyOf, {EarlyExitTakenCond});
 
   VPBasicBlock *NewMiddle = Plan.createVPBasicBlock("middle.split");
+  VPBasicBlock *EarlyExitVPBB = Plan.createVPBasicBlock("vector.early.exit");
   VPBlockUtils::insertOnEdge(LoopRegion, MiddleVPBB, NewMiddle);
-  VPBlockUtils::connectBlocks(NewMiddle, VPEarlyExitBlock);
+  VPBlockUtils::connectBlocks(NewMiddle, EarlyExitVPBB);
   NewMiddle->swapSuccessors();
+
+  VPBlockUtils::connectBlocks(EarlyExitVPBB, VPEarlyExitBlock);
 
   VPBuilder MiddleBuilder(NewMiddle);
   MiddleBuilder.createNaryOp(VPInstruction::BranchOnCond, {IsEarlyExitTaken});

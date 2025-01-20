@@ -306,6 +306,24 @@ template <> struct GraphTraits<VPlan *> {
   }
 };
 
+inline bool VPlan::isExitBlock(VPBlockBase *VPBB) {
+  if (!isa<VPIRBasicBlock>(VPBB) || VPBB->getNumSuccessors() ||
+      VPBB == getScalarHeader())
+    return false;
+
+  VPRegionBlock *RegionBlock = getVectorLoopRegion();
+  if (!RegionBlock)
+    return false;
+
+  // The block must be a successor of the region block.
+  for (auto *OtherVPBB :
+       vp_depth_first_shallow(RegionBlock->getSingleSuccessor()))
+    if (OtherVPBB == VPBB)
+      return true;
+
+  return false;
+}
+
 inline auto VPlan::getExitBlocks() {
   VPBlockBase *ScalarHeader = getScalarHeader();
   return make_filter_range(
