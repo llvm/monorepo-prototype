@@ -142,10 +142,8 @@ line_entry_helper(Target &target, const SymbolContext &sc, Symbol *symbol,
 
   CPPLanguageRuntime::LibCppStdFunctionCallableInfo optional_info;
 
-  AddressRange range;
-  sc.GetAddressRange(eSymbolContextEverything, 0, false, range);
-
-  Address address = range.GetBaseAddress();
+  Address address =
+      sc.GetAddress(eSymbolContextFunction | eSymbolContextSymbol, false);
 
   Address addr;
   if (target.ResolveLoadAddress(address.GetCallableLoadAddress(&target),
