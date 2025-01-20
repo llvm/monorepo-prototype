@@ -2536,7 +2536,8 @@ public:
   bool isPointerType() const;
   bool isPointerOrReferenceType() const;
   bool isSignableType() const;
-  bool isAnyPointerType() const;   // Any C pointer or ObjC object pointer
+  bool isPointerOrObjCObjectPointerType()
+      const; // Any C pointer or ObjC object pointer
   bool isCountAttributedType() const;
   bool isBlockPointerType() const;
   bool isVoidPointerType() const;
@@ -2862,13 +2863,23 @@ public:
   /// This should never be used when type qualifiers are meaningful.
   const Type *getArrayElementTypeNoTypeQual() const;
 
-  /// If this is a pointer type, return the pointee type.
+  /// If this is a C or ObjC pointer type, return the pointee type. Notably,
+  /// this does not handle things like member pointers or block pointers.
+  ///
   /// If this is an array type, return the array element type.
+  ///
   /// This should never be used when type qualifiers are meaningful.
-  const Type *getPointeeOrArrayElementType() const;
+  const Type *getPointerOrObjCPointerOrArrayElementType() const;
 
-  /// If this is a pointer, ObjC object pointer, or block
-  /// pointer, this returns the respective pointee.
+  /// Return the 'pointee type' for any of the following kinds of types,
+  /// and an empty QualType otherwise.
+  ///
+  ///   - PointerType
+  ///   - ObjCObjectPointerType
+  ///   - BlockPointerType
+  ///   - ReferenceType
+  ///   - MemberPointerType
+  ///   - DecayedType
   QualType getPointeeType() const;
 
   /// Return the specified type with any "sugar" removed from the type,
@@ -8196,7 +8207,7 @@ inline bool Type::isPointerOrReferenceType() const {
   return isPointerType() || isReferenceType();
 }
 
-inline bool Type::isAnyPointerType() const {
+inline bool Type::isPointerOrObjCObjectPointerType() const {
   return isPointerType() || isObjCObjectPointerType();
 }
 
@@ -8656,8 +8667,8 @@ inline bool Type::isUndeducedType() const {
 inline bool Type::isOverloadableType() const {
   if (!isDependentType())
     return isRecordType() || isEnumeralType();
-  return !isArrayType() && !isFunctionType() && !isAnyPointerType() &&
-         !isMemberPointerType();
+  return !isArrayType() && !isFunctionType() &&
+         !isPointerOrObjCObjectPointerType() && !isMemberPointerType();
 }
 
 /// Determines whether this type is written as a typedef-name.
@@ -8690,9 +8701,9 @@ inline const Type *Type::getBaseElementTypeUnsafe() const {
   return type;
 }
 
-inline const Type *Type::getPointeeOrArrayElementType() const {
+inline const Type *Type::getPointerOrObjCPointerOrArrayElementType() const {
   const Type *type = this;
-  if (type->isAnyPointerType())
+  if (type->isPointerOrObjCObjectPointerType())
     return type->getPointeeType().getTypePtr();
   else if (type->isArrayType())
     return type->getBaseElementTypeUnsafe();
