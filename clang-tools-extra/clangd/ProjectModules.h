@@ -12,14 +12,11 @@
 #include "support/Function.h"
 #include "support/Path.h"
 #include "support/ThreadsafeFS.h"
+#include "clang/Tooling/CompilationDatabase.h"
 
 #include <memory>
 
 namespace clang {
-namespace tooling {
-class CompileCommand;
-} // namespace tooling
-
 namespace clangd {
 
 /// An interface to query the modules information in the project.

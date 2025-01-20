@@ -39,6 +39,10 @@ public:
 
   void addFile(llvm::StringRef Path, llvm::StringRef Contents);
 
+  std::unique_ptr<ProjectModules> getProjectModules(PathRef) const override {
+    return scanningProjectModules(MockedCDBPtr, TFS);
+  }
+
 private:
   class MockClangCompilationDatabase : public tooling::CompilationDatabase {
   public:
