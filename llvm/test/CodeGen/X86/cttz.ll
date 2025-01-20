@@ -134,7 +134,7 @@ define i64 @cttz_i64(i64 %x)  {
 ; X86-NOCMOV-NEXT:    jne .LBB3_1
 ; X86-NOCMOV-NEXT:  # %bb.2:
 ; X86-NOCMOV-NEXT:    rep bsfl {{[0-9]+}}(%esp), %eax
-; X86-NOCMOV-NEXT:    addl $32, %eax
+; X86-NOCMOV-NEXT:    orl $32, %eax
 ; X86-NOCMOV-NEXT:    xorl %edx, %edx
 ; X86-NOCMOV-NEXT:    retl
 ; X86-NOCMOV-NEXT:  .LBB3_1:
@@ -147,7 +147,7 @@ define i64 @cttz_i64(i64 %x)  {
 ; X86-CMOV-NEXT:    movl {{[0-9]+}}(%esp), %ecx
 ; X86-CMOV-NEXT:    rep bsfl %ecx, %edx
 ; X86-CMOV-NEXT:    rep bsfl {{[0-9]+}}(%esp), %eax
-; X86-CMOV-NEXT:    addl $32, %eax
+; X86-CMOV-NEXT:    orl $32, %eax
 ; X86-CMOV-NEXT:    testl %ecx, %ecx
 ; X86-CMOV-NEXT:    cmovnel %edx, %eax
 ; X86-CMOV-NEXT:    xorl %edx, %edx
@@ -393,9 +393,8 @@ define i64 @cttz_i64_zero_test(i64 %n) {
 ;
 ; X64-LABEL: cttz_i64_zero_test:
 ; X64:       # %bb.0:
-; X64-NEXT:    bsfq %rdi, %rcx
 ; X64-NEXT:    movl $64, %eax
-; X64-NEXT:    cmovneq %rcx, %rax
+; X64-NEXT:    rep bsfq %rdi, %rax
 ; X64-NEXT:    retq
 ;
 ; X86-CLZ-LABEL: cttz_i64_zero_test:

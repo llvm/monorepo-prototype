@@ -325,10 +325,11 @@ declare i64 @llvm.cttz.i64(i64, i1)
 define i64 @cttz_64_eq_select(i64 %v) nounwind {
 ; NOBMI-LABEL: cttz_64_eq_select:
 ; NOBMI:       # %bb.0:
-; NOBMI-NEXT:    bsfq %rdi, %rcx
-; NOBMI-NEXT:    movq $-1, %rax
+; NOBMI-NEXT:    rep bsfq %rdi, %rcx
+; NOBMI-NEXT:    addq $6, %rcx
+; NOBMI-NEXT:    testq %rdi, %rdi
+; NOBMI-NEXT:    movl $5, %eax
 ; NOBMI-NEXT:    cmovneq %rcx, %rax
-; NOBMI-NEXT:    addq $6, %rax
 ; NOBMI-NEXT:    retq
 ;
 ; BMI-LABEL: cttz_64_eq_select:
@@ -349,10 +350,11 @@ define i64 @cttz_64_eq_select(i64 %v) nounwind {
 define i64 @cttz_64_ne_select(i64 %v) nounwind {
 ; NOBMI-LABEL: cttz_64_ne_select:
 ; NOBMI:       # %bb.0:
-; NOBMI-NEXT:    bsfq %rdi, %rcx
-; NOBMI-NEXT:    movq $-1, %rax
+; NOBMI-NEXT:    rep bsfq %rdi, %rcx
+; NOBMI-NEXT:    addq $6, %rcx
+; NOBMI-NEXT:    testq %rdi, %rdi
+; NOBMI-NEXT:    movl $5, %eax
 ; NOBMI-NEXT:    cmovneq %rcx, %rax
-; NOBMI-NEXT:    addq $6, %rax
 ; NOBMI-NEXT:    retq
 ;
 ; BMI-LABEL: cttz_64_ne_select:
@@ -374,10 +376,11 @@ declare i32 @llvm.cttz.i32(i32, i1)
 define i32 @cttz_32_eq_select(i32 %v) nounwind {
 ; NOBMI-LABEL: cttz_32_eq_select:
 ; NOBMI:       # %bb.0:
-; NOBMI-NEXT:    bsfl %edi, %ecx
-; NOBMI-NEXT:    movl $-1, %eax
+; NOBMI-NEXT:    rep bsfl %edi, %ecx
+; NOBMI-NEXT:    addl $6, %ecx
+; NOBMI-NEXT:    testl %edi, %edi
+; NOBMI-NEXT:    movl $5, %eax
 ; NOBMI-NEXT:    cmovnel %ecx, %eax
-; NOBMI-NEXT:    addl $6, %eax
 ; NOBMI-NEXT:    retq
 ;
 ; BMI-LABEL: cttz_32_eq_select:
@@ -398,10 +401,11 @@ define i32 @cttz_32_eq_select(i32 %v) nounwind {
 define i32 @cttz_32_ne_select(i32 %v) nounwind {
 ; NOBMI-LABEL: cttz_32_ne_select:
 ; NOBMI:       # %bb.0:
-; NOBMI-NEXT:    bsfl %edi, %ecx
-; NOBMI-NEXT:    movl $-1, %eax
+; NOBMI-NEXT:    rep bsfl %edi, %ecx
+; NOBMI-NEXT:    addl $6, %ecx
+; NOBMI-NEXT:    testl %edi, %edi
+; NOBMI-NEXT:    movl $5, %eax
 ; NOBMI-NEXT:    cmovnel %ecx, %eax
-; NOBMI-NEXT:    addl $6, %eax
 ; NOBMI-NEXT:    retq
 ;
 ; BMI-LABEL: cttz_32_ne_select:
@@ -423,10 +427,10 @@ define i32 @cttz_32_ne_select(i32 %v) nounwind {
 define i32 @cttz_32_eq_select_ffs(i32 %v) nounwind {
 ; NOBMI-LABEL: cttz_32_eq_select_ffs:
 ; NOBMI:       # %bb.0:
-; NOBMI-NEXT:    bsfl %edi, %ecx
-; NOBMI-NEXT:    movl $-1, %eax
-; NOBMI-NEXT:    cmovnel %ecx, %eax
+; NOBMI-NEXT:    rep bsfl %edi, %eax
 ; NOBMI-NEXT:    incl %eax
+; NOBMI-NEXT:    testl %edi, %edi
+; NOBMI-NEXT:    cmovel %edi, %eax
 ; NOBMI-NEXT:    retq
 ;
 ; BMI-LABEL: cttz_32_eq_select_ffs:
@@ -447,10 +451,10 @@ define i32 @cttz_32_eq_select_ffs(i32 %v) nounwind {
 define i32 @cttz_32_ne_select_ffs(i32 %v) nounwind {
 ; NOBMI-LABEL: cttz_32_ne_select_ffs:
 ; NOBMI:       # %bb.0:
-; NOBMI-NEXT:    bsfl %edi, %ecx
-; NOBMI-NEXT:    movl $-1, %eax
-; NOBMI-NEXT:    cmovnel %ecx, %eax
+; NOBMI-NEXT:    rep bsfl %edi, %eax
 ; NOBMI-NEXT:    incl %eax
+; NOBMI-NEXT:    testl %edi, %edi
+; NOBMI-NEXT:    cmovel %edi, %eax
 ; NOBMI-NEXT:    retq
 ;
 ; BMI-LABEL: cttz_32_ne_select_ffs:
