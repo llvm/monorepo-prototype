@@ -57,6 +57,7 @@ The program won't terminate, which will allow you to detect many strict aliasing
 run.
 
 .. code-block:: console
+
     % ./a.out
     ==1375532==ERROR: TypeSanitizer: type-aliasing-violation on address 0x7ffeebf1a72c (pc 0x5b3b1145ff41 bp 0x7ffeebf1a660 sp 0x7ffeebf19e08 tid 1375532)
     READ of size 4 at 0x7ffeebf1a72c with type float accesses an existing object of type int
