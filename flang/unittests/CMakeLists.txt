@@ -1,3 +1,5 @@
+include(AddFlangOffloadRuntime)
+
 if (FLANG_EXPERIMENTAL_CUDA_RUNTIME)
   # If Fortran runtime is built as CUDA library, the linking
   # of targets that link FortranRuntime must be done
