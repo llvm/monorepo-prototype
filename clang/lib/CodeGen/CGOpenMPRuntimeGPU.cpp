@@ -871,9 +871,6 @@ CGOpenMPRuntimeGPU::CGOpenMPRuntimeGPU(CodeGenModule &CGM)
       hasRequiresUnifiedSharedMemory(), /*HasRequiresDynamicAllocators*/ false);
   OMPBuilder.setConfig(Config);
 
-  if (!CGM.getLangOpts().OpenMPIsTargetDevice)
-    llvm_unreachable("OpenMP can only handle device code.");
-
   if (CGM.getLangOpts().OpenMPCUDAMode)
     CurrentDataSharingMode = CGOpenMPRuntimeGPU::DS_CUDA;
 
@@ -1311,6 +1308,19 @@ void CGOpenMPRuntimeGPU::emitBarrierCall(CodeGenFunction &CGF,
   CGF.EmitRuntimeCall(OMPBuilder.getOrCreateRuntimeFunction(
                           CGM.getModule(), OMPRTL___kmpc_barrier),
                       Args);
+}
+
+void CGOpenMPRuntimeGPU::emitTargetCall(
+    CodeGenFunction &CGF, const OMPExecutableDirective &D,
+    llvm::Function *OutlinedFn, llvm::Value *OutlinedFnID, const Expr *IfCond,
+    llvm::PointerIntPair<const Expr *, 2, OpenMPDeviceClauseModifier> Device,
+    llvm::function_ref<llvm::Value *(CodeGenFunction &CGF,
+                                     const OMPLoopDirective &D)>
+        SizeEmitter) {
+  unsigned DiagID = CGM.getDiags().getCustomDiagID(
+      DiagnosticsEngine::Error,
+      "Cannot emit a '#pragma omp target' region on the GPU");
+  CGM.getDiags().Report(D.getBeginLoc(), DiagID);
 }
 
 void CGOpenMPRuntimeGPU::emitCriticalRegion(
