@@ -33,8 +33,7 @@ Usage
 Compile and link your program with ``-fsanitize=type`` flag.  The
 TypeSanitizer run-time library should be linked to the final executable, so
 make sure to use ``clang`` (not ``ld``) for the final link step. To
-get a reasonable performance add ``-O1`` or higher 
-(`This may currently lead to false-negatives <https://github.com/llvm/llvm-project/issues/120855>`). 
+get a reasonable performance add ``-O1`` or higher.
 TypeSanitizer by default doesn't print the full stack trace on error messages. Use ``TYSAN_OPTIONS=print_stacktrace=1`` 
 to print the full trace. To get nicer stack traces in error messages add ``-fno-omit-frame-pointer`` and 
 ``-g``.  To get perfect stack traces you may need to disable inlining (just use ``-O1``) and tail call elimination 
@@ -70,8 +69,9 @@ run.
 Error terminology
 ------------------
 
-There are some terms that may appear in TypeSanitizer errors that are derived from TBAA Metadata. This 
-section hopes to provide a brief dictionary of these terms.
+There are some terms that may appear in TypeSanitizer errors that are derived from 
+`TBAA Metadata <https://llvm.org/docs/LangRef.html#tbaa-metadata>`. This section hopes to provide a 
+brief dictionary of these terms.
 
 * ``omnipotent char``: This is a special type which can alias with anything. Its name comes from the C/C++ 
   type ``char``.
@@ -105,7 +105,7 @@ this purpose.
 
 Some code you may not want to be instrumented by TypeSanitizer.  One may use the
 function attribute ``no_sanitize("type")`` to disable instrumenting type aliasing. 
-Its possible, depending on what happens in non-instrumented code, that instrumented code 
+It is possible, depending on what happens in non-instrumented code, that instrumented code 
 emits false-positives/ false-negatives. This attribute may not be supported by other 
 compilers, so we suggest to use it together with ``__has_feature(type_sanitizer)``.
 
@@ -138,7 +138,7 @@ Limitations
 * Currently, all instrumentation is inlined. This can result in a **15x** 
   (on average) increase in generated file size, and **3x** to **7x** increase 
   in compile time. In some documented cases this can cause the compiler to hang.
-  A fix for this is in the last stages of release.
+  There are plans to improve this in the future.
 * Codebases that use unions and struct-initialized variables can see incorrect 
   results, as TypeSanitizer doesn't yet instrument these reliably.
 
