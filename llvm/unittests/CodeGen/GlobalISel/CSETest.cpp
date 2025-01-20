@@ -9,6 +9,7 @@
 #include "GISelMITest.h"
 #include "llvm/CodeGen/GlobalISel/CSEInfo.h"
 #include "llvm/CodeGen/GlobalISel/CSEMIRBuilder.h"
+#include "llvm/CodeGenTypes/LowLevelType.h"
 #include "gtest/gtest.h"
 
 namespace {
@@ -75,6 +76,11 @@ TEST_F(AArch64GISelMITest, TestCSE) {
   auto MIBUnmerge2 = CSEB.buildUnmerge({s32, s32}, Copies[0]);
   EXPECT_TRUE(&*MIBUnmerge == &*MIBUnmerge2);
 
+  // Check G_FDIV
+  auto MIBFDiv = CSEB.buildFDiv(s32, Copies[0], Copies[1]);
+  auto MIBFDiv2 = CSEB.buildFDiv(s32, Copies[0], Copies[1]);
+  EXPECT_TRUE(&*MIBFDiv == &*MIBFDiv2);
+
   // Check G_BUILD_VECTOR
   Register Reg1 = MRI->createGenericVirtualRegister(s32);
   Register Reg2 = MRI->createGenericVirtualRegister(s32);
@@ -99,6 +105,7 @@ TEST_F(AArch64GISelMITest, TestCSE) {
   auto Undef0 = CSEB.buildUndef(s32);
   auto Undef1 = CSEB.buildUndef(s32);
   EXPECT_EQ(&*Undef0, &*Undef1);
+
 
   // If the observer is installed to the MF, CSE can also
   // track new instructions built without the CSEBuilder and
