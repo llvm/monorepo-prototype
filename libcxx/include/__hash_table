@@ -770,9 +770,16 @@ public:
 
   _LIBCPP_HIDE_FROM_ABI __hash_table& operator=(const __hash_table& __u);
   _LIBCPP_HIDE_FROM_ABI __hash_table& operator=(__hash_table&& __u)
-      _NOEXCEPT_(__node_traits::propagate_on_container_move_assignment::value&&
-                     is_nothrow_move_assignable<__node_allocator>::value&& is_nothrow_move_assignable<hasher>::value&&
-                         is_nothrow_move_assignable<key_equal>::value);
+#ifndef _LIBCPP_CXX03_LANG
+      noexcept(is_nothrow_move_assignable<hasher>::value && is_nothrow_move_assignable<key_equal>::value &&
+               ((__node_traits::propagate_on_container_move_assignment::value &&
+                 is_nothrow_move_assignable<__node_allocator>::value)
+#  if _LIBCPP_STD_VER >= 17
+                || allocator_traits<__node_allocator>::is_always_equal::value
+#  endif
+                ))
+#endif
+          ;
   template <class _InputIterator>
   _LIBCPP_HIDE_FROM_ABI void __assign_unique(_InputIterator __first, _InputIterator __last);
   template <class _InputIterator>
@@ -1238,10 +1245,17 @@ void __hash_table<_Tp, _Hash, _Equal, _Alloc>::__move_assign(__hash_table& __u, 
 }
 
 template <class _Tp, class _Hash, class _Equal, class _Alloc>
-inline __hash_table<_Tp, _Hash, _Equal, _Alloc>&
-__hash_table<_Tp, _Hash, _Equal, _Alloc>::operator=(__hash_table&& __u) _NOEXCEPT_(
-    __node_traits::propagate_on_container_move_assignment::value&& is_nothrow_move_assignable<__node_allocator>::value&&
-        is_nothrow_move_assignable<hasher>::value&& is_nothrow_move_assignable<key_equal>::value) {
+inline __hash_table<_Tp, _Hash, _Equal, _Alloc>& __hash_table<_Tp, _Hash, _Equal, _Alloc>::operator=(__hash_table&& __u)
+#ifndef _LIBCPP_CXX03_LANG
+    noexcept(is_nothrow_move_assignable<hasher>::value && is_nothrow_move_assignable<key_equal>::value &&
+             ((__node_traits::propagate_on_container_move_assignment::value &&
+               is_nothrow_move_assignable<__node_allocator>::value)
+#  if _LIBCPP_STD_VER >= 17
+              || allocator_traits<__node_allocator>::is_always_equal::value
+#  endif
+              ))
+#endif
+{
   __move_assign(__u, integral_constant<bool, __node_traits::propagate_on_container_move_assignment::value>());
   return *this;
 }
