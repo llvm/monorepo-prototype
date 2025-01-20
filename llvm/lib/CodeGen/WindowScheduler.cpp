@@ -270,7 +270,7 @@ void WindowScheduler::backupMBB() {
     OriMIs.push_back(&MI);
   // Remove MIs and the corresponding live intervals.
   for (auto &MI : make_early_inc_range(*MBB)) {
-    Context->LIS->getSlotIndexes()->removeMachineInstrFromMaps(MI, true);
+    Context->LIS->RemoveMachineInstrFromMaps(MI);
     MBB->remove(&MI);
   }
 }
@@ -278,7 +278,7 @@ void WindowScheduler::backupMBB() {
 void WindowScheduler::restoreMBB() {
   // Erase MIs and the corresponding live intervals.
   for (auto &MI : make_early_inc_range(*MBB)) {
-    Context->LIS->getSlotIndexes()->removeMachineInstrFromMaps(MI, true);
+    Context->LIS->RemoveMachineInstrFromMaps(MI);
     MI.eraseFromParent();
   }
   // Restore MBB to the state before window scheduling.
@@ -303,6 +303,7 @@ void WindowScheduler::generateTripleMBB() {
       if (Register AntiReg = getAntiRegister(MI))
         DefPairs[MI->getOperand(0).getReg()] = AntiReg;
     auto *NewMI = MF->CloneMachineInstr(MI);
+    Context->LIS->RemoveMachineInstrFromMaps(*NewMI);
     MBB->push_back(NewMI);
     TriMIs.push_back(NewMI);
     TriToOri[NewMI] = MI;
@@ -316,6 +317,7 @@ void WindowScheduler::generateTripleMBB() {
           (MI->isTerminator() && Cnt < DuplicateNum - 1))
         continue;
       auto *NewMI = MF->CloneMachineInstr(MI);
+      Context->LIS->RemoveMachineInstrFromMaps(*NewMI);
       DenseMap<Register, Register> NewDefs;
       // New defines are updated.
       for (auto MO : NewMI->all_defs())
