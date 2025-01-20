@@ -1259,6 +1259,23 @@ void SIFrameLowering::emitEpilogue(MachineFunction &MF,
   Register FramePtrRegScratchCopy;
   Register SGPRForFPSaveRestoreCopy =
       FuncInfo->getScratchSGPRCopyDstReg(FramePtrReg);
+
+  if (MFI.hasVarSizedObjects()) {
+    // If we have over-aligned dynamic-sized objects, then restore SP with
+    // saved-BP, else restore it with saved-FP.
+    if (FuncInfo->isStackRealigned()) {
+      Register BasePtrReg = TRI.getBaseRegister();
+      BuildMI(MBB, MBBI, DL, TII->get(AMDGPU::S_ADD_I32), StackPtrReg)
+          .addReg(BasePtrReg)
+          .addImm(RoundedSize * getScratchScaleFactor(ST))
+          .setMIFlag(MachineInstr::FrameDestroy);
+    } else {
+      BuildMI(MBB, MBBI, DL, TII->get(AMDGPU::S_ADD_I32), StackPtrReg)
+          .addReg(FramePtrReg)
+          .addImm(RoundedSize * getScratchScaleFactor(ST))
+          .setMIFlag(MachineInstr::FrameDestroy);
+    }
+  }
   if (FPSaved) {
     // CSR spill restores should use FP as base register. If
     // SGPRForFPSaveRestoreCopy is not true, restore the previous value of FP
