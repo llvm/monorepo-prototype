@@ -23,6 +23,7 @@ include "mlir/Interfaces/FunctionInterfaces.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/IR/OpAsmInterface.td"
 include "mlir/IR/RegionKindInterface.td"
+include "mlir/IR/BuiltinAttributes.td"
 
 //===----------------------------------------------------------------------===//
 // EmitC op definitions
@@ -55,6 +56,54 @@ def CExpression : NativeOpTrait<"emitc::CExpression">;
 def IntegerIndexOrOpaqueType : Type<CPred<"emitc::isIntegerIndexOrOpaqueType($_self)">,
 "integer, index or opaque type supported by EmitC">;
 def FloatIntegerIndexOrOpaqueType : AnyTypeOf<[EmitCFloatType, IntegerIndexOrOpaqueType]>;
+
+def EmitC_TranslationUnitOp
+    : EmitC_Op<"tu", [IsolatedFromAbove, NoRegionArguments, SymbolTable,
+                      OpAsmOpInterface]#GraphRegionNoTerminator.traits> {
+  let summary = "A translation unit container operation";
+  let description = [{
+    A `tu` represents a translation unit that can be emitted
+    into a single C++ file.
+
+    `mlir-translate` emits only the translation unit selected via
+    the `-translation-unit-id=id` flag. By default, no translation units are
+    emitted.
+
+    Example:
+
+    ```mlir
+    emitc.tu "main" {
+      emitc.func @func_one() {
+        emitc.return
+      }
+    }
+    ```
+  }];
+
+  let arguments = (ins Builtin_StringAttr:$id);
+  let regions = (region SizedRegion<1>:$bodyRegion);
+
+  let assemblyFormat = "$id attr-dict-with-keyword $bodyRegion";
+  let builders = [OpBuilder<(ins CArg<"StringRef">:$id)>];
+  let extraClassDeclaration = [{
+    /// Construct a module from the given location with an optional name.
+    static TranslationUnitOp create(Location loc, StringRef name);
+
+    //===------------------------------------------------------------------===//
+    // OpAsmOpInterface Methods
+    //===------------------------------------------------------------------===//
+
+    /// EmitC ops in the body of the translation_unit can omit their 'emitc.'
+    /// prefix in the assembly.
+    static ::llvm::StringRef getDefaultDialect() {
+      return "emitc";
+    }
+  }];
+
+  // We need to ensure that the body region has a block;
+  // the auto-generated builders do not guarantee that.
+  let skipDefaultBuilders = 1;
+}
 
 def EmitC_AddOp : EmitC_BinaryOp<"add", [CExpression]> {
   let summary = "Addition operation";
