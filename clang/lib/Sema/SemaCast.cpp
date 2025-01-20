@@ -2390,6 +2390,16 @@ static TryCastResult TryReinterpretCast(Sema &Self, ExprResult &SrcExpr,
     return TC_Success;
   }
 
+  // Allow bitcasting between a regular vector type or a scalar, and a builtin
+  // Neon vector type.
+  if ((SrcType->isNeonVectorBuiltinType() ||
+       DestType->isNeonVectorBuiltinType())) {
+    if (!Self.isValidNeonVectorBuiltinTypeBitcast(OpRange, SrcType, DestType))
+      return TC_Failed;
+    Kind = CK_BitCast;
+    return TC_Success;
+  }
+
   // Allow reinterpret_casts between vectors of the same size and
   // between vectors and integers of the same size.
   bool destIsVector = DestType->isVectorType();
@@ -3009,6 +3019,18 @@ void CastOperation::CheckCStyleCast() {
   // Allow bitcasting between compatible SVE vector types.
   if ((SrcType->isVectorType() || DestType->isVectorType()) &&
       Self.isValidSveBitcast(SrcType, DestType)) {
+    Kind = CK_BitCast;
+    return;
+  }
+
+  // Allow bitcasting between a regular vector type and a builtin Neon vector
+  // type.
+  if (SrcType->isNeonVectorBuiltinType() ||
+      DestType->isNeonVectorBuiltinType()) {
+    if (!Self.isValidNeonVectorBuiltinTypeBitcast(OpRange, SrcType, DestType)) {
+      SrcExpr = ExprError();
+      return;
+    }
     Kind = CK_BitCast;
     return;
   }
