@@ -845,9 +845,7 @@ _LIBCPP_CONSTEXPR_SINCE_CXX20 void vector<bool, _Allocator>::reserve(size_type _
       this->__throw_length_error();
     vector __v(this->get_allocator());
     __v.__vallocate(__n);
-    // Ensure that the call to __construct_at_end(first, last, n) meets the precondition of n > 0
-    if (this->size() > 0)
-      __v.__construct_at_end(this->begin(), this->end(), this->size());
+    __v.__construct_at_end(this->begin(), this->end(), this->size());
     swap(__v);
   }
 }
