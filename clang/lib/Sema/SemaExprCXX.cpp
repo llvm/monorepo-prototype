@@ -1082,6 +1082,10 @@ bool Sema::CheckCXXThrowOperand(SourceLocation ThrowLoc,
       // friendship or any other means).
       Context.addCopyConstructorForExceptionObject(Subobject, CD);
 
+      // Store the bit in CXXRecordDecl so that ASTReader can restore this
+      // mapping later.
+      Subobject->setHasCopyConstructorForExceptionObject();
+
       // We don't keep the instantiated default argument expressions around so
       // we must rebuild them here.
       for (unsigned I = 1, E = CD->getNumParams(); I != E; ++I) {

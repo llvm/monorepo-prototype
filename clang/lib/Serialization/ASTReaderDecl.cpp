@@ -2317,6 +2317,20 @@ void ASTDeclReader::VisitCXXConstructorDecl(CXXConstructorDecl *D) {
   }
 
   VisitCXXMethodDecl(D);
+
+  // Microsoft CXX ABI specific:
+  // Restore the RecordToCopyCtor sidecar LUT entry so that `throw` expressions
+  // find the correct copy constructor for exceptions during codegen.
+  // There is no need to check the target info because the
+  // HasCopyConstructorForExceptionObject bit only gets set for the MS ABI.
+  if (D->isCopyConstructor()) {
+    // TODO What if this is not the same copy constructor which was chosen by
+    //      LookupCopyingConstructor() in SemaExprCXX? Is there a better way?
+    auto *R = cast<CXXRecordDecl>(D->getDeclContext());
+    if (R->hasCopyConstructorForExceptionObject()) {
+      Reader.getContext().addCopyConstructorForExceptionObject(R, D);
+    }
+  }
 }
 
 void ASTDeclReader::VisitCXXDestructorDecl(CXXDestructorDecl *D) {

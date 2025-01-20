@@ -1558,6 +1558,14 @@ public:
   /// a field or in base class.
   bool isHLSLIntangible() const { return data().IsHLSLIntangible; }
 
+  bool hasCopyConstructorForExceptionObject() const {
+    return data().HasCopyConstructorForExceptionObject;
+  }
+
+  void setHasCopyConstructorForExceptionObject() {
+    data().HasCopyConstructorForExceptionObject = true;
+  }
+
   /// If the class is a local class [class.local], returns
   /// the enclosing function declaration.
   const FunctionDecl *isLocalClass() const {
