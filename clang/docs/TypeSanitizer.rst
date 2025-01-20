@@ -9,12 +9,13 @@ Introduction
 ============
 
 TypeSanitizer is a detector for strict type aliasing violations. It consists of a compiler
-instrumentation module and a run-time library. The tool detects violations such as the use 
-of an illegally cast pointer, or misuse of a union.
+instrumentation module and a run-time library. The tool detects violations where you access 
+memory under a different type than the dynamic type of the object.
 
 The violations TypeSanitizer catches may cause the compiler to emit incorrect code.
 
-Typical slowdown introduced by TypeSanitizer is about **4x** [[CHECK THIS]]. Typical memory overhead introduced by TypeSanitizer is about **9x**. 
+As TypeSanitizer is still experimental, it can currently have a large impact on runtime speed, 
+memory use, and code size.
 
 How to build
 ============
@@ -76,11 +77,11 @@ brief dictionary of these terms.
 
 * ``omnipotent char``: This is a special type which can alias with anything. Its name comes from the C/C++ 
   type ``char``.
-* ``type p[x]``: Sometimes a program could generate distinct TBAA metadata that resolve to the same name. 
-  To make them unique, they have the character 'p' and a number prepended to their name.
+* ``type p[x]``: This signifies pointers to the type. x is the number of indirections to reach the final value.
+  As an example, a pointer to a pointer to an integer would be ``type p2 int``.
 
-These terms are a result of non-user-facing processes, and not always self-explanatory. There is some 
-interest in changing TypeSanitizer in the future to translate these terms before printing them to users.
+TypeSanitizer is still experimental. User-facing error messages should be improved in the future to remove 
+references to LLVM IR specific terms.
 
 Sanitizer features
 ==================
@@ -147,7 +148,9 @@ Current Status
 --------------
 
 TypeSanitizer is brand new, and still in development. There are some known 
-issues, especially in areas where clang doesn't generate valid TBAA metadata. 
+issues, especially in areas where Clang's emitted TBAA data isn't extensive 
+enough for TypeSanitizer's runtime.
 
 We are actively working on enhancing the tool --- stay tuned.  Any help, 
-issues, pull requests, ideas, is more than welcome.
+issues, pull requests, ideas, is more than welcome. You can find the 
+`issue tracker here.<https://github.com/llvm/llvm-project/issues?q=is%3Aissue%20state%3Aopen%20TySan%20label%3Acompiler-rt%3Atysan>`
