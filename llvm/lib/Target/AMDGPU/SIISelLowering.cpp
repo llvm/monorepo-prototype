@@ -816,6 +816,13 @@ SITargetLowering::SITargetLowering(const TargetMachine &TM,
                          {MVT::v4f32, MVT::v8f32, MVT::v16f32, MVT::v32f32},
                          Custom);
     }
+
+    // Avoid true 16 instruction
+    if (!Subtarget->hasTrue16BitInsts() || !Subtarget->useRealTrue16Insts()) {
+      // MVT::v2i16 for src type check in foldToSaturated
+      // MVT::v2i8 for dst type check in CustomLowerNode
+      setOperationAction(ISD::TRUNCATE_SSAT_U, {MVT::v2i16, MVT::v2i8}, Custom);
+    }
   }
 
   setOperationAction({ISD::FNEG, ISD::FABS}, MVT::v4f16, Custom);
@@ -1974,6 +1981,10 @@ bool SITargetLowering::isTypeDesirableForOp(unsigned Op, EVT VT) const {
   // create setcc with i1 operands.  We don't have instructions for i1 setcc.
   if (VT == MVT::i1 && Op == ISD::SETCC)
     return false;
+
+  // v2i8 is illegal and only allowed in specific cases
+  if (VT == MVT::v2i8 && Op == ISD::TRUNCATE_SSAT_U)
+    return true;
 
   return TargetLowering::isTypeDesirableForOp(Op, VT);
 }
@@ -6604,6 +6615,14 @@ void SITargetLowering::ReplaceNodeResults(SDNode *N,
     if (N->getValueType(0) != MVT::f16)
       break;
     Results.push_back(lowerFSQRTF16(SDValue(N, 0), DAG));
+    break;
+  }
+  case ISD::TRUNCATE_SSAT_U: {
+    SDLoc SL(N);
+    SDValue Op =
+        DAG.getNode(AMDGPUISD::SAT_PK_CAST, SL, MVT::i16, N->getOperand(0));
+    Op = DAG.getNode(ISD::BITCAST, SL, MVT::v2i8, Op);
+    Results.push_back(Op);
     break;
   }
   default:
