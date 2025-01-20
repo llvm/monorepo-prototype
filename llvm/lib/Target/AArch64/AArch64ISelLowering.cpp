@@ -9576,7 +9576,8 @@ AArch64TargetLowering::LowerCall(CallLoweringInfo &CLI,
 
     DAG.addNoMergeSiteInfo(Ret.getNode(), CLI.NoMerge);
     DAG.addCallSiteInfo(Ret.getNode(), std::move(CSInfo));
-    if (CalledGlobal)
+    if (CalledGlobal &&
+        MF.getFunction().getParent()->getModuleFlag("import-call-optimization"))
       DAG.addCalledGlobal(Ret.getNode(), CalledGlobal, OpFlags);
     return Ret;
   }
@@ -9589,7 +9590,8 @@ AArch64TargetLowering::LowerCall(CallLoweringInfo &CLI,
   DAG.addNoMergeSiteInfo(Chain.getNode(), CLI.NoMerge);
   InGlue = Chain.getValue(1);
   DAG.addCallSiteInfo(Chain.getNode(), std::move(CSInfo));
-  if (CalledGlobal)
+  if (CalledGlobal &&
+      MF.getFunction().getParent()->getModuleFlag("import-call-optimization"))
     DAG.addCalledGlobal(Chain.getNode(), CalledGlobal, OpFlags);
 
   uint64_t CalleePopBytes =
