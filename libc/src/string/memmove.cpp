@@ -8,6 +8,7 @@
 
 #include "src/string/memmove.h"
 #include "src/__support/macros/config.h"
+#include "src/__support/macros/null_check.h"
 #include "src/string/memory_utils/inline_memcpy.h"
 #include "src/string/memory_utils/inline_memmove.h"
 #include <stddef.h> // size_t
@@ -16,6 +17,11 @@ namespace LIBC_NAMESPACE_DECL {
 
 LLVM_LIBC_FUNCTION(void *, memmove,
                    (void *dst, const void *src, size_t count)) {
+  const unsigned char *dst_cpy = (const unsigned char *)dst;
+  const unsigned char *src_cpy = (const unsigned char *)src;
+  LIBC_CRASH_ON_NULLPTR(dst_cpy);
+  LIBC_CRASH_ON_NULLPTR(src_cpy);
+
   // Memmove may handle some small sizes as efficiently as inline_memcpy.
   // For these sizes we may not do is_disjoint check.
   // This both avoids additional code for the most frequent smaller sizes
