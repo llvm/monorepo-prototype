@@ -4,7 +4,7 @@
 // RUN: %flang_fc1 -emit-llvm -O1 -mllvm -force-vector-width=2 -o- %s | FileCheck %s --check-prefixes=CHECK,NO-UNROLL
 
 // CHECK-LABEL: @unroll
-// CHECK-SAME: (ptr nocapture writeonly %[[ARG0:.*]])
+// CHECK-SAME: (ptr writeonly captures(none) %[[ARG0:.*]])
 func.func @unroll(%arg0: !fir.ref<!fir.array<1000 x index>> {fir.bindc_name = "a"}) {
   %scope = fir.dummy_scope : !fir.dscope
   %c1000 = arith.constant 1000 : index
