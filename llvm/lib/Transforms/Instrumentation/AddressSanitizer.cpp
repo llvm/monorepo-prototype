@@ -3391,21 +3391,23 @@ static void findStoresToUninstrumentedArgAllocas(
   }
 }
 
-StringRef getAllocaName(AllocaInst *AI) {
+static StringRef getAllocaName(AllocaInst *AI) {
   // Alloca could have been renamed for uniqueness. Its true name will have been
   // recorded as an annotation.
   if (AI->hasMetadata(LLVMContext::MD_annotation)) {
-    MDTuple *Annotation =
-        (MDTuple *)AI->getMetadata(LLVMContext::MD_annotation);
-    for (int i = 0; i < Annotation->getNumOperands(); i++) {
-      if (auto Tuple = dyn_cast<MDTuple>(Annotation->getOperand(i))) {
-        for (int i = 0; i < Tuple->getNumOperands(); i++) {
-          if (auto stringMetadata = dyn_cast<MDString>(Tuple->getOperand(i))) {
-            if (stringMetadata->getString() == "alloca_name_altered") {
-              return ((MDString *)Tuple->getOperand(i + 1).get())->getString();
-            }
-          }
-        }
+    MDTuple *AllocaAnnotations =
+        cast<MDTuple>(AI->getMetadata(LLVMContext::MD_annotation));
+    for (auto &Annotation : AllocaAnnotations->operands()) {
+      if (!isa<MDTuple>(Annotation))
+        continue;
+      auto AnnotationTuple = cast<MDTuple>(Annotation);
+      for (int Index = 0; Index < AnnotationTuple->getNumOperands(); Index++) {
+        // All annotations are strings
+        auto MetadataString =
+            cast<MDString>(AnnotationTuple->getOperand(Index));
+        if (MetadataString->getString() == "alloca_name_altered")
+          return cast<MDString>(AnnotationTuple->getOperand(Index + 1))
+              ->getString();
       }
     }
   }
@@ -3446,8 +3448,7 @@ void FunctionStackPoisoner::processStaticAllocas() {
     ArgInitInst->moveBefore(InsBefore);
 
   // If we have a call to llvm.localescape, keep it in the entry block.
-  if (LocalEscapeCall)
-    LocalEscapeCall->moveBefore(InsBefore);
+  if (LocalEscapeCall) LocalEscapeCall->moveBefore(InsBefore);
 
   SmallVector<ASanStackVariableDescription, 16> SVD;
   SVD.reserve(AllocaVec.size());
