@@ -1228,6 +1228,9 @@ public:
     // Returns a scalar boolean value, which is true if any lane of its (only
     // boolean) vector operand is true.
     AnyOf,
+    // Extracts the first active lane of a vector, where the first operand is
+    // the predicate, and the second operand is the vector to extract.
+    ExtractFirstActive,
   };
 
 private:
@@ -3938,6 +3941,22 @@ public:
   VPRegionBlock *getVectorLoopRegion();
   const VPRegionBlock *getVectorLoopRegion() const;
 
+  /// Get the vector early exit block
+  VPBasicBlock *getEarlyExit() {
+    auto LoopRegion = getVectorLoopRegion();
+    if (!LoopRegion)
+      return nullptr;
+
+    auto *SuccessorVPBB = LoopRegion->getSingleSuccessor();
+    auto *MiddleVPBB = getMiddleBlock();
+    if (SuccessorVPBB == MiddleVPBB)
+      return nullptr;
+
+    assert(SuccessorVPBB->getSuccessors()[1] == MiddleVPBB &&
+           "Expected second successor to be the middle block");
+    return cast<VPBasicBlock>(SuccessorVPBB->getSuccessors()[0]);
+  }
+
   /// Returns the 'middle' block of the plan, that is the block that selects
   /// whether to execute the scalar tail loop or the exit block from the loop
   /// latch.
@@ -3961,6 +3980,9 @@ public:
   /// VPlanHCFG, as the definition of the type needs access to the definitions
   /// of VPBlockShallowTraversalWrapper.
   auto getExitBlocks();
+
+  /// Returns true if \p VPBB is an exit block.
+  bool isExitBlock(VPBlockBase *VPBB);
 
   /// The trip count of the original loop.
   VPValue *getTripCount() const {
