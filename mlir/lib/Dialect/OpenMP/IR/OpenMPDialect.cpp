@@ -494,16 +494,19 @@ struct PrivateParseArgs {
                    DenseI64ArrayAttr *mapIndices = nullptr)
       : vars(vars), types(types), syms(syms), mapIndices(mapIndices) {}
 };
+
 struct ReductionParseArgs {
   SmallVectorImpl<OpAsmParser::UnresolvedOperand> &vars;
   SmallVectorImpl<Type> &types;
   DenseBoolArrayAttr &byref;
   ArrayAttr &syms;
+  ReductionModifierAttr *modifier;
   ReductionParseArgs(SmallVectorImpl<OpAsmParser::UnresolvedOperand> &vars,
                      SmallVectorImpl<Type> &types, DenseBoolArrayAttr &byref,
-                     ArrayAttr &syms)
-      : vars(vars), types(types), byref(byref), syms(syms) {}
+                     ArrayAttr &syms, ReductionModifierAttr *mod = nullptr)
+      : vars(vars), types(types), byref(byref), syms(syms), modifier(mod) {}
 };
+
 struct AllRegionParseArgs {
   std::optional<MapParseArgs> hostEvalArgs;
   std::optional<ReductionParseArgs> inReductionArgs;
@@ -522,7 +525,8 @@ static ParseResult parseClauseWithRegionArgs(
     SmallVectorImpl<Type> &types,
     SmallVectorImpl<OpAsmParser::Argument> &regionPrivateArgs,
     ArrayAttr *symbols = nullptr, DenseI64ArrayAttr *mapIndices = nullptr,
-    DenseBoolArrayAttr *byref = nullptr) {
+    DenseBoolArrayAttr *byref = nullptr,
+    ReductionModifierAttr *modifier = nullptr) {
   SmallVector<SymbolRefAttr> symbolVec;
   SmallVector<int64_t> mapIndicesVec;
   SmallVector<bool> isByRefVec;
@@ -530,6 +534,20 @@ static ParseResult parseClauseWithRegionArgs(
 
   if (parser.parseLParen())
     return failure();
+
+  if (modifier && succeeded(parser.parseOptionalKeyword("mod"))) {
+    StringRef enumStr;
+    if (parser.parseColon() || parser.parseKeyword(&enumStr) ||
+        parser.parseComma())
+      return failure();
+    std::optional<ReductionModifier> enumValue =
+        symbolizeReductionModifier(enumStr);
+    if (!enumValue.has_value())
+      return failure();
+    *modifier = ReductionModifierAttr::get(parser.getContext(), *enumValue);
+    if (!*modifier)
+      return failure();
+  }
 
   if (parser.parseCommaSeparatedList([&]() {
         if (byref)
@@ -635,16 +653,14 @@ static ParseResult parseBlockArgClause(
   if (succeeded(parser.parseOptionalKeyword(keyword))) {
     if (!reductionArgs)
       return failure();
-
     if (failed(parseClauseWithRegionArgs(
             parser, reductionArgs->vars, reductionArgs->types, entryBlockArgs,
-            &reductionArgs->syms, /*mapIndices=*/nullptr,
-            &reductionArgs->byref)))
+            &reductionArgs->syms, /*mapIndices=*/nullptr, &reductionArgs->byref,
+            reductionArgs->modifier)))
       return failure();
   }
   return success();
 }
-
 static ParseResult parseBlockArgRegion(OpAsmParser &parser, Region &region,
                                        AllRegionParseArgs args) {
   llvm::SmallVector<OpAsmParser::Argument> entryBlockArgs;
@@ -735,6 +751,7 @@ static ParseResult parseInReductionPrivateReductionRegion(
     DenseBoolArrayAttr &inReductionByref, ArrayAttr &inReductionSyms,
     llvm::SmallVectorImpl<OpAsmParser::UnresolvedOperand> &privateVars,
     llvm::SmallVectorImpl<Type> &privateTypes, ArrayAttr &privateSyms,
+    ReductionModifierAttr &reductionMod,
     SmallVectorImpl<OpAsmParser::UnresolvedOperand> &reductionVars,
     SmallVectorImpl<Type> &reductionTypes, DenseBoolArrayAttr &reductionByref,
     ArrayAttr &reductionSyms) {
@@ -743,7 +760,7 @@ static ParseResult parseInReductionPrivateReductionRegion(
                                inReductionByref, inReductionSyms);
   args.privateArgs.emplace(privateVars, privateTypes, privateSyms);
   args.reductionArgs.emplace(reductionVars, reductionTypes, reductionByref,
-                             reductionSyms);
+                             reductionSyms, &reductionMod);
   return parseBlockArgRegion(parser, region, args);
 }
 
@@ -760,13 +777,14 @@ static ParseResult parsePrivateReductionRegion(
     OpAsmParser &parser, Region &region,
     llvm::SmallVectorImpl<OpAsmParser::UnresolvedOperand> &privateVars,
     llvm::SmallVectorImpl<Type> &privateTypes, ArrayAttr &privateSyms,
+    ReductionModifierAttr &reductionMod,
     SmallVectorImpl<OpAsmParser::UnresolvedOperand> &reductionVars,
     SmallVectorImpl<Type> &reductionTypes, DenseBoolArrayAttr &reductionByref,
     ArrayAttr &reductionSyms) {
   AllRegionParseArgs args;
   args.privateArgs.emplace(privateVars, privateTypes, privateSyms);
   args.reductionArgs.emplace(reductionVars, reductionTypes, reductionByref,
-                             reductionSyms);
+                             reductionSyms, &reductionMod);
   return parseBlockArgRegion(parser, region, args);
 }
 
@@ -817,9 +835,10 @@ struct ReductionPrintArgs {
   TypeRange types;
   DenseBoolArrayAttr byref;
   ArrayAttr syms;
+  ReductionModifierAttr *modifier;
   ReductionPrintArgs(ValueRange vars, TypeRange types, DenseBoolArrayAttr byref,
-                     ArrayAttr syms)
-      : vars(vars), types(types), byref(byref), syms(syms) {}
+                     ArrayAttr syms, ReductionModifierAttr *mod = nullptr)
+      : vars(vars), types(types), byref(byref), syms(syms), modifier(mod) {}
 };
 struct AllRegionPrintArgs {
   std::optional<MapPrintArgs> hostEvalArgs;
@@ -833,17 +852,19 @@ struct AllRegionPrintArgs {
 };
 } // namespace
 
-static void printClauseWithRegionArgs(OpAsmPrinter &p, MLIRContext *ctx,
-                                      StringRef clauseName,
-                                      ValueRange argsSubrange,
-                                      ValueRange operands, TypeRange types,
-                                      ArrayAttr symbols = nullptr,
-                                      DenseI64ArrayAttr mapIndices = nullptr,
-                                      DenseBoolArrayAttr byref = nullptr) {
+static void printClauseWithRegionArgs(
+    OpAsmPrinter &p, MLIRContext *ctx, StringRef clauseName,
+    ValueRange argsSubrange, ValueRange operands, TypeRange types,
+    ArrayAttr symbols = nullptr, DenseI64ArrayAttr mapIndices = nullptr,
+    DenseBoolArrayAttr byref = nullptr,
+    ReductionModifierAttr *modifier = nullptr) {
   if (argsSubrange.empty())
     return;
 
   p << clauseName << "(";
+
+  if (modifier && *modifier)
+    p << "mod: " << stringifyReductionModifier(modifier->getValue()) << ", ";
 
   if (!symbols) {
     llvm::SmallVector<Attribute> values(operands.size(), nullptr);
@@ -905,7 +926,7 @@ printBlockArgClause(OpAsmPrinter &p, MLIRContext *ctx, StringRef clauseName,
     printClauseWithRegionArgs(p, ctx, clauseName, argsSubrange,
                               reductionArgs->vars, reductionArgs->types,
                               reductionArgs->syms, /*mapIndices=*/nullptr,
-                              reductionArgs->byref);
+                              reductionArgs->byref, reductionArgs->modifier);
 }
 
 static void printBlockArgRegion(OpAsmPrinter &p, Operation *op, Region &region,
@@ -968,7 +989,8 @@ static void printInReductionPrivateReductionRegion(
     OpAsmPrinter &p, Operation *op, Region &region, ValueRange inReductionVars,
     TypeRange inReductionTypes, DenseBoolArrayAttr inReductionByref,
     ArrayAttr inReductionSyms, ValueRange privateVars, TypeRange privateTypes,
-    ArrayAttr privateSyms, ValueRange reductionVars, TypeRange reductionTypes,
+    ArrayAttr privateSyms, ReductionModifierAttr reductionMod,
+    ValueRange reductionVars, TypeRange reductionTypes,
     DenseBoolArrayAttr reductionByref, ArrayAttr reductionSyms) {
   AllRegionPrintArgs args;
   args.inReductionArgs.emplace(inReductionVars, inReductionTypes,
@@ -976,7 +998,7 @@ static void printInReductionPrivateReductionRegion(
   args.privateArgs.emplace(privateVars, privateTypes, privateSyms,
                            /*mapIndices=*/nullptr);
   args.reductionArgs.emplace(reductionVars, reductionTypes, reductionByref,
-                             reductionSyms);
+                             reductionSyms, &reductionMod);
   printBlockArgRegion(p, op, region, args);
 }
 
@@ -991,14 +1013,15 @@ static void printPrivateRegion(OpAsmPrinter &p, Operation *op, Region &region,
 
 static void printPrivateReductionRegion(
     OpAsmPrinter &p, Operation *op, Region &region, ValueRange privateVars,
-    TypeRange privateTypes, ArrayAttr privateSyms, ValueRange reductionVars,
+    TypeRange privateTypes, ArrayAttr privateSyms,
+    ReductionModifierAttr reductionMod, ValueRange reductionVars,
     TypeRange reductionTypes, DenseBoolArrayAttr reductionByref,
     ArrayAttr reductionSyms) {
   AllRegionPrintArgs args;
   args.privateArgs.emplace(privateVars, privateTypes, privateSyms,
                            /*mapIndices=*/nullptr);
   args.reductionArgs.emplace(reductionVars, reductionTypes, reductionByref,
-                             reductionSyms);
+                             reductionSyms, &reductionMod);
   printBlockArgRegion(p, op, region, args);
 }
 
@@ -1942,7 +1965,7 @@ void ParallelOp::build(OpBuilder &builder, OperationState &state,
                     /*allocator_vars=*/ValueRange(), /*if_expr=*/nullptr,
                     /*num_threads=*/nullptr, /*private_vars=*/ValueRange(),
                     /*private_syms=*/nullptr, /*proc_bind_kind=*/nullptr,
-                    /*reduction_vars=*/ValueRange(),
+                    /*reduction_mod =*/nullptr, /*reduction_vars=*/ValueRange(),
                     /*reduction_byref=*/nullptr, /*reduction_syms=*/nullptr);
   state.addAttributes(attributes);
 }
@@ -1953,7 +1976,8 @@ void ParallelOp::build(OpBuilder &builder, OperationState &state,
   ParallelOp::build(builder, state, clauses.allocateVars, clauses.allocatorVars,
                     clauses.ifExpr, clauses.numThreads, clauses.privateVars,
                     makeArrayAttr(ctx, clauses.privateSyms),
-                    clauses.procBindKind, clauses.reductionVars,
+                    clauses.procBindKind, clauses.reductionMod,
+                    clauses.reductionVars,
                     makeDenseBoolArrayAttr(ctx, clauses.reductionByref),
                     makeArrayAttr(ctx, clauses.reductionSyms));
 }
@@ -2052,12 +2076,13 @@ void TeamsOp::build(OpBuilder &builder, OperationState &state,
                     const TeamsOperands &clauses) {
   MLIRContext *ctx = builder.getContext();
   // TODO Store clauses in op: privateVars, privateSyms.
-  TeamsOp::build(
-      builder, state, clauses.allocateVars, clauses.allocatorVars,
-      clauses.ifExpr, clauses.numTeamsLower, clauses.numTeamsUpper,
-      /*private_vars=*/{}, /*private_syms=*/nullptr, clauses.reductionVars,
-      makeDenseBoolArrayAttr(ctx, clauses.reductionByref),
-      makeArrayAttr(ctx, clauses.reductionSyms), clauses.threadLimit);
+  TeamsOp::build(builder, state, clauses.allocateVars, clauses.allocatorVars,
+                 clauses.ifExpr, clauses.numTeamsLower, clauses.numTeamsUpper,
+                 /*private_vars=*/{}, /*private_syms=*/nullptr,
+                 clauses.reductionMod, clauses.reductionVars,
+                 makeDenseBoolArrayAttr(ctx, clauses.reductionByref),
+                 makeArrayAttr(ctx, clauses.reductionSyms),
+                 clauses.threadLimit);
 }
 
 LogicalResult TeamsOp::verify() {
@@ -2114,7 +2139,8 @@ void SectionsOp::build(OpBuilder &builder, OperationState &state,
   // TODO Store clauses in op: privateVars, privateSyms.
   SectionsOp::build(builder, state, clauses.allocateVars, clauses.allocatorVars,
                     clauses.nowait, /*private_vars=*/{},
-                    /*private_syms=*/nullptr, clauses.reductionVars,
+                    /*private_syms=*/nullptr, clauses.reductionMod,
+                    clauses.reductionVars,
                     makeDenseBoolArrayAttr(ctx, clauses.reductionByref),
                     makeArrayAttr(ctx, clauses.reductionSyms));
 }
@@ -2221,7 +2247,7 @@ void LoopOp::build(OpBuilder &builder, OperationState &state,
 
   LoopOp::build(builder, state, clauses.bindKind, clauses.privateVars,
                 makeArrayAttr(ctx, clauses.privateSyms), clauses.order,
-                clauses.orderMod, clauses.reductionVars,
+                clauses.orderMod, clauses.reductionMod, clauses.reductionVars,
                 makeDenseBoolArrayAttr(ctx, clauses.reductionByref),
                 makeArrayAttr(ctx, clauses.reductionSyms));
 }
@@ -2249,7 +2275,8 @@ void WsloopOp::build(OpBuilder &builder, OperationState &state,
         /*linear_vars=*/ValueRange(), /*linear_step_vars=*/ValueRange(),
         /*nowait=*/false, /*order=*/nullptr, /*order_mod=*/nullptr,
         /*ordered=*/nullptr, /*private_vars=*/{}, /*private_syms=*/nullptr,
-        /*reduction_vars=*/ValueRange(), /*reduction_byref=*/nullptr,
+        /*reduction_mod=*/nullptr, /*reduction_vars=*/ValueRange(),
+        /*reduction_byref=*/nullptr,
         /*reduction_syms=*/nullptr, /*schedule_kind=*/nullptr,
         /*schedule_chunk=*/nullptr, /*schedule_mod=*/nullptr,
         /*schedule_simd=*/false);
@@ -2261,15 +2288,16 @@ void WsloopOp::build(OpBuilder &builder, OperationState &state,
   MLIRContext *ctx = builder.getContext();
   // TODO: Store clauses in op: allocateVars, allocatorVars, privateVars,
   // privateSyms.
-  WsloopOp::build(
-      builder, state,
-      /*allocate_vars=*/{}, /*allocator_vars=*/{}, clauses.linearVars,
-      clauses.linearStepVars, clauses.nowait, clauses.order, clauses.orderMod,
-      clauses.ordered, clauses.privateVars,
-      makeArrayAttr(ctx, clauses.privateSyms), clauses.reductionVars,
-      makeDenseBoolArrayAttr(ctx, clauses.reductionByref),
-      makeArrayAttr(ctx, clauses.reductionSyms), clauses.scheduleKind,
-      clauses.scheduleChunk, clauses.scheduleMod, clauses.scheduleSimd);
+  WsloopOp::build(builder, state,
+                  /*allocate_vars=*/{}, /*allocator_vars=*/{},
+                  clauses.linearVars, clauses.linearStepVars, clauses.nowait,
+                  clauses.order, clauses.orderMod, clauses.ordered,
+                  clauses.privateVars, makeArrayAttr(ctx, clauses.privateSyms),
+                  clauses.reductionMod, clauses.reductionVars,
+                  makeDenseBoolArrayAttr(ctx, clauses.reductionByref),
+                  makeArrayAttr(ctx, clauses.reductionSyms),
+                  clauses.scheduleKind, clauses.scheduleChunk,
+                  clauses.scheduleMod, clauses.scheduleSimd);
 }
 
 LogicalResult WsloopOp::verify() {
@@ -2316,7 +2344,7 @@ void SimdOp::build(OpBuilder &builder, OperationState &state,
                 /*linear_vars=*/{}, /*linear_step_vars=*/{},
                 clauses.nontemporalVars, clauses.order, clauses.orderMod,
                 clauses.privateVars, makeArrayAttr(ctx, clauses.privateSyms),
-                clauses.reductionVars,
+                clauses.reductionMod, clauses.reductionVars,
                 makeDenseBoolArrayAttr(ctx, clauses.reductionByref),
                 makeArrayAttr(ctx, clauses.reductionSyms), clauses.safelen,
                 clauses.simdlen);
@@ -2548,7 +2576,7 @@ void TaskloopOp::build(OpBuilder &builder, OperationState &state,
       makeDenseBoolArrayAttr(ctx, clauses.inReductionByref),
       makeArrayAttr(ctx, clauses.inReductionSyms), clauses.mergeable,
       clauses.nogroup, clauses.numTasks, clauses.priority, /*private_vars=*/{},
-      /*private_syms=*/nullptr, clauses.reductionVars,
+      /*private_syms=*/nullptr, clauses.reductionMod, clauses.reductionVars,
       makeDenseBoolArrayAttr(ctx, clauses.reductionByref),
       makeArrayAttr(ctx, clauses.reductionSyms), clauses.untied);
 }
@@ -3123,6 +3151,41 @@ LogicalResult PrivateClauseOp::verifyRegions() {
 void MaskedOp::build(OpBuilder &builder, OperationState &state,
                      const MaskedOperands &clauses) {
   MaskedOp::build(builder, state, clauses.filteredThreadId);
+}
+
+//===----------------------------------------------------------------------===//
+// Spec 5.2: Scan construct (5.6)
+//===----------------------------------------------------------------------===//
+
+void ScanOp::build(OpBuilder &builder, OperationState &state,
+                   const ScanOperands &clauses) {
+  ScanOp::build(builder, state, clauses.inclusiveVars, clauses.exclusiveVars);
+}
+
+LogicalResult ScanOp::verify() {
+  if (hasExclusiveVars() && hasInclusiveVars()) {
+    return emitError(
+        "Exactly one of EXCLUSIVE or INCLUSIVE clause is expected");
+  }
+  if (mlir::omp::WsloopOp parentWsLoopOp =
+          (*this)->getParentOfType<mlir::omp::WsloopOp>()) {
+    if (parentWsLoopOp.getReductionModAttr() &&
+        parentWsLoopOp.getReductionModAttr().getValue() ==
+            mlir::omp::ReductionModifier::inscan) {
+      return success();
+    }
+  }
+  if (mlir::omp::SimdOp parentSimdOp =
+          (*this)->getParentOfType<mlir::omp::SimdOp>()) {
+    if (parentSimdOp.getReductionModAttr() &&
+        parentSimdOp.getReductionModAttr().getValue() ==
+            mlir::omp::ReductionModifier::inscan) {
+      return success();
+    }
+  }
+  return emitError("SCAN directive needs to be enclosed within a parent "
+                   "worksharing loop construct or SIMD construct with INSCAN "
+                   "reduction modifier");
 }
 
 #define GET_ATTRDEF_CLASSES
