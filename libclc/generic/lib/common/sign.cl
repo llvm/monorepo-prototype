@@ -2,7 +2,18 @@
 #include <clc/clcmacro.h>
 #include <clc/common/clc_sign.h>
 
-#define FUNCTION sign
-#define __CLC_BODY <clc/common/unary_def.inc>
+_CLC_DEFINE_UNARY_BUILTIN(float, sign, __clc_sign, float)
 
-#include <clc/common/floatn.inc>
+#ifdef cl_khr_fp64
+#pragma OPENCL EXTENSION cl_khr_fp64 : enable
+
+_CLC_DEFINE_UNARY_BUILTIN(double, sign, __clc_sign, double)
+
+#endif
+
+#ifdef cl_khr_fp16
+#pragma OPENCL EXTENSION cl_khr_fp16 : enable
+
+_CLC_DEFINE_UNARY_BUILTIN(half, sign, __clc_sign, half)
+
+#endif
