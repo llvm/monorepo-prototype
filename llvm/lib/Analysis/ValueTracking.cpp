@@ -1561,6 +1561,9 @@ static void computeKnownBitsFromOperator(const Operator *I,
         // D69571).
         SimplifyQuery RecQ = Q.getWithoutCondContext();
 
+        if (isa<GetElementPtrInst>(BO) && !isa<Constant>(L))
+          break;
+
         unsigned OpNum = P->getOperand(0) == R ? 0 : 1;
         Instruction *RInst = P->getIncomingBlock(OpNum)->getTerminator();
         Instruction *LInst = P->getIncomingBlock(1 - OpNum)->getTerminator();
