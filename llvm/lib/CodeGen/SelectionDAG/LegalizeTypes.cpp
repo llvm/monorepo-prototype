@@ -910,6 +910,77 @@ SDValue DAGTypeLegalizer::CreateStackStoreLoad(SDValue Op,
   return DAG.getLoad(DestVT, dl, Store, StackPtr, MachinePointerInfo(), Align);
 }
 
+SDValue DAGTypeLegalizer::LowerBitcastInRegister(SDNode *N) const {
+  // Lower a bitcast into in-register shift operations
+  assert(N->getOpcode() == ISD::BITCAST && "Unexpected opcode!");
+
+  EVT FromVT = N->getOperand(0)->getValueType(0);
+  EVT ToVT = N->getValueType(0);
+
+  SDLoc DL(N);
+
+  bool IsBigEndian = DAG.getDataLayout().isBigEndian();
+
+  if (FromVT.isVector() && ToVT.isScalarInteger()) {
+
+    EVT ElemVT = FromVT.getVectorElementType();
+    unsigned NumElems = FromVT.getVectorNumElements();
+    unsigned ElemBits = ElemVT.getSizeInBits();
+
+    unsigned PackedBits = ToVT.getSizeInBits();
+    assert(PackedBits >= ElemBits * NumElems &&
+           "Scalar type does not have enough bits to pack vector values.");
+
+    EVT PackVT = EVT::getIntegerVT(*DAG.getContext(), ElemBits * NumElems);
+    SDValue Packed = DAG.getConstant(0, DL, PackVT);
+
+    for (unsigned I = 0; I < NumElems; ++I) {
+      unsigned ElementIndex = IsBigEndian ? (NumElems - 1 - I) : I;
+      SDValue Elem =
+          DAG.getNode(ISD::EXTRACT_VECTOR_ELT, DL, ElemVT, N->getOperand(0),
+                      DAG.getIntPtrConstant(ElementIndex, DL));
+      SDValue ExtElem = DAG.getNode(ISD::ZERO_EXTEND, DL, PackVT, Elem);
+      SDValue ShiftAmount =
+          DAG.getShiftAmountConstant(ElemBits * I, PackVT, DL);
+      SDValue ShiftedElem =
+          DAG.getNode(ISD::SHL, DL, PackVT, ExtElem, ShiftAmount);
+
+      Packed = DAG.getNode(ISD::OR, DL, PackVT, Packed, ShiftedElem);
+    }
+
+    return DAG.getBitcast(ToVT, Packed);
+
+  } else if (FromVT.isScalarInteger() && ToVT.isVector()) {
+
+    EVT ElemVT = ToVT.getVectorElementType();
+    unsigned NumElems = ToVT.getVectorNumElements();
+    unsigned ElemBits = ElemVT.getSizeInBits();
+
+    unsigned PackedBits = FromVT.getSizeInBits();
+    assert(PackedBits >= ElemBits * NumElems &&
+           "Vector does not have enough bits to unpack scalar type.");
+
+    SmallVector<SDValue, 8> Elements;
+    Elements.reserve(NumElems);
+
+    for (unsigned I = 0; I < NumElems; ++I) {
+      unsigned ElementIndex = IsBigEndian ? (NumElems - 1 - I) : I;
+      unsigned ShiftAmountVal = ElemBits * ElementIndex;
+
+      SDValue ShiftAmount =
+          DAG.getShiftAmountConstant(ShiftAmountVal, FromVT, DL);
+      SDValue Shifted =
+          DAG.getNode(ISD::SRL, DL, FromVT, N->getOperand(0), ShiftAmount);
+      SDValue Element = DAG.getNode(ISD::TRUNCATE, DL, ElemVT, Shifted);
+      Elements.push_back(Element);
+    }
+
+    return DAG.getBuildVector(ToVT, DL, Elements);
+  }
+
+  return {};
+}
+
 /// Replace the node's results with custom code provided by the target and
 /// return "true", or do nothing and return "false".
 /// The last parameter is FALSE if we are dealing with a node with legal
