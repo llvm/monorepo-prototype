@@ -255,7 +255,7 @@ Changes in existing checks
 
 - Improved :doc:`bugprone-unsafe-functions
   <clang-tidy/checks/bugprone/unsafe-functions>` check to allow specifying
-  additional functions to match.
+  additional functions to match, including C++ member functions.
 
 - Improved :doc:`bugprone-unused-local-non-trivial-variable
   <clang-tidy/checks/bugprone/unused-local-non-trivial-variable>` check to avoid
