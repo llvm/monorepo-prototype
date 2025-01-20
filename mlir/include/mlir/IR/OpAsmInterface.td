@@ -23,7 +23,7 @@ include "mlir/IR/OpBase.td"
 
 def OpAsmOpInterface : OpInterface<"OpAsmOpInterface"> {
   let description = [{
-    This interface provides hooks to interact with the AsmPrinter and AsmParser
+    This op interface provides hooks to interact with the AsmPrinter and AsmParser
     classes.
   }];
   let cppNamespace = "::mlir";
@@ -105,6 +105,27 @@ def OpAsmOpInterface : OpInterface<"OpAsmOpInterface"> {
       is ignored.
       }],
       "::llvm::StringRef", "getDefaultDialect", (ins), "", "return \"\";"
+    >,
+  ];
+}
+
+//===----------------------------------------------------------------------===//
+// OpAsmTypeInterface
+//===----------------------------------------------------------------------===//
+
+def OpAsmTypeInterface : TypeInterface<"OpAsmTypeInterface"> {
+  let description = [{
+    This type interface provides hooks to interact with the AsmPrinter and AsmParser
+    classes.
+  }];
+  let cppNamespace = "::mlir";
+
+  let methods = [
+    InterfaceMethod<[{
+        Get a name to use when printing value of this type.
+      }],
+      "void", "getAsmName",
+      (ins "::mlir::OpAsmSetNameFn":$setNameFn), "", ";"
     >,
   ];
 }
