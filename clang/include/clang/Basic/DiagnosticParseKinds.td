@@ -1099,6 +1099,13 @@ def err_lambda_capture_misplaced_ellipsis : Error<
   "the name of the capture">;
 def err_lambda_capture_multiple_ellipses : Error<
   "multiple ellipses in pack capture">;
+def err_binding_multiple_ellipses : Error<
+  "multiple packs in structured binding declaration">;
+def note_previous_ellipsis : Note<
+  "previous binding pack specified here">;
+def ext_cxx_binding_pack : ExtWarn<
+  "structured binding pack is incompatible with C++ standards before C++2c">,
+  InGroup<CXX26>;
 def err_capture_default_first : Error<
   "capture default must be first">;
 def ext_decl_attrs_on_lambda : ExtWarn<

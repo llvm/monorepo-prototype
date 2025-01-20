@@ -5155,7 +5155,7 @@ static bool EvaluateDecl(EvalInfo &Info, const Decl *D) {
     OK &= EvaluateVarDecl(Info, VD);
 
   if (const DecompositionDecl *DD = dyn_cast<DecompositionDecl>(D))
-    for (auto *BD : DD->bindings())
+    for (auto *BD : DD->flat_bindings())
       if (auto *VD = BD->getHoldingVar())
         OK &= EvaluateDecl(Info, VD);
 
@@ -17137,6 +17137,7 @@ static ICEDiag CheckICE(const Expr* E, const ASTContext &Ctx) {
   case Expr::SYCLUniqueStableNameExprClass:
   case Expr::CXXParenListInitExprClass:
   case Expr::HLSLOutArgExprClass:
+  case Expr::ResolvedUnexpandedPackExprClass:
     return ICEDiag(IK_NotICE, E->getBeginLoc());
 
   case Expr::InitListExprClass: {
