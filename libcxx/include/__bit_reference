@@ -10,6 +10,7 @@
 #ifndef _LIBCPP___BIT_REFERENCE
 #define _LIBCPP___BIT_REFERENCE
 
+#include <__algorithm/copy.h>
 #include <__algorithm/copy_n.h>
 #include <__algorithm/min.h>
 #include <__bit/countr.h>
@@ -24,6 +25,7 @@
 #include <__type_traits/conditional.h>
 #include <__type_traits/is_constant_evaluated.h>
 #include <__type_traits/void_t.h>
+#include <__utility/pair.h>
 #include <__utility/swap.h>
 
 #if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
@@ -977,6 +979,7 @@ private:
   friend class __bit_iterator<_Cp, true>;
   template <class _Dp>
   friend struct __bit_array;
+  friend struct __copy_impl;
 
   template <bool _FillVal, class _Dp>
   _LIBCPP_CONSTEXPR_SINCE_CXX20 friend void

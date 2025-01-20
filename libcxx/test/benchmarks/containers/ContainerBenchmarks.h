@@ -51,6 +51,30 @@ void BM_Assignment(benchmark::State& st, Container) {
   }
 }
 
+template <class Container, class GenInputs>
+void BM_assign_iter_iter(benchmark::State& st, Container c, GenInputs gen) {
+  auto in  = gen(st.range(0));
+  auto beg = in.begin();
+  auto end = in.end();
+  for (auto _ : st) {
+    c.assign(beg, end);
+    DoNotOptimizeData(c);
+    DoNotOptimizeData(in);
+    benchmark::ClobberMemory();
+  }
+}
+
+template <std::size_t... sz, typename Container, typename GenInputs>
+void BM_assign_range(benchmark::State& st, Container c, GenInputs gen) {
+  auto in = gen(st.range(0));
+  for (auto _ : st) {
+    c.assign_range(in);
+    DoNotOptimizeData(c);
+    DoNotOptimizeData(in);
+    benchmark::ClobberMemory();
+  }
+}
+
 template <std::size_t... sz, typename Container, typename GenInputs>
 void BM_AssignInputIterIter(benchmark::State& st, Container c, GenInputs gen) {
   auto v = gen(1, sz...);
@@ -105,6 +129,40 @@ void BM_Pushback_no_grow(benchmark::State& state, Container c) {
       c.push_back(i);
     }
     benchmark::DoNotOptimize(c.data());
+  }
+}
+
+template <class Container, class GenInputs>
+void BM_insert_iter_iter_iter(benchmark::State& st, Container c, GenInputs gen) {
+  auto in        = gen(st.range(0));
+  const auto beg = in.begin();
+  const auto end = in.end();
+  for (auto _ : st) {
+    c.resize(100);
+    c.insert(c.begin() + 50, beg, end);
+    DoNotOptimizeData(c);
+    benchmark::ClobberMemory();
+  }
+}
+
+template <class Container, class GenInputs>
+void BM_insert_range(benchmark::State& st, Container c, GenInputs gen) {
+  auto in = gen(st.range(0));
+  for (auto _ : st) {
+    c.resize(100);
+    c.insert_range(c.begin() + 50, in);
+    DoNotOptimizeData(c);
+    benchmark::ClobberMemory();
+  }
+}
+
+template <class Container, class GenInputs>
+void BM_append_range(benchmark::State& st, Container c, GenInputs gen) {
+  auto in = gen(st.range(0));
+  for (auto _ : st) {
+    c.append_range(in);
+    DoNotOptimizeData(c);
+    benchmark::ClobberMemory();
   }
 }
 
