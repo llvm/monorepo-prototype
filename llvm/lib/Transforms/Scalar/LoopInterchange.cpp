@@ -1379,7 +1379,7 @@ bool LoopInterchangeTransform::transform() {
     for (Instruction &I :
          make_early_inc_range(make_range(InnerLoopPreHeader->begin(),
                                          std::prev(InnerLoopPreHeader->end()))))
-      I.moveBeforePreserving(OuterLoopHeader->getTerminator());
+      I.moveBeforePreserving(OuterLoopHeader->getTerminator()->getIterator());
   }
 
   Transformed |= adjustLoopLinks();
@@ -1414,7 +1414,7 @@ static void swapBBContents(BasicBlock *BB1, BasicBlock *BB2) {
 
   // Move instructions from TempInstrs to BB2.
   for (Instruction *I : TempInstrs)
-    I->insertBefore(BB2->getTerminator());
+    I->insertBefore(BB2->getTerminator()->getIterator());
 }
 
 // Update BI to jump to NewBB instead of OldBB. Records updates to the
