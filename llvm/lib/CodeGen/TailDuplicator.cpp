@@ -67,18 +67,6 @@ static cl::opt<unsigned> TailDupIndirectBranchSize(
              "end with indirect branches."), cl::init(20),
     cl::Hidden);
 
-static cl::opt<unsigned>
-    TailDupPredSize("tail-dup-pred-size",
-                    cl::desc("Maximum predecessors (maximum successors at the "
-                             "same time) to consider tail duplicating blocks."),
-                    cl::init(16), cl::Hidden);
-
-static cl::opt<unsigned>
-    TailDupSuccSize("tail-dup-succ-size",
-                    cl::desc("Maximum successors (maximum predecessors at the "
-                             "same time) to consider tail duplicating blocks."),
-                    cl::init(16), cl::Hidden);
-
 static cl::opt<bool>
     TailDupVerify("tail-dup-verify",
                   cl::desc("Verify sanity of PHI instructions during taildup"),
@@ -573,14 +561,6 @@ bool TailDuplicator::shouldTailDuplicate(bool IsSimple,
   if (TailBB.isSuccessor(&TailBB))
     return false;
 
-  // Duplicating a BB which has both multiple predecessors and successors will
-  // result in a complex CFG and also may cause huge amount of PHI nodes. If we
-  // want to remove this limitation, we have to address
-  // https://github.com/llvm/llvm-project/issues/78578.
-  if (TailBB.pred_size() > TailDupPredSize &&
-      TailBB.succ_size() > TailDupSuccSize)
-    return false;
-
   // Set the limit on the cost to duplicate. When optimizing for size,
   // duplicate only one, because one branch instruction can be eliminated to
   // compensate for the duplication.
@@ -602,17 +582,19 @@ bool TailDuplicator::shouldTailDuplicate(bool IsSimple,
       TailBB.canFallThrough())
     return false;
 
-  // If the target has hardware branch prediction that can handle indirect
-  // branches, duplicating them can often make them predictable when there
-  // are common paths through the code.  The limit needs to be high enough
-  // to allow undoing the effects of tail merging and other optimizations
-  // that rearrange the predecessors of the indirect branch.
-
-  bool HasIndirectbr = false;
+  // Only duplicate the blocks containing computed gotos. This basically
+  // unfactors computed gotos that were factored early on in the compilation
+  // process to speed up edge based data flow. If we do not unfactor them again,
+  // it can seriously pessimize code with many computed jumps in the source
+  // code, such as interpreters.
+  bool HasComputedGoto = false;
   if (!TailBB.empty())
-    HasIndirectbr = TailBB.back().isIndirectBranch();
+    HasComputedGoto = TailBB.back().isIndirectBranch(
+        /*Type=*/MachineInstr::AnyInBundle,
+        // Jump tables are not considered computed gotos.
+        /*IncludeJumpTable=*/false);
 
-  if (HasIndirectbr && PreRegAlloc)
+  if (HasComputedGoto && PreRegAlloc)
     MaxDuplicateCount = TailDupIndirectBranchSize;
 
   // Check the instructions in the block to determine whether tail-duplication
@@ -684,7 +666,7 @@ bool TailDuplicator::shouldTailDuplicate(bool IsSimple,
     }
   }
 
-  if (HasIndirectbr && PreRegAlloc)
+  if (HasComputedGoto && PreRegAlloc)
     return true;
 
   if (IsSimple)
