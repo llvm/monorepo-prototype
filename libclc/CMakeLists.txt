@@ -347,7 +347,6 @@ foreach( t ${LIBCLC_TARGETS_TO_BUILD} )
     string( TOUPPER "CLC_${MACRO_ARCH}" CLC_TARGET_DEFINE )
 
     list( APPEND build_flags
-      -D__CLC_INTERNAL
       -D${CLC_TARGET_DEFINE}
       # All libclc builtin libraries see CLC headers
       -I${CMAKE_CURRENT_SOURCE_DIR}/clc/include
@@ -359,12 +358,20 @@ foreach( t ${LIBCLC_TARGETS_TO_BUILD} )
       list( APPEND build_flags -mcpu=${cpu} )
     endif()
 
+    set( clc_build_flags ${build_flags} -DCLC_INTERNAL )
+
+    # clspv and spir-v targets remap some CLC functions to OpenCL builtins.
+    # Automatically provide those declarations to the compiler for CLC builtins.
+    if ( ARCH STREQUAL spirv OR ARCH STREQUAL spirv64 OR ARCH STREQUAL clspv OR ARCH STREQUAL clspv64 )
+      list( APPEND clc_build_flags -Xclang -fdeclare-opencl-builtins )
+    endif()
+
     add_libclc_builtin_set(
       CLC_INTERNAL
       ARCH ${ARCH}
       ARCH_SUFFIX clc-${arch_suffix}
       TRIPLE ${clang_triple}
-      COMPILE_FLAGS ${build_flags}
+      COMPILE_FLAGS ${clc_build_flags}
       OPT_FLAGS ${opt_flags}
       LIB_FILES ${clc_lib_files}
     )
