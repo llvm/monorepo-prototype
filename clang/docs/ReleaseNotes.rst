@@ -798,6 +798,9 @@ Improvements to Clang's diagnostics
     }
 - Diagnose invalid declarators in the declaration of constructors and destructors (#GH121706).
 
+- The :doc:`ThreadSafetyAnalysis` now supports ``-Wthread-safety-addressof``,
+  which enables warning if the address of guarded variables is obtained.
+
 Improvements to Clang's time-trace
 ----------------------------------
 
