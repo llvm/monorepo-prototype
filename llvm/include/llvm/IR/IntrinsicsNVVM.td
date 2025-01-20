@@ -5033,4 +5033,8 @@ def int_nvvm_cp_async_bulk_shared_cta_to_global
        NoCapture<ArgIndex<0>>, NoCapture<ArgIndex<1>>,
        ImmArg<ArgIndex<4>>]>;
 
+
+def int_nvvm_griddepcontrol_launch_dependents: DefaultAttrsIntrinsic<[], []>;
+def int_nvvm_griddepcontrol_wait: DefaultAttrsIntrinsic<[], []>;
+
 } // let TargetPrefix = "nvvm"
