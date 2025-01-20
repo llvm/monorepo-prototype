@@ -377,6 +377,7 @@ C Language Changes
 ------------------
 
 - Extend clang's ``<limits.h>`` to define ``LONG_LONG_*`` macros for Android's bionic.
+- Added support for the ``__nullptr`` keyword. 
 
 C2y Feature Support
 ^^^^^^^^^^^^^^^^^^^

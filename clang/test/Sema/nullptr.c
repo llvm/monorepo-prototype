@@ -108,3 +108,10 @@ void test_f1() {
   int ir = (f1)(nullptr);
 }
 
+// __nullptr keyword in C
+void foo(void *);
+void bar() { foo(__nullptr); }
+static_assert(nullptr == __nullptr);
+static_assert(_Generic(typeof(__nullptr), nullptr_t: true, default: false));
+_Static_assert(__nullptr == 0); // Test that its value matches that of NULL
+_Static_assert(_Generic(__typeof(__nullptr), int : 0, void * : 0, default : 1)); // Test that it's type is not the same as what NULL would generally have.
