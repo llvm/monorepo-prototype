@@ -52,7 +52,7 @@ to print the full trace. To get nicer stack traces in error messages add ``-fno-
     # Compile and link
     % clang++ -g -fsanitize=type example_AliasViolation.cc
 
-If a strict aliasing violation is detected, the program will print an error message to stderr. 
+The program will print an error message to stderr each time a strict aliasing violation is detected. 
 The program won't terminate, which will allow you to detect many strict aliasing violations in one 
 run.
 
