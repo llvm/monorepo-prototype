@@ -1232,6 +1232,7 @@ clang-format
 - Adds support for bash globstar in ``.clang-format-ignore``.
 - Adds ``WrapNamespaceBodyWithEmptyLines`` option.
 - Adds the ``ExportBlockIndentation`` option.
+- Adds ``BreakBeforeTemplateCloser`` option.
 
 libclang
 --------
