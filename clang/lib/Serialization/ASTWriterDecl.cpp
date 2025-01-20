@@ -1985,8 +1985,7 @@ void ASTDeclWriter::VisitNonTypeTemplateParmDecl(NonTypeTemplateParmDecl *D) {
   // For an expanded parameter pack, record the number of expansion types here
   // so that it's easier for deserialization to allocate the right amount of
   // memory.
-  Expr *TypeConstraint = D->getPlaceholderTypeConstraint();
-  Record.push_back(!!TypeConstraint);
+  Record.push_back(D->hasPlaceholderTypeConstraint());
   if (D->isExpandedParameterPack())
     Record.push_back(D->getNumExpansionTypes());
 
@@ -1994,8 +1993,14 @@ void ASTDeclWriter::VisitNonTypeTemplateParmDecl(NonTypeTemplateParmDecl *D) {
   // TemplateParmPosition.
   Record.push_back(D->getDepth());
   Record.push_back(D->getPosition());
-  if (TypeConstraint)
-    Record.AddStmt(TypeConstraint);
+
+  if (D->hasPlaceholderTypeConstraint()) {
+    Expr *TypeConstraint = D->getPlaceholderTypeConstraint();
+    Record.push_back(/*PlaceholderTypeConstraintInitialized=*/TypeConstraint !=
+                     nullptr);
+    if (TypeConstraint)
+      Record.AddStmt(TypeConstraint);
+  }
 
   if (D->isExpandedParameterPack()) {
     for (unsigned I = 0, N = D->getNumExpansionTypes(); I != N; ++I) {
