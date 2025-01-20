@@ -1,5 +1,5 @@
 // Test hlfir.count operation lowering with different default integer kinds.
-// RUN: fir-opt %s -lower-hlfir-intrinsics | FileCheck %s
+// RUN: fir-test-opt %s -lower-hlfir-intrinsics | FileCheck %s
 
 module attributes {fir.defaultkind = "a1c4d8i8l4r4", fir.kindmap = ""} {
   func.func @test_i8(%arg0: !fir.box<!fir.array<?x?x!fir.logical<4>>> {fir.bindc_name = "x"}, %arg1: i64) -> !hlfir.expr<?xi64> {

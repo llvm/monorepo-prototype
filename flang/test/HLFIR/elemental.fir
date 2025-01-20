@@ -1,7 +1,7 @@
 // Test hlfir.elemental and hlfir.yield_element operation parse, verify
 // (no errors), and unparse.
 
-// RUN: fir-opt %s | fir-opt | FileCheck %s
+// RUN: fir-test-opt %s | fir-test-opt | FileCheck %s
 
 func.func @numeric_type(%x: !fir.ref<!fir.array<10x20xi32>>, %y: !fir.ref<!fir.array<10x20xi32>>) {
   %c10 = arith.constant 10 : index

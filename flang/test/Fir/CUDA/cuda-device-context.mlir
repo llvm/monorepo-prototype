@@ -1,4 +1,4 @@
-// RUN: fir-opt --simplify-intrinsics %s | FileCheck %s
+// RUN: fir-test-opt --simplify-intrinsics %s | FileCheck %s
 
 func.func @_QPsum_in_device(%arg0: !fir.ref<!fir.array<?xi32>> {cuf.data_attr = #cuf.cuda<device>, fir.bindc_name = "a"}, %arg1: i32 {fir.bindc_name = "n"}) attributes {cuf.proc_attr = #cuf.cuda_proc<global>} {
   %c5_i32 = arith.constant 5 : i32

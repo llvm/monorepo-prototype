@@ -1,5 +1,5 @@
 // Test hlfir.dot_product simplification to a reduction loop:
-// RUN: fir-opt --simplify-hlfir-intrinsics %s | FileCheck %s
+// RUN: fir-test-opt --simplify-hlfir-intrinsics %s | FileCheck %s
 
 func.func @dot_product_integer(%arg0: !hlfir.expr<?xi16>, %arg1: !hlfir.expr<?xi32>) -> i32 {
   %res = hlfir.dot_product %arg0 %arg1 : (!hlfir.expr<?xi16>, !hlfir.expr<?xi32>) -> i32

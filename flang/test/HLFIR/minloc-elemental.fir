@@ -1,4 +1,4 @@
-// RUN: fir-opt %s -opt-bufferization | FileCheck %s
+// RUN: fir-test-opt %s -opt-bufferization | FileCheck %s
 
 func.func @_QPtest(%arg0: !fir.box<!fir.array<?xi32>> {fir.bindc_name = "array"}, %arg1: !fir.ref<i32> {fir.bindc_name = "val"}, %arg2: !fir.box<!fir.array<?xi32>> {fir.bindc_name = "m"}) {
   %c0 = arith.constant 0 : index

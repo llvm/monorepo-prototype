@@ -1,4 +1,4 @@
-// RUN: fir-opt -split-input-file -verify-diagnostics %s
+// RUN: fir-test-opt -split-input-file -verify-diagnostics %s
 
 func.func @_QPsub1() {
   %0 = fir.alloca !fir.box<!fir.heap<!fir.array<?xf32>>> {bindc_name = "a", uniq_name = "_QFsub1Ea"}

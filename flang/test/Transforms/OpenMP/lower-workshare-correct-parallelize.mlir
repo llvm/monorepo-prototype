@@ -1,4 +1,4 @@
-// RUN: fir-opt --lower-workshare --allow-unregistered-dialect %s | FileCheck %s
+// RUN: fir-test-opt --lower-workshare --allow-unregistered-dialect %s | FileCheck %s
 
 // Check that the safe to parallelize `fir.declare` op will not be parallelized
 // due to its operand %alloc not being reloaded outside the omp.single.

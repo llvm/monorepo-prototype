@@ -1,4 +1,4 @@
-// RUN: fir-opt --split-input-file --compiler-generated-names --fir-to-llvm-ir="target=x86_64-unknown-linux-gnu type-descriptors-renamed-for-assembly=true" %s | FileCheck %s
+// RUN: fir-test-opt --split-input-file --compiler-generated-names --fir-to-llvm-ir="target=x86_64-unknown-linux-gnu type-descriptors-renamed-for-assembly=true" %s | FileCheck %s
 
 module @mod1 attributes {gpu.container} {
   gpu.module @gpu1 {

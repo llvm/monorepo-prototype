@@ -1,4 +1,4 @@
-// RUN: fir-opt --split-input-file --omp-map-info-finalization %s | FileCheck %s
+// RUN: fir-test-opt --split-input-file --omp-map-info-finalization %s | FileCheck %s
 
 func.func @test_descriptor_expansion_pass(%arg0: !fir.box<!fir.array<?xi32>>) {
   %0 = fir.alloca !fir.box<!fir.heap<i32>>

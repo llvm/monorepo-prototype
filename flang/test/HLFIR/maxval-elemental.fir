@@ -1,5 +1,5 @@
 // Test maxval inlining for both elemental and designate
-// RUN: fir-opt %s -opt-bufferization | FileCheck %s
+// RUN: fir-test-opt %s -opt-bufferization | FileCheck %s
 
 // subroutine test(array)
 //   integer :: array(:), x

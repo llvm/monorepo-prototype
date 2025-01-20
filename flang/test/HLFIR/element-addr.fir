@@ -1,5 +1,5 @@
 // Test hlfir.element_addr operation parse, verify (no errors), and unparse.
-// RUN: fir-opt %s | fir-opt | FileCheck %s
+// RUN: fir-test-opt %s | fir-test-opt | FileCheck %s
 
 func.func @test_element_addr(%x: !fir.ref<!fir.array<100xf32>>, %vector: !fir.ref<!fir.array<20xi32>>, %y: !fir.ref<!fir.array<20xf32>>) {
   %c20 = arith.constant 20 : index

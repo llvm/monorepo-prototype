@@ -1,4 +1,4 @@
-// RUN: fir-opt --split-input-file --omp-maps-for-privatized-symbols %s | FileCheck %s
+// RUN: fir-test-opt --split-input-file --omp-maps-for-privatized-symbols %s | FileCheck %s
 module attributes {omp.is_target_device = false} {
   omp.private {type = private} @_QFtarget_simpleEsimple_var_private_ref_box_heap_i32 : !fir.ref<!fir.box<!fir.heap<i32>>> alloc {
   ^bb0(%arg0: !fir.ref<!fir.box<!fir.heap<i32>>>):

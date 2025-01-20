@@ -1,4 +1,4 @@
-// RUN: fir-opt --split-input-file --constant-argument-globalisation-opt < %s | FileCheck %s
+// RUN: fir-test-opt --split-input-file --constant-argument-globalisation-opt < %s | FileCheck %s
 
 module {
 // Test for "two conditional writes to the same alloca doesn't get replaced."

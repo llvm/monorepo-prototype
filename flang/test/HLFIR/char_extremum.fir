@@ -1,6 +1,6 @@
 // Test hlfir.char_extremum operation parse, verify (no errors), and unparse.
 
-// RUN: fir-opt %s | fir-opt | FileCheck %s
+// RUN: fir-test-opt %s | fir-test-opt | FileCheck %s
 
 
 // variable check

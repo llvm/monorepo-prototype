@@ -1,4 +1,4 @@
-// RUN: %not_todo_cmd fir-opt --fir-to-llvm-ir="target=x86_64-unknown-linux-gnu" %s 2>&1 | FileCheck %s
+// RUN: %not_todo_cmd fir-test-opt --fir-to-llvm-ir="target=x86_64-unknown-linux-gnu" %s 2>&1 | FileCheck %s
 
 // Test `fir.allocmem` of derived type with LEN parameters conversion to llvm.
 // Not implemented yet.

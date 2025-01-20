@@ -1,4 +1,4 @@
-// RUN: fir-opt -annotate-constant %s | FileCheck %s
+// RUN: fir-test-opt -annotate-constant %s | FileCheck %s
 
 // CHECK-LABEL: func @annotate_test() -> !fir.ref<!fir.array<?xi32>> {
 func.func @annotate_test() -> !fir.ref<!fir.array<?xi32>> {

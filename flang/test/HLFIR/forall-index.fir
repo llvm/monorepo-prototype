@@ -1,7 +1,7 @@
 // Test hlfir.forall_index operation parse, verify (no errors), unparse,
 // and canonicalization.
-// RUN: fir-opt %s | fir-opt | FileCheck %s
-// RUN: fir-opt -canonicalize %s | FileCheck %s --check-prefix=CANONICALIZATION
+// RUN: fir-test-opt %s | fir-test-opt | FileCheck %s
+// RUN: fir-test-opt -canonicalize %s | FileCheck %s --check-prefix=CANONICALIZATION
 
 func.func @forall_index(%x: !fir.ref<!fir.array<10xf32>>, %y: !fir.ref<!fir.array<10xf32>>) {
   %c1 = arith.constant 1 : index

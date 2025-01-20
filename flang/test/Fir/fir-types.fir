@@ -1,6 +1,6 @@
 // Test the FIR types
 // Parse types and check that we can reparse what we print.
-// RUN: fir-opt --split-input-file %s | fir-opt --split-input-file | FileCheck %s
+// RUN: fir-test-opt --split-input-file %s | fir-test-opt --split-input-file | FileCheck %s
 
 // Fortran Intrinsic types
 // CHECK-LABEL: func private @it1() -> !fir.int<4>

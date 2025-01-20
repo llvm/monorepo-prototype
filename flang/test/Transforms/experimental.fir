@@ -1,4 +1,4 @@
-// RUN: fir-opt --split-input-file --simplify-intrinsics='enable-experimental=true' %s | FileCheck %s
+// RUN: fir-test-opt --split-input-file --simplify-intrinsics='enable-experimental=true' %s | FileCheck %s
 
 // check that a simple function compiled with experimental enabled
 module attributes {fir.defaultkind = "a1c4d8i4l4r4", fir.kindmap = "", llvm.target_triple = "native"} {

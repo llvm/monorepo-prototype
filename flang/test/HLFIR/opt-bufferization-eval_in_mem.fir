@@ -1,4 +1,4 @@
-// RUN: fir-opt --opt-bufferization %s | FileCheck %s
+// RUN: fir-test-opt --opt-bufferization %s | FileCheck %s
 
 // Fortran F2023 15.5.2.14 point 4. ensures that _QPfoo cannot access _QFtestEx
 // and the temporary storage for the result can be avoided.

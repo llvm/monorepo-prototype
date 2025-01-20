@@ -1,6 +1,6 @@
-// RUN: fir-opt --split-input-file --fir-to-llvm-ir %s | FileCheck --check-prefixes=COMMON,DEFAULT %s
-// RUN: fir-opt --kind-mapping="i1:4,i2:8,i4:16,i8:32,i16:64" --split-input-file --fir-to-llvm-ir %s | FileCheck --check-prefixes=COMMON,ALL-CUSTOM %s
-// RUN: fir-opt --kind-mapping="i2:1,i4:8,i16:32" --split-input-file --fir-to-llvm-ir %s | FileCheck --check-prefixes=COMMON,SOME-CUSTOM %s
+// RUN: fir-test-opt --split-input-file --fir-to-llvm-ir %s | FileCheck --check-prefixes=COMMON,DEFAULT %s
+// RUN: fir-test-opt --kind-mapping="i1:4,i2:8,i4:16,i8:32,i16:64" --split-input-file --fir-to-llvm-ir %s | FileCheck --check-prefixes=COMMON,ALL-CUSTOM %s
+// RUN: fir-test-opt --kind-mapping="i2:1,i4:8,i16:32" --split-input-file --fir-to-llvm-ir %s | FileCheck --check-prefixes=COMMON,SOME-CUSTOM %s
 
 // Test `!fir.integer<KIND>` conversion with and without kind-mapping string
 

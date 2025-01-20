@@ -1,10 +1,10 @@
-// RUN: fir-opt --split-input-file --target-rewrite="target=i386-unknown-linux-gnu" %s | FileCheck %s --check-prefixes=I32,ALL
-// RUN: fir-opt --split-input-file --target-rewrite="target=x86_64-unknown-linux-gnu" %s | FileCheck %s --check-prefixes=X64,ALL
-// RUN: fir-opt --split-input-file --target-rewrite="target=aarch64-unknown-linux-gnu" %s | FileCheck %s --check-prefixes=AARCH64,ALL
-// RUN: fir-opt --split-input-file --target-rewrite="target=powerpc64le-unknown-linux-gnu" %s | FileCheck %s --check-prefixes=PPC,ALL
-// RUN: fir-opt --split-input-file --target-rewrite="target=sparc64-unknown-linux-gnu" %s | FileCheck %s --check-prefixes=SPARCV9,ALL
-// RUN: fir-opt --split-input-file --target-rewrite="target=sparcv9-sun-solaris2.11" %s | FileCheck %s --check-prefixes=SPARCV9,ALL
-// RUN: fir-opt --split-input-file --target-rewrite="target=loongarch64-unknown-linux-gnu" %s | FileCheck %s --check-prefixes=LOONGARCH64,ALL
+// RUN: fir-test-opt --split-input-file --target-rewrite="target=i386-unknown-linux-gnu" %s | FileCheck %s --check-prefixes=I32,ALL
+// RUN: fir-test-opt --split-input-file --target-rewrite="target=x86_64-unknown-linux-gnu" %s | FileCheck %s --check-prefixes=X64,ALL
+// RUN: fir-test-opt --split-input-file --target-rewrite="target=aarch64-unknown-linux-gnu" %s | FileCheck %s --check-prefixes=AARCH64,ALL
+// RUN: fir-test-opt --split-input-file --target-rewrite="target=powerpc64le-unknown-linux-gnu" %s | FileCheck %s --check-prefixes=PPC,ALL
+// RUN: fir-test-opt --split-input-file --target-rewrite="target=sparc64-unknown-linux-gnu" %s | FileCheck %s --check-prefixes=SPARCV9,ALL
+// RUN: fir-test-opt --split-input-file --target-rewrite="target=sparcv9-sun-solaris2.11" %s | FileCheck %s --check-prefixes=SPARCV9,ALL
+// RUN: fir-test-opt --split-input-file --target-rewrite="target=loongarch64-unknown-linux-gnu" %s | FileCheck %s --check-prefixes=LOONGARCH64,ALL
 
 // -----
 

@@ -1,6 +1,6 @@
 // Test code generation to FIR of hlfir.designate operations
 // without component reference.
-// RUN: fir-opt %s -convert-hlfir-to-fir | FileCheck %s
+// RUN: fir-test-opt %s -convert-hlfir-to-fir | FileCheck %s
 
 func.func @array_ref(%arg0: !fir.box<!fir.array<?xf32>>, %arg1: !fir.ref<i64>) {
   %0:2 = hlfir.declare %arg1 {uniq_name = "n"} : (!fir.ref<i64>) -> (!fir.ref<i64>, !fir.ref<i64>)

@@ -1,6 +1,6 @@
 // Test hlfir.copy_in and hlfir.copy_out operation codegen
 
-// RUN: fir-opt %s -convert-hlfir-to-fir | FileCheck %s
+// RUN: fir-test-opt %s -convert-hlfir-to-fir | FileCheck %s
 
 func.func @test_copy_in(%box: !fir.box<!fir.array<?xf64>>, %temp: !fir.ref<!fir.box<!fir.heap<!fir.array<?xf64>>>>) {
   %0:2 = hlfir.copy_in %box to %temp : (!fir.box<!fir.array<?xf64>>, !fir.ref<!fir.box<!fir.heap<!fir.array<?xf64>>>>) -> (!fir.box<!fir.array<?xf64>>, i1)

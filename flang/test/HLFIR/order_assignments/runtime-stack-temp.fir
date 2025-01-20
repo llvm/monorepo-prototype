@@ -1,6 +1,6 @@
 // Test code generation of hlfir.forall and hlfir.where when temporary
 // storage is needed and requires a runtime managed stack.
-// RUN: fir-opt %s --lower-hlfir-ordered-assignments | FileCheck %s
+// RUN: fir-test-opt %s --lower-hlfir-ordered-assignments | FileCheck %s
 
 func.func @test_runtime_stack(%arg0: !fir.box<!fir.array<?xi32>>, %n: !fir.ref<i32>) {
   %c1 = arith.constant 1 : index

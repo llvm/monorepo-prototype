@@ -1,6 +1,6 @@
 // Test fir.declare operation parse, verify (no errors), and unparse.
 
-// RUN: fir-opt %s | fir-opt | FileCheck %s
+// RUN: fir-test-opt %s | fir-test-opt | FileCheck %s
 
 func.func @numeric_declare(%arg0: !fir.ref<f32>) {
   %0 = fir.declare %arg0 {uniq_name = "x"} : (!fir.ref<f32>) -> !fir.ref<f32>

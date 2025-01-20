@@ -1,5 +1,5 @@
 // Test no-struct-conversion of target-rewrite pass.
-// RUN: fir-opt -target-rewrite="no-struct-conversion" %s | FileCheck %s
+// RUN: fir-test-opt -target-rewrite="no-struct-conversion" %s | FileCheck %s
 
 func.func @test(%arg0: !fir.type<t{i:i32}>) {
   return

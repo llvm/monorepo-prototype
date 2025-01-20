@@ -1,4 +1,4 @@
-// RUN: fir-opt --cse -split-input-file %s | FileCheck %s
+// RUN: fir-test-opt --cse -split-input-file %s | FileCheck %s
 
 // Check that the redundant fir.load is removed.
 func.func @fun(%arg0: !fir.ref<i64>) -> i64 {

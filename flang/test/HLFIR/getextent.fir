@@ -1,5 +1,5 @@
 // Test hlfir.get_extent operaiton parse, verify (no errors), and unparse
-// RUN: fir-opt %s | fir-opt | FileCheck %s
+// RUN: fir-test-opt %s | fir-test-opt | FileCheck %s
 
 func.func @getextent(%arg0: !fir.shape<3>) {
   %0 = hlfir.get_extent %arg0 {dim = 0 : index} : (!fir.shape<3>) -> index

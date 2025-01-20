@@ -1,6 +1,6 @@
 // Test the HLFIR Expr type
 // Parse types and check that we can reparse what we print.
-// RUN: fir-opt --split-input-file %s | fir-opt --split-input-file | FileCheck %s
+// RUN: fir-test-opt --split-input-file %s | fir-test-opt --split-input-file | FileCheck %s
 
 // Scalar expression types
 func.func private @scalar01() -> !hlfir.expr<!fir.char<1,?>>

@@ -1,5 +1,5 @@
 // Test inlining of hlfir.assign of arrays:
-// RUN: fir-opt --inline-hlfir-assign %s | FileCheck %s
+// RUN: fir-test-opt --inline-hlfir-assign %s | FileCheck %s
 
 // The two assigns come from the following source forms:
 //   y(:,:) = x(:,:)

@@ -1,4 +1,4 @@
-// RUN: fir-opt --split-input-file --stack-reclaim %s | FileCheck %s
+// RUN: fir-test-opt --split-input-file --stack-reclaim %s | FileCheck %s
 
 func.func @alloca_in_loop(%lb : index, %ub : index, %step : index, %b : i1, %addr : !fir.ref<index>) {
   fir.do_loop %iv = %lb to %ub step %step unordered {

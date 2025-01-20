@@ -1,6 +1,6 @@
 // Test COMPLEX(10) passing and returning on X86
 // REQUIRES: x86-registered-target
-// RUN: fir-opt --target-rewrite="target=x86_64-unknown-linux-gnu" %s | FileCheck %s --check-prefix=AMD64
+// RUN: fir-test-opt --target-rewrite="target=x86_64-unknown-linux-gnu" %s | FileCheck %s --check-prefix=AMD64
 // RUN: tco -target="x86_64-unknown-linux-gnu" %s | FileCheck %s --check-prefix=AMD64_LLVM
 
 func.func @returncomplex10() -> complex<f80> {

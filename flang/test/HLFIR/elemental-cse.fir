@@ -1,5 +1,5 @@
 // Test CSE for hlfir.elemental.
-// RUN: fir-opt %s --cse | FileCheck %s
+// RUN: fir-test-opt %s --cse | FileCheck %s
 
 // Check that the CSE does not optimize the hlfir.elemental
 // without handling the associated hlfir.destroy's, otherwise,

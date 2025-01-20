@@ -1,5 +1,5 @@
-// RUN: fir-opt --split-input-file --cfg-conversion %s | FileCheck %s
-// RUN: fir-opt --split-input-file --cfg-conversion="set-nsw=false" %s | FileCheck %s --check-prefix=NO-NSW
+// RUN: fir-test-opt --split-input-file --cfg-conversion %s | FileCheck %s
+// RUN: fir-test-opt --split-input-file --cfg-conversion="set-nsw=false" %s | FileCheck %s --check-prefix=NO-NSW
 
 // NO-NSW-NOT: overflow<nsw>
 

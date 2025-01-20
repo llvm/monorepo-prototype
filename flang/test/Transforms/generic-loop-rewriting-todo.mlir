@@ -1,4 +1,4 @@
-// RUN: fir-opt --omp-generic-loop-conversion -verify-diagnostics %s
+// RUN: fir-test-opt --omp-generic-loop-conversion -verify-diagnostics %s
 
 func.func @_QPtarget_loop() {
   %c0 = arith.constant 0 : i32

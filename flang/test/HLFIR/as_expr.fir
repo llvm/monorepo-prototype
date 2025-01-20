@@ -1,6 +1,6 @@
 // Test hlfir.as_expr operation parse, verify (no errors), and unparse.
 
-// RUN: fir-opt %s | fir-opt | FileCheck %s
+// RUN: fir-test-opt %s | fir-test-opt | FileCheck %s
 
 func.func @char_expr(%arg0: !fir.boxchar<1>) {
   %0 = hlfir.as_expr %arg0 : (!fir.boxchar<1>) -> !hlfir.expr<!fir.char<1,?>>

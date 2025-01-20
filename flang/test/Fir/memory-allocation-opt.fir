@@ -1,4 +1,4 @@
-// RUN: fir-opt --memory-allocation-opt="dynamic-array-on-heap=true maximum-array-alloc-size=1024" %s | FileCheck %s
+// RUN: fir-test-opt --memory-allocation-opt="dynamic-array-on-heap=true maximum-array-alloc-size=1024" %s | FileCheck %s
 
 // Test for size of array being too big.
 

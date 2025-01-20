@@ -1,5 +1,5 @@
 // Test hlfir.where masked region cleanup lowering (the freemem in the tests).
-// RUN: fir-opt %s --lower-hlfir-ordered-assignments | FileCheck %s
+// RUN: fir-test-opt %s --lower-hlfir-ordered-assignments | FileCheck %s
 
 func.func @loop_cleanup(%mask : !fir.ref<!fir.array<2x!fir.logical<4>>>, %x : !fir.ref<!fir.array<2xf32>>, %y : !fir.ref<!fir.array<2xf32>>) {
     hlfir.where {

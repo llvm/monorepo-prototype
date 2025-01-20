@@ -1,7 +1,7 @@
 // Test code generation of hlfir.region_assign where the left-hand
 // side terminator is an hlfir.elemental_addr (Fortran assignments to
 // vector subscripted designators).
-// RUN: fir-opt %s --lower-hlfir-ordered-assignments | FileCheck %s
+// RUN: fir-test-opt %s --lower-hlfir-ordered-assignments | FileCheck %s
 
 func.func @simple(%arg0: !fir.ref<!fir.array<100xf32>> , %arg1: !fir.ref<!fir.array<10xi64>> , %arg2: !fir.ref<!fir.array<10xf32>> ) {
   %c10 = arith.constant 10 : index

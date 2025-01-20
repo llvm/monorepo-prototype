@@ -1,7 +1,7 @@
 // Test code generation of hlfir.forall when assignment fusing is enabled
 // and possible.
-// RUN: fir-opt %s --lower-hlfir-ordered-assignments=fuse-assignments=true | FileCheck %s --check-prefix=FUSE
-// RUN: fir-opt %s --lower-hlfir-ordered-assignments=fuse-assignments=false | FileCheck %s --check-prefix=NOFUSE
+// RUN: fir-test-opt %s --lower-hlfir-ordered-assignments=fuse-assignments=true | FileCheck %s --check-prefix=FUSE
+// RUN: fir-test-opt %s --lower-hlfir-ordered-assignments=fuse-assignments=false | FileCheck %s --check-prefix=NOFUSE
 
 func.func @test_assignment_fusing(%x: !fir.ref<!fir.array<10xi32>>, %y : !fir.box<!fir.array<?xi32>>) {
   %c42 = arith.constant 42 : i32

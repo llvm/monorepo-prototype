@@ -1,7 +1,7 @@
 // Test rewrite of character procedure pointer tuple argument to two different
 // arguments: one for the function address, and one for the length. The length
 // argument is added after other characters.
-// RUN: fir-opt --target-rewrite="target=x86_64-unknown-linux-gnu" %s | FileCheck %s
+// RUN: fir-test-opt --target-rewrite="target=x86_64-unknown-linux-gnu" %s | FileCheck %s
 
 // CHECK:  func private @takes_char_proc(() -> () {fir.char_proc}, i64)
 func.func private @takes_char_proc(tuple<() -> (), i64> {fir.char_proc})

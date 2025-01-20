@@ -1,4 +1,4 @@
-// RUN: fir-opt --split-input-file --fir-add-alias-tags %s | FileCheck %s
+// RUN: fir-test-opt --split-input-file --fir-add-alias-tags %s | FileCheck %s
 
 // subroutine oneArg(a)
 //   integer :: a(:)

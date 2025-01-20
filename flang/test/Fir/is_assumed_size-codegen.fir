@@ -1,5 +1,5 @@
 // Test fir.is_assumed_size lowering to runtime calls in fir-assumed-rank-op pass.
-// RUN: fir-opt -o - --fir-assumed-rank-op %s | FileCheck %s
+// RUN: fir-test-opt -o - --fir-assumed-rank-op %s | FileCheck %s
 
 func.func @test_ranked(%arg0: !fir.class<!fir.array<?xnone>> ) -> i1 {
   %1 = fir.is_assumed_size %arg0 : (!fir.class<!fir.array<?xnone>>) -> i1

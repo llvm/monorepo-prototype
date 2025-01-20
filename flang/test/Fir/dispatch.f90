@@ -1,4 +1,4 @@
-! RUN: bbc -emit-hlfir %s -o - | fir-opt --fir-polymorphic-op | FileCheck %s
+! RUN: bbc -emit-hlfir %s -o - | fir-test-opt --fir-polymorphic-op | FileCheck %s
 ! RUN: bbc -emit-hlfir %s -o - | FileCheck %s --check-prefix=BT
 
 ! Tests codegen of fir.dispatch operation. This test is intentionally run from

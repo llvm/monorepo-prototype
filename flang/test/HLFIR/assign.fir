@@ -1,6 +1,6 @@
 // Test hlfir.assign operation parse, verify (no errors), and unparse.
 
-// RUN: fir-opt %s | fir-opt | FileCheck %s
+// RUN: fir-test-opt %s | fir-test-opt | FileCheck %s
 
 func.func @scalar_logical(%arg0: !fir.ref<!fir.logical<1>>, %arg1: !fir.ref<!fir.logical<1>>) {
   hlfir.assign %arg1 to %arg0 : !fir.ref<!fir.logical<1>>, !fir.ref<!fir.logical<1>>

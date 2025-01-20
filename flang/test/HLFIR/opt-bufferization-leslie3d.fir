@@ -1,4 +1,4 @@
-// RUN: fir-opt --opt-bufferization %s | FileCheck %s
+// RUN: fir-test-opt --opt-bufferization %s | FileCheck %s
 
 // leslie3d case with two allocatable module variables
 // that cannot alias:

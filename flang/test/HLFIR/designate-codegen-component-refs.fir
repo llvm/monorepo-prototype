@@ -1,6 +1,6 @@
 // Test code generation to FIR of hlfir.designate operations
 // with component reference.
-// RUN: fir-opt %s -convert-hlfir-to-fir | FileCheck %s
+// RUN: fir-test-opt %s -convert-hlfir-to-fir | FileCheck %s
 
 func.func @test_scalar(%arg0: !fir.ref<!fir.type<t1{scalar_i:i32,scalar_x:f32}>>) {
   %0:2 = hlfir.declare %arg0 {uniq_name = "a"} : (!fir.ref<!fir.type<t1{scalar_i:i32,scalar_x:f32}>>) -> (!fir.ref<!fir.type<t1{scalar_i:i32,scalar_x:f32}>>, !fir.ref<!fir.type<t1{scalar_i:i32,scalar_x:f32}>>)

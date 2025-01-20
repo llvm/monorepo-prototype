@@ -1,5 +1,5 @@
 // Test optimized bufferization for hlfir.assign with scalar RHS.
-// RUN: fir-opt --opt-bufferization %s | FileCheck %s
+// RUN: fir-test-opt --opt-bufferization %s | FileCheck %s
 
 func.func @_QPtest1() {
   %cst = arith.constant 0.000000e+00 : f32

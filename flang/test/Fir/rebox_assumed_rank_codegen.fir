@@ -1,5 +1,5 @@
 // Test fir.rebox_assumed_rank lowering to runtime calls in fir-assumed-rank-op pass.
-// RUN: fir-opt -o - --fir-assumed-rank-op %s | FileCheck %s
+// RUN: fir-test-opt -o - --fir-assumed-rank-op %s | FileCheck %s
 
 func.func @test_simple(%arg0: !fir.box<!fir.array<*:f32>> ) {
   %1 = fir.rebox_assumed_rank %arg0 lbs ones : (!fir.box<!fir.array<*:f32>>) -> !fir.box<!fir.array<*:f32>>

@@ -1,5 +1,5 @@
 // Test AArch64 ABI rewrite of struct returned by value (BIND(C), VALUE derived types).
-// RUN: fir-opt --target-rewrite="target=aarch64-unknown-linux-gnu" %s | FileCheck %s
+// RUN: fir-test-opt --target-rewrite="target=aarch64-unknown-linux-gnu" %s | FileCheck %s
 
 !composite = !fir.type<t1{i:f32,j:i32,k:f32}>
 // CHECK-LABEL: func.func private @test_composite() -> !fir.array<2xi64>

@@ -1,6 +1,6 @@
 // Test hlfir.minloc operation parse, verify (no errors), and unparse
 
-// RUN: fir-opt %s | fir-opt | FileCheck %s
+// RUN: fir-test-opt %s | fir-test-opt | FileCheck %s
 
 // array is an expression of known shape
 func.func @minloc0(%arg0: !hlfir.expr<42xi32>) {

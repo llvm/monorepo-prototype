@@ -1,6 +1,6 @@
 // Test X86-64 ABI rewrite of struct returned by value (BIND(C), VALUE derived types).
 // REQUIRES: x86-registered-target
-// RUN: fir-opt --target-rewrite %s | FileCheck %s
+// RUN: fir-test-opt --target-rewrite %s | FileCheck %s
 
 !fits_in_reg = !fir.type<t1{i:f32,j:i32,k:f32}>
 !too_big = !fir.type<t2{i:!fir.array<5xf32>}>

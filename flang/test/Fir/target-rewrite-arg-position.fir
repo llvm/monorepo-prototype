@@ -1,4 +1,4 @@
-// RUN: fir-opt --target-rewrite="target=x86_64-unknown-linux-gnu" %s | FileCheck %s
+// RUN: fir-test-opt --target-rewrite="target=x86_64-unknown-linux-gnu" %s | FileCheck %s
 
 // Test with an argument shift.
 

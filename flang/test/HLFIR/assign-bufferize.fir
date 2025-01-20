@@ -1,7 +1,7 @@
 // Test hlfir.assign rewrite in the bufferization pass.
 // Assign in itself is not transformed, but its operands may be
 // expressions that are bufferized and must be updated.
-// RUN: fir-opt %s -bufferize-hlfir | FileCheck %s
+// RUN: fir-test-opt %s -bufferize-hlfir | FileCheck %s
 
 func.func @keep_attributes(%arg0: !fir.ref<!fir.box<!fir.heap<!fir.array<?x!fir.char<1,8>>>>>, %arg1: !fir.box<!fir.array<1x!fir.char<1,?>>>) {
   %true = arith.constant true

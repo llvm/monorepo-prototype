@@ -1,4 +1,4 @@
-// RUN: fir-opt --inline-elementals %s | FileCheck %s
+// RUN: fir-test-opt --inline-elementals %s | FileCheck %s
 
 // check inlining one elemental into another
 // a = b * c + d

@@ -1,7 +1,7 @@
 // Test hlfir.associate and hlfir.end_associate operations parse, verify
 // (no errors), and unparse.
 
-// RUN: fir-opt %s | fir-opt | FileCheck %s
+// RUN: fir-test-opt %s | fir-test-opt | FileCheck %s
 
 func.func @test_cst_char(%arg0: !hlfir.expr<!fir.char<1,12>>) {
   %c12 = arith.constant 12 : index

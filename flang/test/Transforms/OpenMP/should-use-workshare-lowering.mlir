@@ -1,4 +1,4 @@
-// RUN: fir-opt --bufferize-hlfir %s | FileCheck %s
+// RUN: fir-test-opt --bufferize-hlfir %s | FileCheck %s
 
 // Checks that we correctly identify when to use the lowering to
 // omp.workshare.loop_wrapper

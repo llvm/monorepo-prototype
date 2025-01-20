@@ -1,4 +1,4 @@
-// RUN: fir-opt --bufferize-hlfir --split-input-file %s | FileCheck %s
+// RUN: fir-test-opt --bufferize-hlfir --split-input-file %s | FileCheck %s
 
 // -----
 

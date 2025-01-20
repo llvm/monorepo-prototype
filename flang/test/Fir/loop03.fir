@@ -1,5 +1,5 @@
 // Test the reduction semantics of fir.do_loop
-// RUN: fir-opt %s | FileCheck %s
+// RUN: fir-test-opt %s | FileCheck %s
 
 func.func @reduction() {
   %bound = arith.constant 10 : index

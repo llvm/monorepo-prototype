@@ -1,6 +1,6 @@
 // Test code generation to FIR of hlfir.designate operations
 // with complex parts.
-// RUN: fir-opt %s -convert-hlfir-to-fir | FileCheck %s
+// RUN: fir-test-opt %s -convert-hlfir-to-fir | FileCheck %s
 
 func.func @test_set_scalar(%arg0: !fir.ref<complex<f32>>, %arg1: !fir.ref<f32>) {
   %0:2 = hlfir.declare %arg0 {uniq_name = "a"} : (!fir.ref<complex<f32>>) -> (!fir.ref<complex<f32>>, !fir.ref<complex<f32>>)

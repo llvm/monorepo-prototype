@@ -1,4 +1,4 @@
-// RUN: fir-opt --add-debug-info --mlir-print-debuginfo %s -o - | FileCheck %s
+// RUN: fir-test-opt --add-debug-info --mlir-print-debuginfo %s -o - | FileCheck %s
 
 module attributes {dlti.dl_spec = #dlti.dl_spec<>} {
   func.func @test(%arg0: !fir.ref<!fir.char<1,?>> {fir.bindc_name = "str"}, %arg1: i64) {

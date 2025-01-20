@@ -1,6 +1,6 @@
 // Test hlfir.as_expr codegen for polymorphic expressions.
 
-// RUN: fir-opt %s -bufferize-hlfir | FileCheck %s
+// RUN: fir-test-opt %s -bufferize-hlfir | FileCheck %s
 
 !t = !fir.type<t{i:i32}>
 func.func @as_expr_class(%arg0 : !fir.class<!t>, %arg1: !fir.ref<!t>) {

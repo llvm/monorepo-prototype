@@ -1,5 +1,5 @@
 // Test hlfir.elemental code generation
-// RUN: fir-opt %s --bufferize-hlfir | FileCheck %s
+// RUN: fir-test-opt %s --bufferize-hlfir | FileCheck %s
 
 func.func @numeric_type(%arg0: !fir.ref<!fir.array<10x20xi32>>, %arg1: !fir.ref<!fir.array<10x20xi32>>) {
   %c10 = arith.constant 10 : index

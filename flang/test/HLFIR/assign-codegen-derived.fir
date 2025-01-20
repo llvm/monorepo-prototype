@@ -1,7 +1,7 @@
 // Test hlfir.assign code generation to FIR of derived type requiring
 // or not finalization.
 
-// RUN: fir-opt %s -convert-hlfir-to-fir | FileCheck %s
+// RUN: fir-test-opt %s -convert-hlfir-to-fir | FileCheck %s
 
 !t_simple = !fir.type<simple{i:i32}>
 fir.type_info @simple noinit nodestroy nofinal : !t_simple

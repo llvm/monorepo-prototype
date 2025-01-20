@@ -2,7 +2,7 @@
 /// LoongArch64 LP64D ABI requires unsigned 32 bit integers to be sign extended.
 
 // REQUIRES: loongarch-registered-target
-// RUN: fir-opt --target-rewrite="target=loongarch64-unknown-linux-gnu" %s | FileCheck %s --check-prefix=LOONGARCH64
+// RUN: fir-test-opt --target-rewrite="target=loongarch64-unknown-linux-gnu" %s | FileCheck %s --check-prefix=LOONGARCH64
 // RUN: tco -target="loongarch64-unknown-linux-gnu" %s | FileCheck %s --check-prefix=LOONGARCH64_LLVM
 
 // LOONGARCH64: func.func private @cfunc32(i32 {llvm.signext}) -> (i32 {llvm.signext}) attributes {fir.bindc_name = "cfunc32"}

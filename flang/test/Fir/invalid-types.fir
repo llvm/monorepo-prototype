@@ -1,5 +1,5 @@
 // Test the FIR types parser diagnostics
-// RUN: fir-opt -split-input-file -verify-diagnostics %s
+// RUN: fir-test-opt -split-input-file -verify-diagnostics %s
 
 // expected-error@+1 {{expected non-function type}}
 func.func private @box3() -> !fir.boxproc<>

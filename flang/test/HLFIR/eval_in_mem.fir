@@ -1,6 +1,6 @@
 // Test hlfir.eval_in_mem operation parse, verify (no errors), and unparse.
 
-// RUN: fir-opt %s | fir-opt | FileCheck %s
+// RUN: fir-test-opt %s | fir-test-opt | FileCheck %s
 
 func.func @_QPtest() {
   %c10 = arith.constant 10 : index

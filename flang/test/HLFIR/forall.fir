@@ -1,5 +1,5 @@
 // Test hlfir.forall operation parse, verify (no errors), and unparse.
-// RUN: fir-opt %s | fir-opt | FileCheck %s
+// RUN: fir-test-opt %s | fir-test-opt | FileCheck %s
 
 func.func @forall_test(%x: !fir.box<!fir.array<?xf32>>, %x2: !fir.box<!fir.array<?x?xf32>>) {
   %c1 = arith.constant 1 : index

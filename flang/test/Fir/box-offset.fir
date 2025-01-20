@@ -1,5 +1,5 @@
 // Test fir.box_offset parse/print/parse/print identity.
-// RUN: fir-opt %s | fir-opt | FileCheck %s
+// RUN: fir-test-opt %s | fir-test-opt | FileCheck %s
 
 func.func @test_box_offset(%unlimited : !fir.ref<!fir.class<none>>, %type_star : !fir.ref<!fir.box<!fir.array<?xnone>>>) {
   %box1 = fir.alloca !fir.box<i32>

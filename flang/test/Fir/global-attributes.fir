@@ -1,6 +1,6 @@
-// RUN: fir-opt --fir-to-llvm-ir %s | FileCheck %s
+// RUN: fir-test-opt --fir-to-llvm-ir %s | FileCheck %s
 // RUN: tco --fir-to-llvm-ir %s | FileCheck %s
-// RUN: fir-opt %s | FileCheck %s --check-prefix=READ-OUT
+// RUN: fir-test-opt %s | FileCheck %s --check-prefix=READ-OUT
 // RUN: tco --emit-fir %s | FileCheck %s --check-prefix=READ-OUT
 
 // CHECK: llvm.mlir.global external @_QMtest_0Edata_int() {{{.*}}test = "string_attribute_maintained"{{.*}}} : i32 {

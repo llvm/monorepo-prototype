@@ -1,6 +1,6 @@
 // Test hlfir.apply operation parse, verify (no errors), and unparse.
 
-// RUN: fir-opt %s | fir-opt | FileCheck %s
+// RUN: fir-test-opt %s | fir-test-opt | FileCheck %s
 
 func.func @numeric(%expr: !hlfir.expr<?x?xf32>) {
   %c9 = arith.constant 9 : index

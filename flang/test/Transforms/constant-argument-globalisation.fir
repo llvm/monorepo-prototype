@@ -1,4 +1,4 @@
-// RUN: fir-opt --constant-argument-globalisation-opt  < %s | FileCheck %s
+// RUN: fir-test-opt --constant-argument-globalisation-opt  < %s | FileCheck %s
 // RUN: %flang_fc1 -emit-llvm -flang-deprecated-no-hlfir -O2 -o - %s | FileCheck --check-prefix=DISABLE %s
 module {
   func.func @sub1(%arg0: !fir.ref<i32> {fir.bindc_name = "x"}, %arg1: !fir.ref<i32> {fir.bindc_name = "y"}) {

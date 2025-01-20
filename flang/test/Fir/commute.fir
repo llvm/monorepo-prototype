@@ -1,4 +1,4 @@
-// RUN: fir-opt %s | tco | FileCheck %s
+// RUN: fir-test-opt %s | tco | FileCheck %s
 
 // CHECK-LABEL: define i32 @f1(i32 %0, i32 %1)
 func.func @f1(%a : i32, %b : i32) -> i32 {

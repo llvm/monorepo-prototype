@@ -1,8 +1,8 @@
 // Test hlfir.shape_of operation parse, verify (no errors), and unparse
-// RUN: fir-opt %s | fir-opt | FileCheck --check-prefix CHECK --check-prefix CHECK-ALL %s
+// RUN: fir-test-opt %s | fir-test-opt | FileCheck --check-prefix CHECK --check-prefix CHECK-ALL %s
 
 // Test canonicalization
-// RUN: fir-opt %s --canonicalize | FileCheck --check-prefix CHECK-CANON --check-prefix CHECK-ALL %s
+// RUN: fir-test-opt %s --canonicalize | FileCheck --check-prefix CHECK-CANON --check-prefix CHECK-ALL %s
 
 func.func @shapeof(%arg0: !hlfir.expr<2x2xi32>) -> !fir.shape<2> {
   %shape = hlfir.shape_of %arg0 : (!hlfir.expr<2x2xi32>) -> !fir.shape<2>

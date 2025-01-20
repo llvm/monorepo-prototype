@@ -1,4 +1,4 @@
-// RUN: fir-opt --simplify-hlfir-intrinsics %s | FileCheck %s
+// RUN: fir-test-opt --simplify-hlfir-intrinsics %s | FileCheck %s
 
 // box with known extents
 func.func @transpose0(%arg0: !fir.box<!fir.array<1x2xi32>>) -> !hlfir.expr<2x1xi32> {

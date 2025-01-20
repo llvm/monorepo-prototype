@@ -1,6 +1,6 @@
 // Test hlfir.all operation parse, verify (no errors), and unparse
 
-// RUN: fir-opt %s | fir-opt | FileCheck %s
+// RUN: fir-test-opt %s | fir-test-opt | FileCheck %s
 
 // mask is an expression of known shape
 func.func @all0(%arg0: !hlfir.expr<2x!fir.logical<4>>) {

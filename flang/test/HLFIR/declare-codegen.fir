@@ -1,6 +1,6 @@
 // Test hlfir.declare operation code generation to FIR
 
-// RUN: fir-opt %s -convert-hlfir-to-fir | FileCheck %s
+// RUN: fir-test-opt %s -convert-hlfir-to-fir | FileCheck %s
 
 func.func @numeric_declare(%arg0: !fir.ref<f32>) {
   %0:2 = hlfir.declare %arg0 {uniq_name = "x"} : (!fir.ref<f32>) -> (!fir.ref<f32>, !fir.ref<f32>)

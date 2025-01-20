@@ -1,7 +1,7 @@
 // Test rewrite of fir.declare. The result is replaced by the memref operand.
-// RUN: fir-opt --cg-rewrite="preserve-declare=true" %s -o - | FileCheck %s --check-prefixes DECL
-// RUN: fir-opt --cg-rewrite="preserve-declare=false" %s -o - | FileCheck %s --check-prefixes NODECL
-// RUN: fir-opt --cg-rewrite %s -o - | FileCheck %s --check-prefixes NODECL
+// RUN: fir-test-opt --cg-rewrite="preserve-declare=true" %s -o - | FileCheck %s --check-prefixes DECL
+// RUN: fir-test-opt --cg-rewrite="preserve-declare=false" %s -o - | FileCheck %s --check-prefixes NODECL
+// RUN: fir-test-opt --cg-rewrite %s -o - | FileCheck %s --check-prefixes NODECL
 
 
 func.func @test(%arg0: !fir.ref<!fir.array<12x23xi32>>) {

@@ -1,6 +1,6 @@
 // Check that hlfir.assign codegen is able to insert fir.alloca's inside
 // the regions of the OpenACC recipe.
-// RUN: fir-opt %s -convert-hlfir-to-fir | FileCheck %s
+// RUN: fir-test-opt %s -convert-hlfir-to-fir | FileCheck %s
 
 acc.reduction.recipe @reduction_add_box_heap_Uxi32 : !fir.box<!fir.heap<!fir.array<?xi32>>> reduction_operator <add> init {
 ^bb0(%arg0: !fir.box<!fir.heap<!fir.array<?xi32>>>):

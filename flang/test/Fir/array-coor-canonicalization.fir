@@ -1,4 +1,4 @@
-// RUN: fir-opt --canonicalize %s | FileCheck %s
+// RUN: fir-test-opt --canonicalize %s | FileCheck %s
 
 // CHECK-LABEL:   func.func @_QPtest1(
 // CHECK-SAME:                        %[[VAL_0:.*]]: !fir.ref<!fir.array<120x2xi32>> {fir.bindc_name = "u"}) {

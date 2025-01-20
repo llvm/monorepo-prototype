@@ -1,6 +1,6 @@
 // Test code generation of hlfir.where, and hlfir.elsewhere when there
 // is no need to create temporary storage.
-// RUN: fir-opt %s --lower-hlfir-ordered-assignments | FileCheck %s
+// RUN: fir-test-opt %s --lower-hlfir-ordered-assignments | FileCheck %s
 
 func.func @test_simple(%arg0: !fir.box<!fir.array<?xf32>>, %arg1: !fir.box<!fir.array<?x!fir.logical<4>>>) {
   %cst = arith.constant 4.200000e+01 : f32

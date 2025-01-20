@@ -1,7 +1,7 @@
 // test without per-function tbaa trees so that this functionality does not bitrot
 // per-function tbaa tbaa-codegen2.fir
-// RUN: fir-opt %s --split-input-file --fir-to-llvm-ir="target=x86_64-unknown-linux-gnu apply-tbaa=true" --per-function-tbaa-trees=false | FileCheck %s
-// RUN: fir-opt %s --split-input-file --fir-to-llvm-ir="target=aarch64-unknown-linux-gnu apply-tbaa=true" --per-function-tbaa-trees=false | FileCheck %s
+// RUN: fir-test-opt %s --split-input-file --fir-to-llvm-ir="target=x86_64-unknown-linux-gnu apply-tbaa=true" --per-function-tbaa-trees=false | FileCheck %s
+// RUN: fir-test-opt %s --split-input-file --fir-to-llvm-ir="target=aarch64-unknown-linux-gnu apply-tbaa=true" --per-function-tbaa-trees=false | FileCheck %s
 
 module {
   func.func @tbaa(%arg0: !fir.class<!fir.array<?xnone>> {fir.bindc_name = "a"}) {

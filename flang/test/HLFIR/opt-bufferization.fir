@@ -1,4 +1,4 @@
-// RUN: fir-opt --opt-bufferization %s | FileCheck %s
+// RUN: fir-test-opt --opt-bufferization %s | FileCheck %s
 
 // simplified example
 func.func @simple(%arg: !fir.ref<!fir.array<42xi32>>) {

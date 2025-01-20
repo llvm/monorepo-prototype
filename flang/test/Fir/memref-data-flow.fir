@@ -1,4 +1,4 @@
-// RUN: fir-opt --split-input-file --fir-memref-dataflow-opt %s | FileCheck %s
+// RUN: fir-test-opt --split-input-file --fir-memref-dataflow-opt %s | FileCheck %s
 
 // Test that all load-store chains are removed
 

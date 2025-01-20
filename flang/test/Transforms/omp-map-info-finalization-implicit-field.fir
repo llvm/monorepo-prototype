@@ -1,7 +1,7 @@
 // Tests that we implicitly map alloctable fields of a record when referenced in
 // a target region.
 
-// RUN: fir-opt --split-input-file --omp-map-info-finalization %s | FileCheck %s
+// RUN: fir-test-opt --split-input-file --omp-map-info-finalization %s | FileCheck %s
 
 !record_t = !fir.type<_QFTrecord_t{
   not_to_implicitly_map:

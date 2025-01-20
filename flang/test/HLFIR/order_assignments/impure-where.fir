@@ -1,7 +1,7 @@
 // Test code generation of hlfir.where/hflir.elsewhere when an
 // "impure" mask is used and several runs are needed. The mask
 // must be saved so that the impure function is only evaluated once.
-// RUN: fir-opt %s --lower-hlfir-ordered-assignments | FileCheck %s
+// RUN: fir-test-opt %s --lower-hlfir-ordered-assignments | FileCheck %s
 
 func.func private @impure() -> !fir.heap<!fir.array<10x!fir.logical<4>>>
 func.func @test_elsewhere_impure_mask(%x: !fir.ref<!fir.array<10xi32>>, %y: !fir.ref<!fir.array<10xi32>>, %z: !fir.ref<!fir.array<10xi32>>, %mask: !fir.ref<!fir.array<10x!fir.logical<4>>>) {

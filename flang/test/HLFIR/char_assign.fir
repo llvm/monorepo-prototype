@@ -1,4 +1,4 @@
-// RUN: fir-opt --split-input-file %s -convert-hlfir-to-fir | FileCheck %s
+// RUN: fir-test-opt --split-input-file %s -convert-hlfir-to-fir | FileCheck %s
 
 // Verify that the special case of length-one character assignment
 // is using valid fir.converts.

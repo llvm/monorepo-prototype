@@ -1,6 +1,6 @@
 // Test issue 113843 and 118922 fix: do not elide hlfir.elemental final as_expr
 // copy if this is not the last operation.
-// RUN: fir-opt %s --bufferize-hlfir | FileCheck %s
+// RUN: fir-test-opt %s --bufferize-hlfir | FileCheck %s
 
 func.func @_QMmPbug(%val: !fir.char<1>, %var: !fir.ref<!fir.array<10x!fir.char<1>>>) {
   %c1 = arith.constant 1 : index

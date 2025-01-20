@@ -1,4 +1,4 @@
-// RUN: fir-opt --omp-generic-loop-conversion %s | FileCheck %s
+// RUN: fir-test-opt --omp-generic-loop-conversion %s | FileCheck %s
 
 omp.private {type = private} @_QFtarget_teams_loopEi_private_ref_i32 : !fir.ref<i32> alloc {
 ^bb0(%arg0: !fir.ref<i32>):
