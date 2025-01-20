@@ -660,6 +660,9 @@ public:
   MemoryEffects getMemoryEffects(const CallBase *Call) {
     return AA.getMemoryEffects(Call, AAQI);
   }
+  bool isNoAlias(const MemoryLocation &LocA, const MemoryLocation &LocB) {
+    return alias(LocA, LocB) == AliasResult::NoAlias;
+  }
   bool isMustAlias(const MemoryLocation &LocA, const MemoryLocation &LocB) {
     return alias(LocA, LocB) == AliasResult::MustAlias;
   }
