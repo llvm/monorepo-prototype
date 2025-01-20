@@ -210,7 +210,7 @@ struct ChunkRange {
 class Writer {
 public:
   Writer(COFFLinkerContext &c)
-      : buffer(c.e.outputBuffer), delayIdata(c), edata(c), ctx(c) {}
+      : buffer(c.e.outputBuffer), delayIdata(c), ctx(c) {}
   void run();
 
 private:
@@ -298,7 +298,6 @@ private:
   Chunk *iatStart = nullptr;
   uint64_t iatSize = 0;
   DelayLoadContents delayIdata;
-  EdataContents edata;
   bool setNoSEHCharacteristic = false;
   uint32_t tlsAlignment = 0;
 
@@ -1322,10 +1321,12 @@ void Writer::createExportTable() {
   if (!edataSec->chunks.empty()) {
     // Allow using a custom built export table from input object files, instead
     // of having the linker synthesize the tables.
-    if (ctx.config.hadExplicitExports)
+    if (ctx.symtab.hadExplicitExports)
       Warn(ctx) << "literal .edata sections override exports";
-  } else if (!ctx.config.exports.empty()) {
-    for (Chunk *c : edata.chunks)
+  } else if (!ctx.symtab.exports.empty()) {
+    std::vector<Chunk *> edataChunks;
+    createEdataChunks(ctx.symtab, edataChunks);
+    for (Chunk *c : edataChunks)
       edataSec->addChunk(c);
   }
   if (!edataSec->chunks.empty()) {
@@ -1333,7 +1334,7 @@ void Writer::createExportTable() {
     edataEnd = edataSec->chunks.back();
   }
   // Warn on exported deleting destructor.
-  for (auto e : ctx.config.exports)
+  for (auto e : ctx.symtab.exports)
     if (e.sym && e.sym->getName().starts_with("??_G"))
       Warn(ctx) << "export of deleting dtor: " << e.sym;
 }
@@ -2034,11 +2035,11 @@ void Writer::createGuardCFTables() {
   ctx.forEachSymtab([&](SymbolTable &symtab) {
     if (symtab.entry)
       maybeAddAddressTakenFunction(addressTakenSyms, symtab.entry);
-  });
 
-  // Mark exported symbols in executable sections as address-taken.
-  for (Export &e : config->exports)
-    maybeAddAddressTakenFunction(addressTakenSyms, e.sym);
+    // Mark exported symbols in executable sections as address-taken.
+    for (Export &e : symtab.exports)
+      maybeAddAddressTakenFunction(addressTakenSyms, e.sym);
+  });
 
   // For each entry in the .giats table, check if it has a corresponding load
   // thunk (e.g. because the DLL that defines it will be delay-loaded) and, if
