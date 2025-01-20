@@ -55,6 +55,7 @@ jobs:
 
           echo "Building projects: ${windows_projects}"
           echo "Running project checks targets: ${windows_check_targets}"
-
+          
+          C:\\BuildTools\\Common7\\Tools\\VsDevCmd.bat -arch=amd64 -host_arch=amd64
           .ci/monolithic-windows.sh "$(echo ${windows_projects} | tr ' ' ';')" "$(echo ${windows_check_targets})"
 
