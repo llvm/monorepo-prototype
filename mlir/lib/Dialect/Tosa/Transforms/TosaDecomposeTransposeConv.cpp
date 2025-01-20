@@ -18,7 +18,10 @@
 #include "mlir/Dialect/Tosa/IR/TosaOps.h"
 #include "mlir/Dialect/Tosa/Transforms/Passes.h"
 #include "mlir/Dialect/Tosa/Utils/ConversionUtils.h"
+#include "mlir/Dialect/Tosa/Utils/QuantUtils.h"
 #include "mlir/Dialect/Tosa/Utils/ShapeUtils.h"
+#include "mlir/IR/Matchers.h"
+#include "mlir/IR/TypeUtilities.h"
 #include "mlir/Pass/Pass.h"
 
 using namespace mlir;
@@ -69,22 +72,12 @@ public:
     auto reverse2 = rewriter.create<tosa::ReverseOp>(
         loc, weightTy, reverse1, /* axis = */ rewriter.getI32IntegerAttr(2));
 
-    Value conv2d;
-    if (op.getQuantizationInfo()) {
-      conv2d = rewriter.create<tosa::Conv2DOp>(
-          loc, resultTy, input, reverse2, bias,
-          rewriter.getDenseI64ArrayAttr(convPad),
-          rewriter.getDenseI64ArrayAttr(stride),
-          rewriter.getDenseI64ArrayAttr({1, 1}),
-          /* acc_type = */ op.getAccType(), *op.getQuantizationInfo());
-    } else {
-      conv2d = rewriter.create<tosa::Conv2DOp>(
-          loc, resultTy, input, reverse2, bias,
-          rewriter.getDenseI64ArrayAttr(convPad),
-          rewriter.getDenseI64ArrayAttr(stride),
-          rewriter.getDenseI64ArrayAttr({1, 1}),
-          /* acc_type = */ op.getAccTypeAttr());
-    }
+    Value conv2d = rewriter.create<tosa::Conv2DOp>(
+        loc, resultTy, input, reverse2, bias, op.getInputZp(), op.getWeightZp(),
+        rewriter.getDenseI64ArrayAttr(convPad),
+        rewriter.getDenseI64ArrayAttr(stride),
+        rewriter.getDenseI64ArrayAttr({1, 1}),
+        /* acc_type = */ op.getAccType());
 
     rewriter.replaceOp(op, conv2d);
     return success();
@@ -145,12 +138,37 @@ public:
     Value weightPaddingVal = CreateOpAndInferShape<tosa::ConstOp>(
         rewriter, loc, weightPaddingAttr.getType(), weightPaddingAttr);
 
-    if (op.getQuantizationInfo().has_value()) {
-      auto quantInfo = op.getQuantizationInfo().value();
+    ElementsAttr inputZpAttr;
+    ElementsAttr weightZpAttr;
+    if (!matchPattern(op.getInputZp(), m_Constant(&inputZpAttr)) ||
+        !matchPattern(op.getWeightZp(), m_Constant(&weightZpAttr)))
+      return rewriter.notifyMatchFailure(
+          op,
+          "bail out if the actual value of zero points cannot be determined");
+
+    // Get and verify explicit zero points.
+    int64_t inputZpVal;
+    int64_t weightZpVal;
+
+    if (tosa::getZeroPoint(inputZpAttr, inputZpVal).failed() ||
+        tosa::verifyZeroPoint<tosa::TransposeConv2DOp>(
+            getElementTypeOrSelf(inputZpAttr), inputZpVal)
+            .failed())
+      return rewriter.notifyMatchFailure(
+          op, "input zero point must be zero for non-int8 integer types");
+
+    if (tosa::getZeroPoint(weightZpAttr, weightZpVal).failed() ||
+        tosa::verifyZeroPoint<tosa::TransposeConv2DOp>(
+            getElementTypeOrSelf(weightZpAttr), weightZpVal)
+            .failed())
+      return rewriter.notifyMatchFailure(
+          op, "weight zero point must be zero for non-int8 integer types");
+
+    if (weightZpVal != 0) {
       weight = CreateOpAndInferShape<tosa::PadOp>(
           rewriter, loc, UnrankedTensorType::get(weightETy), weight,
           weightPaddingVal, nullptr,
-          rewriter.getAttr<PadOpQuantizationAttr>(quantInfo.getWeightZp()));
+          rewriter.getAttr<PadOpQuantizationAttr>(weightZpVal));
 
     } else {
       weight = CreateOpAndInferShape<tosa::PadOp>(
@@ -209,12 +227,11 @@ public:
     Value inputPaddingVal = CreateOpAndInferShape<tosa::ConstOp>(
         rewriter, loc, inputPaddingAttr.getType(), inputPaddingAttr);
 
-    if (op.getQuantizationInfo().has_value()) {
-      auto quantInfo = op.getQuantizationInfo().value();
+    if (inputZpVal != 0) {
       input = CreateOpAndInferShape<tosa::PadOp>(
           rewriter, loc, UnrankedTensorType::get(inputETy), input,
           inputPaddingVal, nullptr,
-          rewriter.getAttr<PadOpQuantizationAttr>(quantInfo.getInputZp()));
+          rewriter.getAttr<PadOpQuantizationAttr>(inputZpVal));
     } else {
       input = CreateOpAndInferShape<tosa::PadOp>(
           rewriter, loc, UnrankedTensorType::get(inputETy), input,
@@ -231,27 +248,25 @@ public:
                                   biasETy),
             rewriter.getZeroAttr(biasETy)));
 
-    // Perform the convolution using the zero bias.
-    Value conv2d;
-    if (op.getQuantizationInfo()) {
-      conv2d = CreateOpAndInferShape<tosa::Conv2DOp>(
-                   rewriter, loc, UnrankedTensorType::get(resultETy), input,
-                   weight, zeroBias,
-                   /*pad=*/rewriter.getDenseI64ArrayAttr({0, 0, 0, 0}),
-                   /*stride=*/rewriter.getDenseI64ArrayAttr({1, 1}),
-                   /*dilation=*/rewriter.getDenseI64ArrayAttr({1, 1}),
-                   /* acc_type = */ op.getAccType(), *op.getQuantizationInfo())
-                   .getResult();
-    } else {
-      conv2d = CreateOpAndInferShape<tosa::Conv2DOp>(
-                   rewriter, loc, UnrankedTensorType::get(resultETy), input,
-                   weight, zeroBias,
-                   /*pad=*/rewriter.getDenseI64ArrayAttr({0, 0, 0, 0}),
-                   /*stride=*/rewriter.getDenseI64ArrayAttr({1, 1}),
-                   /*dilation=*/rewriter.getDenseI64ArrayAttr({1, 1}),
-                   /* acc_type = */ op.getAccTypeAttr())
-                   .getResult();
+    auto inputZp = createZeroPointTensor(
+        rewriter, loc, getElementTypeOrSelf(input.getType()), inputZpVal);
+    auto weightZp = createZeroPointTensor(
+        rewriter, loc, getElementTypeOrSelf(weight.getType()), weightZpVal);
+
+    if (!inputZp.has_value() || !weightZp.has_value()) {
+      return rewriter.notifyMatchFailure(
+          op, "fail to create a const zero point tensor");
     }
+
+    // Perform the convolution using the zero bias.
+    Value conv2d = CreateOpAndInferShape<tosa::Conv2DOp>(
+                       rewriter, loc, UnrankedTensorType::get(resultETy), input,
+                       weight, zeroBias, inputZp.value(), weightZp.value(),
+                       /*pad=*/rewriter.getDenseI64ArrayAttr({0, 0, 0, 0}),
+                       /*stride=*/rewriter.getDenseI64ArrayAttr({1, 1}),
+                       /*dilation=*/rewriter.getDenseI64ArrayAttr({1, 1}),
+                       /* acc_type = */ op.getAccType())
+                       .getResult();
 
     // Factor the resulting width / height.
     ShapedType convTy = cast<ShapedType>(conv2d.getType());

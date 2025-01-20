@@ -21,6 +21,7 @@
 #include "mlir/Dialect/Tosa/Utils/ConversionUtils.h"
 #include "mlir/Dialect/Utils/IndexingUtils.h"
 #include "mlir/Dialect/Utils/ReshapeOpsUtils.h"
+#include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Matchers.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Transforms/DialectConversion.h"
@@ -258,7 +259,35 @@ public:
     DenseI64ArrayAttr padAttr = op.getPadAttr();
     DenseI64ArrayAttr strideTosaAttr = op.getStrideAttr();
     DenseI64ArrayAttr dilationTosaAttr = op.getDilationAttr();
-    bool isQuantized = op.getQuantizationInfo().has_value();
+
+    ElementsAttr inputZpAttr;
+    ElementsAttr weightZpAttr;
+    if (!matchPattern(op.getInputZp(), m_Constant(&inputZpAttr)) ||
+        !matchPattern(op.getWeightZp(), m_Constant(&weightZpAttr)))
+      return rewriter.notifyMatchFailure(
+          op,
+          "bail out if the actual value of zero points cannot be determined");
+
+    // Get and verify explicit zero points.
+    int64_t inputZpVal;
+    int64_t weightZpVal;
+
+    if (tosa::getZeroPoint(inputZpAttr, inputZpVal).failed() ||
+        tosa::verifyZeroPoint<TosaConvOp>(getElementTypeOrSelf(inputZpAttr),
+                                          inputZpVal)
+            .failed())
+      return rewriter.notifyMatchFailure(
+          op, "input zero point must be zero for non-int8 integer types");
+
+    if (tosa::getZeroPoint(weightZpAttr, weightZpVal).failed() ||
+        tosa::verifyZeroPoint<TosaConvOp>(getElementTypeOrSelf(weightZpAttr),
+                                          weightZpVal)
+            .failed())
+      return rewriter.notifyMatchFailure(
+          op, "weight zero point must be zero for non-int8 integer types");
+
+    const bool hasZp =
+        (inputZpVal != 0) || (weightZpVal != 0) || isa<IntegerType>(inputETy);
 
     if (!weightTy.hasStaticShape() || !biasTy.hasStaticShape())
       return rewriter.notifyMatchFailure(
@@ -284,10 +313,7 @@ public:
 
     // Apply padding as necessary.
     TypedAttr zeroAttr = rewriter.getZeroAttr(inputETy);
-    if (isQuantized) {
-      auto quantizationInfo = *op.getQuantizationInfo();
-      int64_t iZp = quantizationInfo.getInputZp();
-
+    if (hasZp) {
       int64_t intMin =
           APInt::getSignedMinValue(inputETy.getIntOrFloatBitWidth())
               .getSExtValue();
@@ -295,11 +321,11 @@ public:
           APInt::getSignedMaxValue(inputETy.getIntOrFloatBitWidth())
               .getSExtValue();
 
-      if (iZp < intMin || iZp > intMax)
+      if (inputZpVal < intMin || inputZpVal > intMax)
         return rewriter.notifyMatchFailure(
             op, "tosa.conv op quantization has zp outside of input range");
 
-      zeroAttr = rewriter.getIntegerAttr(inputETy, iZp);
+      zeroAttr = rewriter.getIntegerAttr(inputETy, inputZpVal);
     }
 
     llvm::SmallVector<int64_t> pad;
@@ -312,8 +338,8 @@ public:
       // For 2D convolutions, we need to check if the target convolution op
       // wants a HWCF kernel layout.
       bool wantHwcf =
-          isQuantized ? std::is_same_v<LinalgConvQOp, linalg::Conv2DNhwcHwcfQOp>
-                      : std::is_same_v<LinalgConvOp, linalg::Conv2DNhwcHwcfOp>;
+          hasZp ? std::is_same_v<LinalgConvQOp, linalg::Conv2DNhwcHwcfQOp>
+                : std::is_same_v<LinalgConvOp, linalg::Conv2DNhwcHwcfOp>;
       if (wantHwcf) {
         // Transpose the kernel to match dimension ordering of the linalg
         // convolution operation.
@@ -374,10 +400,9 @@ public:
     Value broadcastBias =
         linalgBroadcastAndMaybeExtSI(rewriter, loc, bias, biasEmptyTensor);
 
-    if (isQuantized) {
-      auto quantizationInfo = *op.getQuantizationInfo();
-      auto iZp = rewriter.getI32IntegerAttr(quantizationInfo.getInputZp());
-      auto kZp = rewriter.getI32IntegerAttr(quantizationInfo.getWeightZp());
+    if (hasZp) {
+      auto iZp = rewriter.getI32IntegerAttr(inputZpVal);
+      auto kZp = rewriter.getI32IntegerAttr(weightZpVal);
 
       auto iZpVal = rewriter.create<arith::ConstantOp>(loc, iZp);
       auto kZpVal = rewriter.create<arith::ConstantOp>(loc, kZp);
@@ -440,25 +465,40 @@ public:
         /*inputSizeDims=*/{1, 2},
         /*kernelSizeDims=*/{0, 1}, rewriter);
 
-    bool isQuantized = op->hasAttr("quantization_info");
-    IntegerAttr iZp;
-    IntegerAttr kZp;
-    if (isQuantized) {
-      auto quantizationInfo =
-          cast<tosa::ConvOpQuantizationAttr>(op->getAttr("quantization_info"));
-      iZp = rewriter.getI32IntegerAttr(quantizationInfo.getInputZp());
-      kZp = rewriter.getI32IntegerAttr(quantizationInfo.getWeightZp());
-    }
+    ElementsAttr inputZpAttr;
+    ElementsAttr weightZpAttr;
+    if (!matchPattern(op.getInputZp(), m_Constant(&inputZpAttr)) ||
+        !matchPattern(op.getWeightZp(), m_Constant(&weightZpAttr)))
+      return rewriter.notifyMatchFailure(
+          op,
+          "bail out if the actual value of zero points cannot be determined");
 
+    // Get and verify explicit zero points.
+    int64_t inputZpVal;
+    int64_t weightZpVal;
+
+    if (tosa::getZeroPoint(inputZpAttr, inputZpVal).failed() ||
+        tosa::verifyZeroPoint<tosa::DepthwiseConv2DOp>(
+            getElementTypeOrSelf(inputZpAttr), inputZpVal)
+            .failed())
+      return rewriter.notifyMatchFailure(
+          op, "input zero point must be zero for non-int8 integer types");
+
+    if (tosa::getZeroPoint(weightZpAttr, weightZpVal).failed() ||
+        tosa::verifyZeroPoint<tosa::DepthwiseConv2DOp>(
+            getElementTypeOrSelf(weightZpAttr), weightZpVal)
+            .failed())
+      return rewriter.notifyMatchFailure(
+          op, "weight zero point must be zero for non-int8 integer types");
+
+    bool hasZp = (inputZpVal != 0) || (weightZpVal != 0);
     auto weightShape = weightTy.getShape();
     auto resultShape = resultTy.getShape();
 
     // Apply padding as necessary.
     TypedAttr zeroAttr = rewriter.getZeroAttr(inputETy);
-    if (isQuantized) {
-      auto quantizationInfo =
-          cast<tosa::ConvOpQuantizationAttr>(op->getAttr("quantization_info"));
-      int64_t iZp = quantizationInfo.getInputZp();
+    if (inputZpVal) {
+      const int64_t iZp = inputZpVal;
 
       int64_t intMin =
           APInt::getSignedMinValue(inputETy.getIntOrFloatBitWidth())
@@ -512,7 +552,7 @@ public:
     indexingMaps.push_back(rewriter.getMultiDimIdentityMap(resultRank));
     indexingMaps.push_back(rewriter.getMultiDimIdentityMap(resultRank));
 
-    if (!isQuantized) {
+    if (!hasZp && isa<FloatType>(inputETy)) {
       Value conv = rewriter
                        .create<linalg::DepthwiseConv2DNhwcHwcmOp>(
                            loc, linalgConvTy, ValueRange{input, weight},
@@ -539,6 +579,8 @@ public:
               .getResult(0);
       rewriter.replaceOp(op, result);
     } else {
+      IntegerAttr iZp = rewriter.getI32IntegerAttr(inputZpVal);
+      IntegerAttr kZp = rewriter.getI32IntegerAttr(weightZpVal);
       auto iZpVal = rewriter.create<arith::ConstantOp>(loc, iZp);
       auto kZpVal = rewriter.create<arith::ConstantOp>(loc, kZp);
       Value conv =
