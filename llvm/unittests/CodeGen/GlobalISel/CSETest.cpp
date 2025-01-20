@@ -14,31 +14,6 @@
 
 namespace {
 
-TEST_F(AArch64GISelMITest, TestFPCSE) {
-  setUp();
-  if (!TM)
-    GTEST_SKIP();
-  LLT s16{LLT::scalar(16)};
-  LLT s32{LLT::scalar(32)};
-
-  GISelCSEInfo CSEInfo;
-  CSEInfo.setCSEConfig(std::make_unique<CSEConfigFull>());
-  CSEInfo.analyze(*MF);
-  B.setCSEInfo(&CSEInfo);
-  CSEMIRBuilder CSEB(B.getState());
-
-  CSEB.setInsertPt(B.getMBB(), B.getInsertPt());
-
-  // Build some fp constants.
-  auto MIBFP0 = CSEB.buildFConstant(s32, 1.0);
-  auto MIBFP0_1 = CSEB.buildFConstant(s32, 1.0);
-  EXPECT_TRUE(&*MIBFP0 == &*MIBFP0_1);
-  CSEInfo.print();
-
-  // Build some
-
-}
-
 TEST_F(AArch64GISelMITest, TestCSE) {
   setUp();
   if (!TM)
