@@ -165,7 +165,7 @@ public:
   ///     eSymbolContextSymbol is set in \a scope
   ///
   /// \param[in] scope
-  ///     A mask of symbol context bits telling this function which
+  ///     A mask of \b SymbolContextItem bits telling this function which
   ///     address ranges it can use when trying to extract one from
   ///     the valid (non-nullptr) symbol context classes.
   ///
