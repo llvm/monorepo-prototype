@@ -798,6 +798,8 @@ Improvements to Clang's diagnostics
     }
 - Diagnose invalid declarators in the declaration of constructors and destructors (#GH121706).
 
+- Clang now diagnoses the use of attribute names reserved by the C++ standard (#GH92196).
+
 Improvements to Clang's time-trace
 ----------------------------------
 
