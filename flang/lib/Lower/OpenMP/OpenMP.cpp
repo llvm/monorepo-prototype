@@ -2511,7 +2511,7 @@ static void genStandaloneDo(lower::AbstractConverter &converter,
 
   DataSharingProcessor dsp(converter, semaCtx, item->clauses, eval,
                            /*shouldCollectPreDeterminedSymbols=*/true,
-                           enableDelayedPrivatization, symTable);
+                           enableDelayedPrivatizationStaging, symTable);
   dsp.processStep1(&wsloopClauseOps);
 
   mlir::omp::LoopNestOperands loopNestClauseOps;
