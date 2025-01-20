@@ -2380,6 +2380,9 @@ Instruction *InstCombinerImpl::visitAnd(BinaryOperator &I) {
   if (Instruction *X = foldVectorBinop(I))
     return X;
 
+  if (Instruction *X = foldBinopOfReductions(I))
+    return replaceInstUsesWith(I, X);
+
   if (Instruction *Phi = foldBinopWithPhiOperands(I))
     return Phi;
 
@@ -3560,6 +3563,9 @@ Instruction *InstCombinerImpl::visitOr(BinaryOperator &I) {
   if (Instruction *X = foldVectorBinop(I))
     return X;
 
+  if (Instruction *X = foldBinopOfReductions(I))
+    return replaceInstUsesWith(I, X);
+
   if (Instruction *Phi = foldBinopWithPhiOperands(I))
     return Phi;
 
@@ -4670,6 +4676,9 @@ Instruction *InstCombinerImpl::visitXor(BinaryOperator &I) {
 
   if (Instruction *X = foldVectorBinop(I))
     return X;
+
+  if (Instruction *X = foldBinopOfReductions(I))
+    return replaceInstUsesWith(I, X);
 
   if (Instruction *Phi = foldBinopWithPhiOperands(I))
     return Phi;
