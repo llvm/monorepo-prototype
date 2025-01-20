@@ -240,6 +240,11 @@ Changes in existing checks
   subtracting from a pointer directly or when used to scale a numeric value and
   fix false positive when sizeof expression with template types.
 
+- Improved :doc:`bugprone-string-constructor
+  <clang-tidy/checks/bugprone/string-constructor>` check to find suspicious
+  calls of string constructor with char pointer, start position
+  and length parameters.
+
 - Improved :doc:`bugprone-throw-keyword-missing
   <clang-tidy/checks/bugprone/throw-keyword-missing>` by fixing a false positive
   when using non-static member initializers and a constructor.
