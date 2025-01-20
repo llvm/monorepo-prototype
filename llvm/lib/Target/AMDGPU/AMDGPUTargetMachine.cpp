@@ -498,6 +498,7 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeAMDGPUTarget() {
   initializeAMDGPUAttributorLegacyPass(*PR);
   initializeAMDGPUAnnotateKernelFeaturesPass(*PR);
   initializeAMDGPUAnnotateUniformValuesLegacyPass(*PR);
+  initializeAMDGPUAnnotateVaryingBranchWeightsLegacyPass(*PR);
   initializeAMDGPUArgumentUsageInfoPass(*PR);
   initializeAMDGPUAtomicOptimizerPass(*PR);
   initializeAMDGPULowerKernelArgumentsPass(*PR);
@@ -1359,6 +1360,7 @@ bool GCNPassConfig::addPreISel() {
 
   addPass(createAMDGPUAnnotateUniformValuesLegacy());
   addPass(createSIAnnotateControlFlowLegacyPass());
+  addPass(createAMDGPUAnnotateVaryingBranchWeightsLegacyPass());
   // TODO: Move this right after structurizeCFG to avoid extra divergence
   // analysis. This depends on stopping SIAnnotateControlFlow from making
   // control flow modifications.
@@ -2051,6 +2053,8 @@ void AMDGPUCodeGenPassBuilder::addPreISel(AddIRPass &addPass) const {
   addPass(AMDGPUAnnotateUniformValuesPass());
 
   addPass(SIAnnotateControlFlowPass(TM));
+
+  addPass(AMDGPUAnnotateVaryingBranchWeightsPass(TM));
 
   // TODO: Move this right after structurizeCFG to avoid extra divergence
   // analysis. This depends on stopping SIAnnotateControlFlow from making
