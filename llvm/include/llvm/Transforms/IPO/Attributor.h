@@ -6477,6 +6477,58 @@ struct AADenormalFPMath
   static const char ID;
 };
 
+/// An abstract attribute for converting out arguments into struct elements.
+struct AAConvertOutArgument
+    : public StateWrapper<BooleanState, AbstractAttribute> {
+  using Base = StateWrapper<BooleanState, AbstractAttribute>;
+
+  AAConvertOutArgument(const IRPosition &IRP, Attributor &A) : Base(IRP) {}
+
+  /// Create an abstract attribute view for the position \p IRP.
+  static AAConvertOutArgument &createForPosition(const IRPosition &IRP,
+                                                 Attributor &A);
+
+  /// See AbstractAttribute::getName()
+  const std::string getName() const override { return "AAConvertOutArgument"; }
+
+  /// Return true if convertible is assumed.
+  bool isAssumedConvertible() const { return getAssumed(); }
+
+  /// Return true if convertible is known.
+  bool isKnownConvertible() const { return getKnown(); }
+
+  /// See AbstractAttribute::getIdAddr()
+  const char *getIdAddr() const override { return &ID; }
+
+  /// This function should return true if the type of the \p AA is
+  /// AADenormalFPMath.
+  static bool classof(const AbstractAttribute *AA) {
+    return (AA->getIdAddr() == &ID);
+  }
+
+  /// Unique ID (due to the unique address)
+  static const char ID;
+
+protected:
+  static bool isEligibleArgumentType(Type *Ty) { return Ty->isPointerTy(); }
+
+  static bool isEligibleArgument(const Argument &Arg, Attributor &A,
+                                 const AbstractAttribute &AA) {
+    if (!isEligibleArgumentType(Arg.getType()))
+      return false;
+
+    const IRPosition &ArgPos = IRPosition::argument(Arg);
+    auto *AAMem = A.getAAFor<AAMemoryBehavior>(AA, ArgPos, DepClassTy::NONE);
+    auto *NoAlias = A.getAAFor<AANoAlias>(AA, ArgPos, DepClassTy::NONE);
+
+    // assert(NoAlias->isKnownNoAlias() && "has aliases");
+
+    return AAMem && NoAlias &&
+           AAMem->isKnownWriteOnly() && // NoAlias->isKnownNoAlias() &&
+           !Arg.hasPointeeInMemoryValueAttr();
+  }
+};
+
 raw_ostream &operator<<(raw_ostream &, const AAPointerInfo::Access &);
 
 /// Run options, used by the pass manager.
